@@ -16,8 +16,6 @@ export default function App() {
         return <Feedback />;
       case "Settings":
         return <Settings />;
-      default:
-        return <Dashboard />;
     }
   };
 
