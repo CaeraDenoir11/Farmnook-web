@@ -1,9 +1,9 @@
 import { useState } from "react";
-import Sidebar from "./Sidebar.jsx";
-import Dashboard from "./Dashboard.jsx";
-import Users from "./Users.jsx";
-import Feedback from "./Feedback.jsx";
-import Settings from "./Settings.jsx";
+import Sidebar from "./components/Sidebar.jsx";
+import Dashboard from "./components/Dashboard.jsx";
+import Users from "./components/Users.jsx";
+import Feedback from "./components/Feedback.jsx";
+import Settings from "./components/Settings.jsx";
 
 export default function App() {
   const [active, setActive] = useState("Dashboard");
@@ -20,9 +20,9 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-white">
+    <div>
       <Sidebar setActive={setActive} />
-      <div className="flex-1">{renderContent()}</div>
+      <div>{renderContent()}</div>
     </div>
   );
 }
