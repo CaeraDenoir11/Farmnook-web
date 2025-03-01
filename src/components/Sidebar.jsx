@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Menu, LogOut } from "lucide-react";
 import "../index.css";
 import logo from "../assets/images/logo.png";
@@ -15,20 +15,36 @@ export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const [active, setActive] = useState("Dashboard");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const sidebarRef = useRef(null);
 
-  // Handle screen resize & auto-close sidebar when switching to mobile
   useEffect(() => {
     const handleResize = () => {
       const mobileView = window.innerWidth < 768;
       setIsMobile(mobileView);
-      if (mobileView) setIsOpen(false); // Auto-close sidebar on small screens
+      if (mobileView) setIsOpen(false);
     };
 
     window.addEventListener("resize", handleResize);
-    handleResize(); // Run once on mount
+    handleResize();
 
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        isMobile &&
+        isOpen &&
+        sidebarRef.current &&
+        !sidebarRef.current.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isMobile, isOpen]);
 
   const menuItems = [
     { name: "Dashboard", icon: dashboardIcon, component: <Dashboard /> },
@@ -39,7 +55,6 @@ export default function Sidebar() {
 
   return (
     <div className="flex h-screen relative">
-      {/* Overlay to darken content when sidebar is open on mobile */}
       {isOpen && isMobile && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-10 md:hidden"
@@ -47,8 +62,8 @@ export default function Sidebar() {
         ></div>
       )}
 
-      {/* Sidebar */}
       <div
+        ref={sidebarRef}
         className={`fixed md:relative h-screen flex flex-col justify-between transition-all duration-300 ${
           isOpen ? "w-64" : "w-18"
         } bg-[#F5EFE6] text-white p-4 z-20
@@ -78,7 +93,7 @@ export default function Sidebar() {
                 }`}
                 onClick={() => {
                   setActive(item.name);
-                  if (isMobile) setIsOpen(false); // Close sidebar on mobile after selecting
+                  if (isMobile) setIsOpen(false);
                 }}
               >
                 <img
@@ -102,7 +117,6 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 bg-white relative z-10">
         {isMobile && !isOpen && (
           <button

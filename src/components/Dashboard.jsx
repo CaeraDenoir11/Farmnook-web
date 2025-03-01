@@ -1,3 +1,4 @@
+import { useState } from "react";
 import "../index.css";
 import {
   AreaChart,
@@ -9,36 +10,73 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const data = [
-  { week: "Week 1", users: 120 },
-  { week: "Week 2", users: 90 },
-  { week: "Week 3", users: 150 },
-  { week: "Week 4", users: 130 },
-];
+const monthlyData = {
+  January: [
+    { week: "Week 1", users: 100 },
+    { week: "Week 2", users: 120 },
+    { week: "Week 3", users: 90 },
+    { week: "Week 4", users: 130 },
+  ],
+  February: [
+    { week: "Week 1", users: 80 },
+    { week: "Week 2", users: 110 },
+    { week: "Week 3", users: 95 },
+    { week: "Week 4", users: 140 },
+  ],
+  March: [
+    { week: "Week 1", users: 120 },
+    { week: "Week 2", users: 90 },
+    { week: "Week 3", users: 150 },
+    { week: "Week 4", users: 130 },
+  ],
+};
 
 export default function Dashboard() {
+  const [selectedMonth, setSelectedMonth] = useState("March");
+
   return (
     <div className="p-4">
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center text-green-800">
+        Dashboard
+      </h1>
 
-      {/* Total Users Card */}
-      <div className="bg-[#F5EFE6] text-green-800 p-6 rounded-lg shadow-md mb-6 max-w-sm mx-auto">
-        <h2 className="text-lg font-semibold">Total Logged-in Users Today</h2>
-        <p className="text-3xl font-bold mt-2">235</p>
-      </div>
-
-      {/* Line Chart Card */}
       <div className="bg-white p-6 rounded-lg shadow-md max-w-4xl mx-auto">
-        <h2 className="text-lg font-semibold mb-4">User Activity Over Time</h2>
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
+          {/* Month Selector on Top Left */}
+          <select
+            className="p-2 border rounded-lg bg-white text-green-800 shadow-md"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+          >
+            {Object.keys(monthlyData).map((month) => (
+              <option key={month} value={month}>
+                {month}
+              </option>
+            ))}
+          </select>
 
-        {/* Responsive Line Chart with Smooth Styling */}
+          {/* Total Users on Top Right */}
+          <div className="bg-[#F5EFE6] text-green-800 p-4 rounded-lg shadow-md text-center">
+            <h2 className="text-lg font-semibold">Total Logged-in Users</h2>
+            <p className="text-2xl font-bold mt-2">
+              {monthlyData[selectedMonth].reduce(
+                (sum, entry) => sum + entry.users,
+                0
+              )}
+            </p>
+          </div>
+        </div>
+
+        {/* Line Chart */}
+        <h2 className="text-lg font-semibold mb-4 text-green-800 text-center">
+          User Activity Over Time ({selectedMonth})
+        </h2>
         <div className="w-full h-80">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
-              data={data}
+              data={monthlyData[selectedMonth]}
               margin={{ top: 20, right: 30, left: 0, bottom: 10 }}
             >
-              {/* Gradient Fill for a Softer Look */}
               <defs>
                 <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#4CAF50" stopOpacity={0.4} />
@@ -59,7 +97,7 @@ export default function Dashboard() {
                 type="monotone"
                 dataKey="users"
                 stroke="#4CAF50"
-                strokeWidth={1} // Thinner, elegant line
+                strokeWidth={1}
                 fill="url(#colorUsers)"
                 dot={{ r: 4, fill: "#4CAF50" }}
                 activeDot={{
