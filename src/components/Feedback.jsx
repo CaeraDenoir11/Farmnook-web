@@ -22,8 +22,8 @@ const initialMessages = {
   ],
 };
 
-export default function Feedback() {
-  const [selectedUser, setSelectedUser] = useState(users[0].id);
+export default function Messenger() {
+  const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState(initialMessages);
   const [input, setInput] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
@@ -50,10 +50,14 @@ export default function Feedback() {
   };
 
   return (
-    <div className="flex h-screen bg-[#F5EFE6]">
+    <div className="h-screen bg-[#F5EFE6] flex">
       {/* Sidebar */}
-      <div className="w-1/4 bg-[#F5EFE6] p-4 border-r text-[#1A4D2E]">
-        <h2 className="text-xl font-bold mb-4">Messages</h2>
+      <div
+        className={`${
+          isMobile && selectedUser !== null ? "hidden" : "w-full sm:w-1/4"
+        } bg-[#F5EFE6] p-4 border-r text-[#1A4D2E]`}
+      >
+        <h2 className="text-xl font-bold mb-4">Feedback</h2>
         {users.map((user) => (
           <div
             key={user.id}
@@ -70,52 +74,57 @@ export default function Feedback() {
       </div>
 
       {/* Chat Area */}
-      {selectedUser !== null && (
-        <div className="flex-1 p-6 flex flex-col">
-          {/* Back Button for Mobile */}
-          {isMobile && (
-            <button
-              className="mb-4 p-2 bg-[#1A4D2E] text-white rounded-lg"
-              onClick={() => setSelectedUser(null)}
-            >
-              Back
-            </button>
-          )}
-          <h2 className="text-2xl font-bold mb-4 text-[#1A4D2E]">
-            Chat with {users.find((user) => user.id === selectedUser).name}
-          </h2>
-          <div className="bg-white p-4 rounded-lg shadow-md flex-1 overflow-y-auto">
-            {messages[selectedUser].map((msg, index) => (
-              <div
-                key={index}
-                className={`mb-2 p-2 rounded-lg max-w-xs ${
-                  msg.sender === "admin"
-                    ? "bg-[#1A4D2E] text-white self-end"
-                    : "bg-[#F5EFE6] text-[#1A4D2E]"
-                }`}
+      <div
+        className={`${
+          isMobile && selectedUser === null ? "hidden" : "w-full sm:flex-1"
+        } p-6 flex flex-col`}
+      >
+        {isMobile && selectedUser !== null && (
+          <button
+            className="mb-4 p-2 bg-[#1A4D2E] text-white rounded-lg"
+            onClick={() => setSelectedUser(null)}
+          >
+            Back
+          </button>
+        )}
+        {selectedUser !== null && (
+          <>
+            <h2 className="text-2xl font-bold mb-4 text-[#1A4D2E]">
+              Chat with {users.find((user) => user.id === selectedUser).name}
+            </h2>
+            <div className="bg-white p-4 rounded-lg shadow-md flex-1 overflow-y-auto">
+              {messages[selectedUser].map((msg, index) => (
+                <div
+                  key={index}
+                  className={`mb-2 p-2 rounded-lg max-w-xs ${
+                    msg.sender === "admin"
+                      ? "bg-[#1A4D2E] text-white self-end"
+                      : "bg-[#F5EFE6] text-[#1A4D2E]"
+                  }`}
+                >
+                  {msg.text}
+                </div>
+              ))}
+            </div>
+            {/* Input Area */}
+            <div className="mt-4 flex">
+              <input
+                type="text"
+                className="flex-1 p-2 border rounded-lg"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type a message..."
+              />
+              <button
+                className="ml-2 p-2 bg-[#1A4D2E] text-white rounded-lg"
+                onClick={handleSendMessage}
               >
-                {msg.text}
-              </div>
-            ))}
-          </div>
-          {/* Input Area */}
-          <div className="mt-4 flex">
-            <input
-              type="text"
-              className="flex-1 p-2 border rounded-lg"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type a message..."
-            />
-            <button
-              className="ml-2 p-2 bg-[#1A4D2E] text-white rounded-lg"
-              onClick={handleSendMessage}
-            >
-              Send
-            </button>
-          </div>
-        </div>
-      )}
+                Send
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
