@@ -17,3 +17,6 @@ body {
   background-color: #f5efe6;
   font-family: poppins, sans-serif;
 }
+.opacity {
+  opacity: 0.3;
+}

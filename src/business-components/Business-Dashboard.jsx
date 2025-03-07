@@ -37,7 +37,7 @@ export default function Dashboard() {
   return (
     <div className="p-4">
       <h1 className="text-3xl font-bold mb-6 text-center text-green-800">
-        Dashboard
+        Business Dashboard
       </h1>
 
       <div className="bg-[#F5EFE6] p-6 rounded-lg shadow-md max-w-4xl mx-auto">

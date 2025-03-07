@@ -48,8 +48,6 @@ export default function Sidebar({ active, setActive, setIsAuthenticated }) {
   const menuItems = [
     { name: "Dashboard", icon: dashboardIcon },
     { name: "Users", icon: usersIcon },
-    { name: "Feedback", icon: feedbackIcon },
-    { name: "Settings", icon: settingsIcon },
   ];
 
   return (
