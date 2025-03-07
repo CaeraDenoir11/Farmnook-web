@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import "../index.css";
 import profilePic from "../assets/images/profile.png";
+import AddDriverButton from "../assets/buttons/AddDriverButton.jsx";
 
 export default function BusinessDrivers() {
   const [users, setUsers] = useState([]);
@@ -57,6 +58,13 @@ export default function BusinessDrivers() {
     };
     fetchData();
   }, []);
+
+  const handleAddDriver = (newDriver) => {
+    setUsers((prevUsers) => [
+      ...prevUsers,
+      { ...newDriver, avatar: profilePic },
+    ]);
+  };
 
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
@@ -120,6 +128,8 @@ export default function BusinessDrivers() {
           &gt;
         </button>
       </div>
+
+      <AddDriverButton onAddDriver={handleAddDriver} />
     </div>
   );
 }

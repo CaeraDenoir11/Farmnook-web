@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import "../index.css";
 import profilePic from "../assets/images/profile.png";
+import AddVehicleButton from "../assets/buttons/AddVehicleButton.jsx";
 
 export default function BusinessVehicles() {
   const [users, setUsers] = useState([]);
@@ -57,6 +58,12 @@ export default function BusinessVehicles() {
     };
     fetchData();
   }, []);
+  const handleAddVehicle = (newVehicle) => {
+    setUsers((prevUsers) => [
+      ...prevUsers,
+      { ...newVehicle, avatar: profilePic },
+    ]);
+  };
 
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
@@ -120,6 +127,8 @@ export default function BusinessVehicles() {
           &gt;
         </button>
       </div>
+
+      <AddVehicleButton onAddDriver={handleAddVehicle} />
     </div>
   );
 }
