@@ -7,7 +7,9 @@ import Settings from "./components/Settings.jsx";
 import Login from "./components/Login.jsx";
 import BusinessSidebar from "./business-components/Business-Sidebar.jsx";
 import BusinessDashboard from "./business-components/Business-Dashboard.jsx";
-import BusinessUsers from "./business-components/Business-Users.jsx";
+import BusinessDrivers from "./business-components/Business-Drivers.jsx";
+import BusinessVehicles from "./business-components/Business-Vehicles.jsx";
+import BusinessProfile from "./business-components/Business-Profile.jsx";
 import logo from "./assets/images/document-logo.png";
 
 export default function App() {
@@ -45,8 +47,12 @@ export default function App() {
   const renderContent = () => {
     if (role === "business-admin") {
       switch (active) {
-        case "Users":
-          return <BusinessUsers />;
+        case "Drivers":
+          return <BusinessDrivers />;
+        case "Vehicles":
+          return <BusinessVehicles />;
+        case "Profile":
+          return <BusinessProfile />;
         case "Dashboard":
         default:
           return <BusinessDashboard />;

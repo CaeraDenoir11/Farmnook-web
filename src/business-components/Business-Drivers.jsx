@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import "../index.css";
 import profilePic from "../assets/images/profile.png";
 
-export default function Users() {
+export default function BusinessDrivers() {
   const [users, setUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 5;
@@ -65,7 +65,7 @@ export default function Users() {
 
   return (
     <div className="flex-1 h-screen p-6 bg-white flex flex-col items-center">
-      <h1 className="text-3xl font-bold text-[#1A4D2E]">Users List</h1>
+      <h1 className="text-3xl font-bold text-[#1A4D2E]">Drivers List</h1>
       <div className="w-full max-w-4xl bg-[#F5EFE6] rounded-xl shadow-lg p-6 mt-6">
         <table className="w-full text-left">
           <thead>

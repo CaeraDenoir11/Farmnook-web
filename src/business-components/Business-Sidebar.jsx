@@ -3,9 +3,9 @@ import { Menu, LogOut } from "lucide-react";
 import "../index.css";
 import logo from "../assets/images/logo.png";
 import dashboardIcon from "../assets/images/dashboard.svg";
-import usersIcon from "../assets/images/users.svg";
-import feedbackIcon from "../assets/images/feedback.svg";
-import settingsIcon from "../assets/images/settings.svg";
+import driversIcon from "../assets/icons/drivers.svg";
+import vehiclesIcon from "../assets/icons/vehicles.svg";
+import profileIcon from "../assets/icons/profile.svg";
 
 export default function Sidebar({ active, setActive, setIsAuthenticated }) {
   const [isOpen, setIsOpen] = useState(true);
@@ -47,7 +47,9 @@ export default function Sidebar({ active, setActive, setIsAuthenticated }) {
 
   const menuItems = [
     { name: "Dashboard", icon: dashboardIcon },
-    { name: "Users", icon: usersIcon },
+    { name: "Drivers", icon: driversIcon },
+    { name: "Vehicles", icon: vehiclesIcon },
+    { name: "Profile", icon: profileIcon },
   ];
 
   return (

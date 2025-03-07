@@ -31,7 +31,7 @@ const monthlyData = {
   ],
 };
 
-export default function Dashboard() {
+export default function BusinessDashboard() {
   const [selectedMonth, setSelectedMonth] = useState("March");
 
   return (
