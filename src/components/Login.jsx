@@ -1,28 +1,70 @@
 import React, { useState } from "react";
-import logo from "../assets/images/document-logo.png";
+import { auth, db } from "../../configs/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 import "../login.css";
-import googleLogo from "../assets/icons/google.png";
-import { Eye, EyeOff } from "lucide-react";
+import logo from "../assets/images/document-logo.png";
 
-const Login = ({ setIsAuthenticated, setRole }) => {
-  const [username, setUsername] = useState("");
+export default function Login({ setIsAuthenticated, setRole }) {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleLogin = (e) => {
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (username === "admin" && password === "password123") {
+    setError("");
+    try {
+      console.log("Attempting login for:", email);
+
+      const userQuery = query(
+        collection(db, "users_business_admin"),
+        where("email", "==", email.toLowerCase())
+      );
+      const querySnapshot = await getDocs(userQuery);
+
+      let userData = null;
+      let role = "";
+
+      if (!querySnapshot.empty) {
+        userData = querySnapshot.docs[0].data();
+        role = "business-admin";
+      } else {
+        const adminQuery = query(
+          collection(db, "users_super_admin"),
+          where("email", "==", email.toLowerCase())
+        );
+        const adminSnapshot = await getDocs(adminQuery);
+        if (!adminSnapshot.empty) {
+          userData = adminSnapshot.docs[0].data();
+          role = "super-admin";
+        }
+      }
+
+      if (!userData) {
+        console.error("User not found in Firestore");
+        setError("Invalid email or password");
+        return;
+      }
+
+      console.log("User found in Firestore:", userData);
+
+      // Authenticate with Firebase Auth
+      await signInWithEmailAndPassword(auth, email, password);
+
+      console.log("Firebase authentication successful");
+
       setIsAuthenticated(true);
-      setRole("admin");
-      setError(false);
-    } else if (username === "business-admin" && password === "bizpass456") {
-      setIsAuthenticated(true);
-      setRole("business-admin");
-      setError(false);
-    } else {
-      setError(true);
-      setTimeout(() => setError(false), 500);
+      setRole(role);
+      localStorage.setItem("userRole", role);
+      localStorage.setItem("isAuthenticated", true);
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Login error:", error.message);
+      setError("Login failed. Please check your credentials and try again.");
     }
   };
 
@@ -43,20 +85,20 @@ const Login = ({ setIsAuthenticated, setRole }) => {
             </h2>
             {error && (
               <p className="text-red-500 text-center mb-4 font-semibold">
-                ⚠️ Invalid credentials!
+                ⚠️ {error}
               </p>
             )}
             <form onSubmit={handleLogin}>
               <div className="mb-4">
                 <label className="block text-gray-700 font-medium mb-1">
-                  Username
+                  Email
                 </label>
                 <input
-                  type="text"
+                  type="email"
                   className="w-full p-3 border rounded-lg bg-[#FCFFE0] focus:ring-2 focus:ring-[#1A4D2E] border-gray-300"
-                  placeholder="Enter username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div className="mb-4 relative">
@@ -76,30 +118,17 @@ const Login = ({ setIsAuthenticated, setRole }) => {
                     className="absolute inset-y-0 right-3 flex items-center"
                     onClick={() => setShowPassword((prev) => !prev)}
                   >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    {showPassword ? "👁️" : "🙈"}
                   </button>
                 </div>
               </div>
-
               <button className="w-full bg-[#1A4D2E] text-white p-3 rounded-lg hover:bg-[#163C24] transition duration-200">
                 Login
               </button>
             </form>
-            <div className="mt-4 flex justify-center">
-              <button className="w-full bg-white text-[#1A4D2E] p-3 rounded-lg border border-[#1A4D2E] hover:bg-gray-100 transition duration-200 flex items-center justify-center">
-                <img
-                  src={googleLogo}
-                  alt="Google Logo"
-                  className="w-5 h-5 mr-2"
-                />
-                Login with Google
-              </button>
-            </div>
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default Login;
+}

@@ -1,4 +1,10 @@
 import { useState, useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import Sidebar from "./components/Sidebar.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Users from "./components/Users.jsx";
@@ -14,13 +20,13 @@ import BusinessProfile from "./business-components/Business-Profile.jsx";
 import logo from "./assets/images/document-logo.png";
 
 export default function App() {
-  const [active, setActive] = useState(
-    localStorage.getItem("activePage") || "Dashboard"
-  );
   const [isAuthenticated, setIsAuthenticated] = useState(
     JSON.parse(localStorage.getItem("isAuthenticated")) || false
   );
   const [role, setRole] = useState(localStorage.getItem("userRole") || "");
+  const [activePage, setActivePage] = useState(
+    localStorage.getItem("activePage") || "Dashboard"
+  );
 
   useEffect(() => {
     document.title = `Farmnook`;
@@ -37,64 +43,80 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("activePage", active);
-  }, [active]);
-
-  useEffect(() => {
     localStorage.setItem("isAuthenticated", JSON.stringify(isAuthenticated));
     localStorage.setItem("userRole", role);
-  }, [isAuthenticated, role]);
-
-  const renderContent = () => {
-    if (role === "business-admin") {
-      switch (active) {
-        case "Drivers":
-          return <BusinessDrivers />;
-        case "Vehicles":
-          return <BusinessVehicles />;
-        case "Inbox":
-          return <BusinessInbox />;
-        case "Profile":
-          return <BusinessProfile />;
-        case "Dashboard":
-        default:
-          return <BusinessDashboard />;
-      }
-    } else {
-      switch (active) {
-        case "Users":
-          return <Users />;
-        case "Feedback":
-          return <Feedback />;
-        case "Settings":
-          return <Settings />;
-        case "Dashboard":
-        default:
-          return <Dashboard />;
-      }
-    }
-  };
-
-  if (!isAuthenticated) {
-    return <Login setIsAuthenticated={setIsAuthenticated} setRole={setRole} />;
-  }
+    localStorage.setItem("activePage", activePage);
+  }, [isAuthenticated, role, activePage]);
 
   return (
-    <div className="flex h-screen">
-      {role === "business-admin" ? (
-        <BusinessSidebar
-          active={active}
-          setActive={setActive}
-          setIsAuthenticated={setIsAuthenticated}
-        />
-      ) : (
-        <Sidebar
-          active={active}
-          setActive={setActive}
-          setIsAuthenticated={setIsAuthenticated}
-        />
+    <Router>
+      {isAuthenticated && (
+        <Navigate to={`/${activePage.toLowerCase()}`} replace />
       )}
-      <div className="flex-1 bg-white">{renderContent()}</div>
-    </div>
+      <Routes>
+        {/* Login Route */}
+        <Route
+          path="/login"
+          element={
+            <Login setIsAuthenticated={setIsAuthenticated} setRole={setRole} />
+          }
+        />
+
+        {/* Protected Routes */}
+        {isAuthenticated ? (
+          role === "business-admin" ? (
+            <Route
+              path="/*"
+              element={
+                <div className="flex h-screen">
+                  <BusinessSidebar
+                    activePage={activePage}
+                    setActivePage={setActivePage}
+                    setIsAuthenticated={setIsAuthenticated}
+                  />
+                  <div className="flex-1 bg-white">
+                    <Routes>
+                      <Route
+                        path="/dashboard"
+                        element={<BusinessDashboard />}
+                      />
+                      <Route path="/drivers" element={<BusinessDrivers />} />
+                      <Route path="/vehicles" element={<BusinessVehicles />} />
+                      <Route path="/inbox" element={<BusinessInbox />} />
+                      <Route path="/profile" element={<BusinessProfile />} />
+                      <Route path="*" element={<Navigate to="/dashboard" />} />
+                    </Routes>
+                  </div>
+                </div>
+              }
+            />
+          ) : (
+            <Route
+              path="/*"
+              element={
+                <div className="flex h-screen">
+                  <Sidebar
+                    activePage={activePage}
+                    setActivePage={setActivePage}
+                    setIsAuthenticated={setIsAuthenticated}
+                  />
+                  <div className="flex-1 bg-white">
+                    <Routes>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/users" element={<Users />} />
+                      <Route path="/feedback" element={<Feedback />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="*" element={<Navigate to="/dashboard" />} />
+                    </Routes>
+                  </div>
+                </div>
+              }
+            />
+          )
+        ) : (
+          <Route path="*" element={<Navigate to="/login" />} />
+        )}
+      </Routes>
+    </Router>
   );
 }
