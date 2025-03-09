@@ -9,6 +9,7 @@ import BusinessSidebar from "./business-components/Business-Sidebar.jsx";
 import BusinessDashboard from "./business-components/Business-Dashboard.jsx";
 import BusinessDrivers from "./business-components/Business-Drivers.jsx";
 import BusinessVehicles from "./business-components/Business-Vehicles.jsx";
+import BusinessInbox from "./business-components/Business-Inbox.jsx";
 import BusinessProfile from "./business-components/Business-Profile.jsx";
 import logo from "./assets/images/document-logo.png";
 
@@ -51,6 +52,8 @@ export default function App() {
           return <BusinessDrivers />;
         case "Vehicles":
           return <BusinessVehicles />;
+        case "Inbox":
+          return <BusinessInbox />;
         case "Profile":
           return <BusinessProfile />;
         case "Dashboard":

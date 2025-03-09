@@ -6,6 +6,7 @@ import dashboardIcon from "../assets/images/dashboard.svg";
 import driversIcon from "../assets/icons/drivers.svg";
 import vehiclesIcon from "../assets/icons/vehicles.svg";
 import profileIcon from "../assets/icons/profile.svg";
+import inboxIcon from "../assets/icons/message.svg";
 
 export default function Sidebar({ active, setActive, setIsAuthenticated }) {
   const [isOpen, setIsOpen] = useState(true);
@@ -13,14 +14,14 @@ export default function Sidebar({ active, setActive, setIsAuthenticated }) {
   const sidebarRef = useRef(null);
 
   const handleLogout = () => {
-    setIsAuthenticated(false); // Logs the user out
+    setIsAuthenticated(false);
   };
 
   useEffect(() => {
     const handleResize = () => {
       const mobileView = window.innerWidth < 768;
       setIsMobile(mobileView);
-      if (mobileView) setIsOpen(false); // Close sidebar on mobile by default
+      if (mobileView) setIsOpen(false);
     };
 
     window.addEventListener("resize", handleResize);
@@ -37,7 +38,7 @@ export default function Sidebar({ active, setActive, setIsAuthenticated }) {
         sidebarRef.current &&
         !sidebarRef.current.contains(event.target)
       ) {
-        setIsOpen(false); // Close sidebar when clicking outside on mobile
+        setIsOpen(false);
       }
     };
 
@@ -49,12 +50,12 @@ export default function Sidebar({ active, setActive, setIsAuthenticated }) {
     { name: "Dashboard", icon: dashboardIcon },
     { name: "Drivers", icon: driversIcon },
     { name: "Vehicles", icon: vehiclesIcon },
+    { name: "Inbox", icon: inboxIcon },
     { name: "Profile", icon: profileIcon },
   ];
 
   return (
     <div className="flex h-screen relative">
-      {/* ✅ Mobile overlay to close sidebar when clicking outside */}
       {isOpen && isMobile && (
         <div
           className="fixed inset-0 backdrop-blur-sm bg-blend-overlay z-10 md:hidden"
@@ -64,14 +65,12 @@ export default function Sidebar({ active, setActive, setIsAuthenticated }) {
 
       <div
         ref={sidebarRef}
-        className={`fixed md:relative h-screen flex flex-col justify-between transition-all duration-300 ${
-          isOpen ? "w-64" : "w-18"
-        } bg-[#F5EFE6] text-white p-4 z-20
+        className={`fixed md:relative flex flex-col justify-between transition-all duration-300 overflow-y-auto h-screen
+          ${isOpen ? "w-64" : "w-18"} bg-[#F5EFE6] text-white p-4 z-20
           ${isMobile ? (isOpen ? "left-0" : "-left-64") : ""}`}
         style={{ zIndex: 30 }}
       >
         <div>
-          {/* ✅ Toggle menu button */}
           <button
             className="mb-4 !bg-white outline-none p-2 rounded-md"
             onClick={() => setIsOpen(!isOpen)}
@@ -83,19 +82,19 @@ export default function Sidebar({ active, setActive, setIsAuthenticated }) {
             <img src={logo} alt="Logo" className="mx-auto mb-4 w-48" />
           )}
 
-          {/* ✅ Sidebar menu items */}
           <ul>
             {menuItems.map((item) => (
               <li
                 key={item.name}
-                className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all ease-in-out duration-300 ${
-                  active === item.name
-                    ? "bg-green-800 text-white"
-                    : "text-green-800"
-                }`}
+                className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all ease-in-out duration-300
+                  ${
+                    active === item.name
+                      ? "bg-green-800 text-white"
+                      : "text-green-800"
+                  }`}
                 onClick={() => {
-                  setActive(item.name); // ✅ Fix: This now correctly updates active tab
-                  if (isMobile) setIsOpen(false); // ✅ Close sidebar on mobile after clicking
+                  setActive(item.name);
+                  if (isMobile) setIsOpen(false);
                 }}
               >
                 <img
@@ -111,7 +110,6 @@ export default function Sidebar({ active, setActive, setIsAuthenticated }) {
           </ul>
         </div>
 
-        {/* ✅ Logout button */}
         <div className="mt-auto">
           <button
             onClick={handleLogout}
@@ -123,11 +121,10 @@ export default function Sidebar({ active, setActive, setIsAuthenticated }) {
         </div>
       </div>
 
-      {/* ✅ Mobile button to open sidebar */}
       <div className="flex-1 bg-white relative z-10">
         {isMobile && !isOpen && (
           <button
-            className="absolute top-4 left-4 bg-white shadow-md p-2 rounded-md z-30"
+            className="fixed top-4 left-4 bg-white shadow-md p-2 rounded-md z-30"
             onClick={() => setIsOpen(true)}
           >
             <Menu size={18} className="text-green-800" />

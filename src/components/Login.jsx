@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import logo from "../assets/images/document-logo.png";
 import "../login.css";
 import googleLogo from "../assets/icons/google.png";
+import { Eye, EyeOff } from "lucide-react";
 
 const Login = ({ setIsAuthenticated, setRole }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(false);
 
   const handleLogin = (e) => {
@@ -57,18 +59,28 @@ const Login = ({ setIsAuthenticated, setRole }) => {
                   onChange={(e) => setUsername(e.target.value)}
                 />
               </div>
-              <div className="mb-4">
+              <div className="mb-4 relative">
                 <label className="block text-gray-700 font-medium mb-1">
                   Password
                 </label>
-                <input
-                  type="password"
-                  className="w-full p-3 border rounded-lg bg-[#FCFFE0] focus:ring-2 focus:ring-[#1A4D2E] border-gray-300"
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className="w-full p-3 border rounded-lg bg-[#FCFFE0] focus:ring-2 focus:ring-[#1A4D2E] border-gray-300 pr-10"
+                    placeholder="Enter password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-3 flex items-center"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
               </div>
+
               <button className="w-full bg-[#1A4D2E] text-white p-3 rounded-lg hover:bg-[#163C24] transition duration-200">
                 Login
               </button>
