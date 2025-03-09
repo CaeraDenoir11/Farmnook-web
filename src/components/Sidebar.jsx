@@ -7,7 +7,11 @@ import usersIcon from "../assets/images/users.svg";
 import feedbackIcon from "../assets/images/feedback.svg";
 import settingsIcon from "../assets/images/settings.svg";
 
-export default function Sidebar({ active, setActive, setIsAuthenticated }) {
+export default function Sidebar({
+  activePage,
+  setActivePage,
+  setIsAuthenticated,
+}) {
   const [isOpen, setIsOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const sidebarRef = useRef(null);
@@ -89,12 +93,12 @@ export default function Sidebar({ active, setActive, setIsAuthenticated }) {
               <li
                 key={item.name}
                 className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all ease-in-out duration-300 ${
-                  active === item.name
+                  activePage === item.name
                     ? "bg-green-800 text-white"
                     : "text-green-800"
                 }`}
                 onClick={() => {
-                  setActive(item.name); // ✅ Fix: This now correctly updates active tab
+                  setActivePage(item.name); // ✅ Fix: Updates activePage correctly
                   if (isMobile) setIsOpen(false); // ✅ Close sidebar on mobile after clicking
                 }}
               >
@@ -102,7 +106,7 @@ export default function Sidebar({ active, setActive, setIsAuthenticated }) {
                   src={item.icon}
                   alt={item.name}
                   className={`w-6 h-6 transition-all duration-300 ${
-                    active === item.name ? "filter invert" : ""
+                    activePage === item.name ? "filter invert" : ""
                   }`}
                 />
                 {isOpen && <span className="font-medium">{item.name}</span>}

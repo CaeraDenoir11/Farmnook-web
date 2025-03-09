@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Menu, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import "../index.css";
 import logo from "../assets/images/logo.png";
 import dashboardIcon from "../assets/images/dashboard.svg";
@@ -8,10 +9,15 @@ import vehiclesIcon from "../assets/icons/vehicles.svg";
 import profileIcon from "../assets/icons/profile.svg";
 import inboxIcon from "../assets/icons/message.svg";
 
-export default function Sidebar({ active, setActive, setIsAuthenticated }) {
+export default function Sidebar({
+  activePage,
+  setActivePage,
+  setIsAuthenticated,
+}) {
   const [isOpen, setIsOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const sidebarRef = useRef(null);
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     setIsAuthenticated(false);
@@ -47,11 +53,11 @@ export default function Sidebar({ active, setActive, setIsAuthenticated }) {
   }, [isMobile, isOpen]);
 
   const menuItems = [
-    { name: "Dashboard", icon: dashboardIcon },
-    { name: "Drivers", icon: driversIcon },
-    { name: "Vehicles", icon: vehiclesIcon },
-    { name: "Inbox", icon: inboxIcon },
-    { name: "Profile", icon: profileIcon },
+    { name: "Dashboard", icon: dashboardIcon, route: "/dashboard" },
+    { name: "Drivers", icon: driversIcon, route: "/drivers" },
+    { name: "Vehicles", icon: vehiclesIcon, route: "/vehicles" },
+    { name: "Inbox", icon: inboxIcon, route: "/inbox" },
+    { name: "Profile", icon: profileIcon, route: "/profile" },
   ];
 
   return (
@@ -88,12 +94,13 @@ export default function Sidebar({ active, setActive, setIsAuthenticated }) {
                 key={item.name}
                 className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all ease-in-out duration-300
                   ${
-                    active === item.name
+                    activePage === item.name
                       ? "bg-green-800 text-white"
                       : "text-green-800"
                   }`}
                 onClick={() => {
-                  setActive(item.name);
+                  setActivePage(item.name);
+                  navigate(item.route); // ✅ Fix: Navigates to the correct route
                   if (isMobile) setIsOpen(false);
                 }}
               >
@@ -101,7 +108,7 @@ export default function Sidebar({ active, setActive, setIsAuthenticated }) {
                   src={item.icon}
                   alt={item.name}
                   className={`w-6 h-6 transition-all duration-300 ${
-                    active === item.name ? "filter invert" : ""
+                    activePage === item.name ? "filter invert" : ""
                   }`}
                 />
                 {isOpen && <span className="font-medium">{item.name}</span>}
