@@ -2,7 +2,7 @@ import { useState } from "react";
 import "../index.css";
 import profilePic from "../assets/images/profile.png"; // Replace with actual profile image
 
-export default function Settings() {
+export default function BusinessProfile() {
   return (
     <div className="flex-1 h-full w-full bg-white text-[#1A4D2E] flex items-center justify-center p-6 md:p-10">
       {/* Card Container - Modern UI with Advanced Responsiveness */}

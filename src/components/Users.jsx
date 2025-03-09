@@ -11,45 +11,51 @@ export default function Users() {
     const fetchData = async () => {
       const data = [
         {
-          id: 1,
+          id: "10001",
           name: "Alice",
           company: "Company A",
-          phone: "123-456-7890",
+          email: "alice@companya.com",
+          totalVehicles: 12,
           avatar: profilePic,
         },
         {
-          id: 2,
+          id: "10002",
           name: "Bob",
           company: "Company B",
-          phone: "234-567-8901",
+          email: "bob@companyb.com",
+          totalVehicles: 8,
           avatar: profilePic,
         },
         {
-          id: 3,
+          id: "10003",
           name: "Charlie",
           company: "Company C",
-          phone: "345-678-9012",
+          email: "charlie@companyc.com",
+          totalVehicles: 15,
           avatar: profilePic,
         },
         {
-          id: 4,
+          id: "10004",
           name: "David",
           company: "Company D",
-          phone: "456-789-0123",
+          email: "david@companyd.com",
+          totalVehicles: 6,
           avatar: profilePic,
         },
         {
-          id: 5,
+          id: "10005",
           name: "Eve",
           company: "Company E",
-          phone: "567-890-1234",
+          email: "eve@companye.com",
+          totalVehicles: 10,
           avatar: profilePic,
         },
         {
-          id: 6,
+          id: "10006",
           name: "Frank",
           company: "Company F",
-          phone: "678-901-2345",
+          email: "frank@companyf.com",
+          totalVehicles: 7,
           avatar: profilePic,
         },
       ];
@@ -64,50 +70,57 @@ export default function Users() {
   const totalPages = Math.ceil(users.length / usersPerPage);
 
   return (
-    <div className="flex-1 h-screen p-6 bg-white flex flex-col items-center">
-      <h1 className="text-3xl font-bold text-[#1A4D2E]">Users List</h1>
-      <div className="w-full max-w-4xl bg-[#F5EFE6] rounded-xl shadow-lg p-6 mt-6">
-        <table className="w-full text-left">
+    <div className="flex-1 min-h-screen p-3 sm:p-5 bg-white flex flex-col items-center">
+      <h1 className="text-2xl sm:text-4xl font-bold text-[#1A4D2E] mb-3 sm:mb-6 text-center">
+        Users List
+      </h1>
+      <div className="w-full max-w-6xl bg-[#F5EFE6] rounded-xl shadow-lg p-3 sm:p-6 overflow-x-auto">
+        <table className="w-full text-center border-collapse text-xs sm:text-sm md:text-base">
           <thead>
-            <tr className="bg-[#1A4D2E] text-white text-lg rounded-lg">
-              <th className="p-3">Name</th>
-              <th className="p-3">ID</th>
-              <th className="p-3">Company</th>
-              <th className="p-3">Phone</th>
+            <tr className="bg-[#1A4D2E] text-white text-xs sm:text-lg">
+              <th className="p-1 sm:p-3 min-w-[80px] sm:w-1/4">Company</th>
+              <th className="p-1 sm:p-3 min-w-[120px] sm:w-1/4">ID</th>
+              <th className="p-1 sm:p-3 min-w-[160px] sm:w-1/4">Email</th>
+              <th className="p-1 sm:p-3 min-w-[60px] sm:w-1/6">Vehicles</th>
             </tr>
           </thead>
           <tbody>
             {currentUsers.map((user) => (
-              <tr
-                key={user.id}
-                className="hover:bg-[#1A4D2E]/10 transition-all rounded-lg"
-              >
-                <td className="p-4 flex items-center gap-3">
+              <tr key={user.id} className="hover:bg-gray-200 transition-all">
+                <td className="p-1 sm:p-3 flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap">
                   <img
                     src={user.avatar}
                     alt={user.name}
-                    className="rounded-full w-12 h-12"
+                    className="rounded-full w-5 h-5 sm:w-7 sm:h-7"
                   />
-                  <span className="text-lg font-medium">{user.name}</span>
+                  <span className="text-xs sm:text-sm md:text-lg font-medium">
+                    {user.company}
+                  </span>
                 </td>
-                <td className="p-4 text-gray-700">{user.id}</td>
-                <td className="p-4 text-gray-700">{user.company}</td>
-                <td className="p-4 text-gray-700">{user.phone}</td>
+                <td className="p-1 sm:p-3 text-gray-700 font-mono font-semibold text-xs sm:text-lg whitespace-nowrap">
+                  {user.id}
+                </td>
+                <td className="p-1 sm:p-3 text-gray-700 text-xs sm:text-lg whitespace-nowrap">
+                  {user.email}
+                </td>
+                <td className="p-1 sm:p-3 text-gray-700 text-xs sm:text-lg text-center whitespace-nowrap">
+                  {user.totalVehicles}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div className="flex items-center mt-6 space-x-4">
+      <div className="flex items-center mt-3 sm:mt-6 space-x-2 sm:space-x-4">
         <button
           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
           disabled={currentPage === 1}
-          className="px-4 py-2 bg-[#1A4D2E] text-white rounded-lg shadow-md disabled:opacity-50 hover:bg-[#145C38] transition-all"
+          className="px-2 sm:px-5 py-1 sm:py-3 bg-[#1A4D2E] text-white rounded-lg shadow-md disabled:opacity-50 hover:bg-[#145C38] transition-all"
         >
           &lt;
         </button>
-        <span className="text-[#1A4D2E] font-semibold text-lg">
+        <span className="text-[#1A4D2E] font-semibold text-sm sm:text-xl px-2 sm:px-6">
           {currentPage}
         </span>
         <button
@@ -115,7 +128,7 @@ export default function Users() {
             setCurrentPage((prev) => Math.min(prev + 1, totalPages))
           }
           disabled={currentPage === totalPages}
-          className="px-4 py-2 bg-[#1A4D2E] text-white rounded-lg shadow-md disabled:opacity-50 hover:bg-[#145C38] transition-all"
+          className="px-2 sm:px-5 py-1 sm:py-3 bg-[#1A4D2E] text-white rounded-lg shadow-md disabled:opacity-50 hover:bg-[#145C38] transition-all"
         >
           &gt;
         </button>

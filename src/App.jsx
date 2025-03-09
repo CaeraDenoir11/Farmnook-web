@@ -4,43 +4,97 @@ import Dashboard from "./components/Dashboard.jsx";
 import Users from "./components/Users.jsx";
 import Feedback from "./components/Feedback.jsx";
 import Settings from "./components/Settings.jsx";
-import logo from "./assets/images/document-logo.png"; // Import the PNG
+import Login from "./components/Login.jsx";
+import BusinessSidebar from "./business-components/Business-Sidebar.jsx";
+import BusinessDashboard from "./business-components/Business-Dashboard.jsx";
+import BusinessDrivers from "./business-components/Business-Drivers.jsx";
+import BusinessVehicles from "./business-components/Business-Vehicles.jsx";
+import BusinessInbox from "./business-components/Business-Inbox.jsx";
+import BusinessProfile from "./business-components/Business-Profile.jsx";
+import logo from "./assets/images/document-logo.png";
 
 export default function App() {
-  const [active, setActive] = useState("Dashboard");
+  const [active, setActive] = useState(
+    localStorage.getItem("activePage") || "Dashboard"
+  );
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    JSON.parse(localStorage.getItem("isAuthenticated")) || false
+  );
+  const [role, setRole] = useState(localStorage.getItem("userRole") || "");
 
   useEffect(() => {
     document.title = `Farmnook`;
-
-    // Update favicon with PNG
     const favicon = document.querySelector("link[rel='icon']");
     if (favicon) {
-      favicon.href = logo; // Set favicon to PNG
+      favicon.href = logo;
     } else {
-      // If favicon doesn't exist, create one dynamically
       const newFavicon = document.createElement("link");
       newFavicon.rel = "icon";
       newFavicon.type = "image/png";
       newFavicon.href = logo;
       document.head.appendChild(newFavicon);
     }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("activePage", active);
   }, [active]);
 
+  useEffect(() => {
+    localStorage.setItem("isAuthenticated", JSON.stringify(isAuthenticated));
+    localStorage.setItem("userRole", role);
+  }, [isAuthenticated, role]);
+
   const renderContent = () => {
-    switch (active) {
-      case "Users":
-        return <Users />;
-      case "Feedback":
-        return <Feedback />;
-      case "Settings":
-        return <Settings />;
+    if (role === "business-admin") {
+      switch (active) {
+        case "Drivers":
+          return <BusinessDrivers />;
+        case "Vehicles":
+          return <BusinessVehicles />;
+        case "Inbox":
+          return <BusinessInbox />;
+        case "Profile":
+          return <BusinessProfile />;
+        case "Dashboard":
+        default:
+          return <BusinessDashboard />;
+      }
+    } else {
+      switch (active) {
+        case "Users":
+          return <Users />;
+        case "Feedback":
+          return <Feedback />;
+        case "Settings":
+          return <Settings />;
+        case "Dashboard":
+        default:
+          return <Dashboard />;
+      }
     }
   };
 
+  if (!isAuthenticated) {
+    return <Login setIsAuthenticated={setIsAuthenticated} setRole={setRole} />;
+  }
+
   return (
-    <div>
-      <Sidebar setActive={setActive} />
-      <div>{renderContent()}</div>
+    <div className="flex h-screen">
+      {role === "business-admin" ? (
+        <BusinessSidebar
+          active={active}
+          setActive={setActive}
+          setIsAuthenticated={setIsAuthenticated}
+        />
+      ) : (
+        <Sidebar
+          active={active}
+          setActive={setActive}
+          setIsAuthenticated={setIsAuthenticated}
+        />
+      )}
+      <div className="flex-1 bg-white">{renderContent()}</div>
     </div>
   );
 }

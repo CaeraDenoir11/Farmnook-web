@@ -40,7 +40,7 @@ export default function Dashboard() {
         Dashboard
       </h1>
 
-      <div className="bg-white p-6 rounded-lg shadow-md max-w-4xl mx-auto">
+      <div className="bg-[#F5EFE6] p-6 rounded-lg shadow-md max-w-4xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center mb-6">
           {/* Month Selector on Top Left */}
           <select
@@ -56,7 +56,7 @@ export default function Dashboard() {
           </select>
 
           {/* Total Users on Top Right */}
-          <div className="bg-[#F5EFE6] text-green-800 p-4 rounded-lg shadow-md text-center">
+          <div className="bg-white text-green-800 p-4 rounded-lg shadow-md text-center">
             <h2 className="text-lg font-semibold">Total Logged-in Users</h2>
             <p className="text-2xl font-bold mt-2">
               {monthlyData[selectedMonth].reduce(
