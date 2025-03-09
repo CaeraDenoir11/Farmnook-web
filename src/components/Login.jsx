@@ -118,7 +118,7 @@ export default function Login({ setIsAuthenticated, setRole }) {
                     className="absolute inset-y-0 right-3 flex items-center"
                     onClick={() => setShowPassword((prev) => !prev)}
                   >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
                   </button>
                 </div>
               </div>
