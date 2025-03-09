@@ -9,7 +9,7 @@ import Sidebar from "./components/Sidebar.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Users from "./components/Users.jsx";
 import Feedback from "./components/Feedback.jsx";
-import Settings from "./components/Settings.jsx";
+
 import Login from "./components/Login.jsx";
 import BusinessSidebar from "./business-components/Business-Sidebar.jsx";
 import BusinessDashboard from "./business-components/Business-Dashboard.jsx";
@@ -105,7 +105,7 @@ export default function App() {
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/users" element={<Users />} />
                       <Route path="/feedback" element={<Feedback />} />
-                      <Route path="/settings" element={<Settings />} />
+
                       <Route path="*" element={<Navigate to="/dashboard" />} />
                     </Routes>
                   </div>
