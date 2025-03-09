@@ -3,6 +3,7 @@ import { auth, db } from "../../configs/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react"; // Import icons
 import "../login.css";
 import logo from "../assets/images/document-logo.png";
 
@@ -52,7 +53,6 @@ export default function Login({ setIsAuthenticated, setRole }) {
 
       console.log("User found in Firestore:", userData);
 
-      // Authenticate with Firebase Auth
       await signInWithEmailAndPassword(auth, email, password);
 
       console.log("Firebase authentication successful");
@@ -118,7 +118,7 @@ export default function Login({ setIsAuthenticated, setRole }) {
                     className="absolute inset-y-0 right-3 flex items-center"
                     onClick={() => setShowPassword((prev) => !prev)}
                   >
-                    {showPassword ? "👁️" : "🙈"}
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
               </div>

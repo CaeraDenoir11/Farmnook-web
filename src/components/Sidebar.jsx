@@ -53,7 +53,6 @@ export default function Sidebar({
     { name: "Dashboard", icon: dashboardIcon },
     { name: "Users", icon: usersIcon },
     { name: "Feedback", icon: feedbackIcon },
-    { name: "Settings", icon: settingsIcon },
   ];
 
   return (
