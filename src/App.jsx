@@ -9,6 +9,7 @@ import Sidebar from "./components/Sidebar.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Users from "./components/Users.jsx";
 import Feedback from "./components/Feedback.jsx";
+import Pending from "./components/Pending.jsx"
 
 import Login from "./components/Login.jsx";
 import BusinessSidebar from "./business-components/Business-Sidebar.jsx";
@@ -103,6 +104,7 @@ export default function App() {
                   <div className="flex-1 bg-white">
                     <Routes>
                       <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/pending" element={<Pending />} />
                       <Route path="/users" element={<Users />} />
                       <Route path="/feedback" element={<Feedback />} />
 

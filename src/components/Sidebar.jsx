@@ -51,6 +51,7 @@ export default function Sidebar({
 
   const menuItems = [
     { name: "Dashboard", icon: dashboardIcon },
+    { name: "Pending", icon: usersIcon },
     { name: "Users", icon: usersIcon },
     { name: "Feedback", icon: feedbackIcon },
   ];
