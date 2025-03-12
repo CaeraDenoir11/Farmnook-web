@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { db } from "../../configs/firebase";
+import { collection, getDocs } from "firebase/firestore";
 import "../index.css";
-import profilePic from "../assets/images/profile.png";
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -9,57 +10,19 @@ export default function Users() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const data = [
-        {
-          id: "10001",
-          name: "Alice",
-          company: "Company A",
-          email: "alice@companya.com",
-          totalVehicles: 12,
-          avatar: profilePic,
-        },
-        {
-          id: "10002",
-          name: "Bob",
-          company: "Company B",
-          email: "bob@companyb.com",
-          totalVehicles: 8,
-          avatar: profilePic,
-        },
-        {
-          id: "10003",
-          name: "Charlie",
-          company: "Company C",
-          email: "charlie@companyc.com",
-          totalVehicles: 15,
-          avatar: profilePic,
-        },
-        {
-          id: "10004",
-          name: "David",
-          company: "Company D",
-          email: "david@companyd.com",
-          totalVehicles: 6,
-          avatar: profilePic,
-        },
-        {
-          id: "10005",
-          name: "Eve",
-          company: "Company E",
-          email: "eve@companye.com",
-          totalVehicles: 10,
-          avatar: profilePic,
-        },
-        {
-          id: "10006",
-          name: "Frank",
-          company: "Company F",
-          email: "frank@companyf.com",
-          totalVehicles: 7,
-          avatar: profilePic,
-        },
-      ];
-      setUsers(data);
+      try {
+        const usersCollection = collection(db, "users_business_admin");
+        const snapshot = await getDocs(usersCollection);
+        const usersList = snapshot.docs.map((doc) => ({
+          id: doc.data().company_id || "N/A",
+          company: doc.data().company_name || "Unknown",
+          email: doc.data().email || "No email",
+          totalVehicles: doc.data().vehicles || 0,
+        }));
+        setUsers(usersList);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
     };
     fetchData();
   }, []);
@@ -87,15 +50,8 @@ export default function Users() {
           <tbody>
             {currentUsers.map((user) => (
               <tr key={user.id} className="hover:bg-gray-200 transition-all">
-                <td className="p-1 sm:p-3 flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap">
-                  <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="rounded-full w-5 h-5 sm:w-7 sm:h-7"
-                  />
-                  <span className="text-xs sm:text-sm md:text-lg font-medium">
-                    {user.company}
-                  </span>
+                <td className="p-1 sm:p-3 text-xs sm:text-lg font-medium">
+                  {user.company}
                 </td>
                 <td className="p-1 sm:p-3 text-gray-700 font-mono font-semibold text-xs sm:text-lg whitespace-nowrap">
                   {user.id}
