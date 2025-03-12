@@ -5,12 +5,11 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
-import Sidebar from "./components/Sidebar.jsx";
-import Dashboard from "./components/Dashboard.jsx";
-import Users from "./components/Users.jsx";
-import Feedback from "./components/Feedback.jsx";
-
-import Login from "./components/Login.jsx";
+import Sidebar from "./dev-components/Sidebar.jsx";
+import Dashboard from "./dev-components/Dashboard.jsx";
+import Users from "./dev-components/Users.jsx";
+import Feedback from "./dev-components/Feedback.jsx";
+import Login from "./dev-components/Login.jsx";
 import BusinessSidebar from "./business-components/Business-Sidebar.jsx";
 import BusinessDashboard from "./business-components/Business-Dashboard.jsx";
 import BusinessDrivers from "./business-components/Business-Drivers.jsx";
