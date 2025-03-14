@@ -1,82 +1,156 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
+import { db } from "../../../configs/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
-function AddDriverButton({ onAddDriver }) {
+function AddVehicleButton({ onAddVehicle }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    name: "",
-    id: "",
-    company: "",
-    phone: "",
-    avatar: "",
+    model: "",
+    plateNumber: "",
+    maxWeightKg: "",
+    size: "",
   });
 
+  // License plate validation regex
+  const plateRegex =
+    /^(?:[A-Z]{3} \d{4}|\d{3}[A-Z]{3}|[A-Z]\d{3}[A-Z]{2}|[A-Z]{2}\d{3}[A-Z])$/;
+
+  // Handles input changes dynamically
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
-    onAddDriver(formData);
-    setIsOpen(false);
+  // Handles form submission and Firestore upload
+  const handleSubmit = async () => {
+    setError(""); // Reset error before validation
+
+    if (
+      !formData.model ||
+      !formData.plateNumber ||
+      !formData.maxWeightKg ||
+      !formData.size
+    ) {
+      setError("All fields are required!");
+      return;
+    }
+
+    if (!plateRegex.test(formData.plateNumber)) {
+      setError("Invalid plate number format!");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        console.error("User ID not found.");
+        return;
+      }
+
+      const newVehicle = {
+        ...formData,
+        maxWeightKg: Number(formData.maxWeightKg), // Ensure correct data type
+        organizationId: userId, // Link vehicle to business admin
+        assignedDriverId: null, // No driver assigned initially
+        createdAt: serverTimestamp(), // Firestore-generated timestamp
+      };
+
+      const docRef = await addDoc(collection(db, "vehicles"), newVehicle);
+      const savedVehicle = { id: docRef.id, ...newVehicle };
+
+      onAddVehicle(savedVehicle); // Update UI instantly
+      setIsOpen(false); // Close modal
+      setFormData({ model: "", plateNumber: "", maxWeightKg: "", size: "" }); // Reset form
+    } catch (error) {
+      console.error("Error adding vehicle:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <>
+      {/* Floating "Add Vehicle" button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 bg-[#1A4D2E] text-white px-5 py-4 flex items-center gap-2 rounded-full shadow-xl hover:scale-110 hover:shadow-2xl transition-transform duration-300"
+        className="fixed bottom-6 right-6 bg-[#1A4D2E] text-white px-6 py-4 flex items-center gap-2 rounded-full shadow-xl 
+          hover:scale-110 hover:shadow-2xl transition-transform duration-300"
       >
         <Plus size={20} /> Add Vehicle
       </button>
 
+      {/* Vehicle input modal */}
       {isOpen && (
-        <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex justify-center items-center">
-          <div className="bg-[#F5EFE6] p-8 rounded-2xl shadow-2xl w-96">
-            <h2 className="text-2xl font-bold mb-6 text-[#1A4D2E] text-center">
-              Add Driver
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="bg-[#F5EFE6] p-8 rounded-2xl shadow-2xl w-full max-w-md">
+            <h2 className="text-2xl font-bold text-[#1A4D2E] text-center mb-6">
+              Add Vehicle
             </h2>
+
+            {/* Error message */}
+            {error && (
+              <p className="text-red-600 text-center mb-4 font-semibold">
+                ⚠️ {error}
+              </p>
+            )}
+
+            {/* Input Fields */}
             <div className="space-y-4">
               <input
                 type="text"
-                name="name"
-                placeholder="Name"
+                name="model"
+                placeholder="Vehicle Model"
+                value={formData.model}
                 onChange={handleChange}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#1A4D2E] outline-none"
               />
               <input
                 type="text"
-                name="id"
-                placeholder="ID"
+                name="plateNumber"
+                placeholder="Plate Number (e.g., NBC 1234)"
+                value={formData.plateNumber}
                 onChange={handleChange}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#1A4D2E] outline-none"
               />
               <input
-                type="text"
-                name="company"
-                placeholder="Company"
+                type="number"
+                name="maxWeightKg"
+                placeholder="Max Weight (Kg)"
+                value={formData.maxWeightKg}
                 onChange={handleChange}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#1A4D2E] outline-none"
               />
-              <input
-                type="text"
-                name="phone"
-                placeholder="Phone"
+              <select
+                name="size"
+                value={formData.size}
                 onChange={handleChange}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#1A4D2E] outline-none"
-              />
+              >
+                <option value="">Select Size</option>
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
             </div>
+
+            {/* Action Buttons */}
             <div className="flex justify-end mt-6 space-x-4">
               <button
                 onClick={() => setIsOpen(false)}
-                className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-all"
+                className="px-4 py-2 bg-[#1A4D2E] text-white rounded-lg hover:bg-[#145C38] transition-all"
+                disabled={loading}
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
+                disabled={loading}
                 className="px-4 py-2 bg-[#1A4D2E] text-white rounded-lg hover:bg-[#145C38] transition-all"
               >
-                Save
+                {loading ? "Saving..." : "Save"}
               </button>
             </div>
           </div>
@@ -86,4 +160,4 @@ function AddDriverButton({ onAddDriver }) {
   );
 }
 
-export default AddDriverButton;
+export default AddVehicleButton;
