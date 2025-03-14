@@ -30,9 +30,12 @@ export default function Login({ setIsAuthenticated, setRole }) {
 
       let userData = null;
       let role = "";
+      let userId = "";
 
       if (!querySnapshot.empty) {
-        userData = querySnapshot.docs[0].data();
+        const userDoc = querySnapshot.docs[0];
+        userData = userDoc.data();
+        userId = userDoc.id; // This is the Firestore-generated ID
         role = "business-admin";
       } else {
         const adminQuery = query(
@@ -41,7 +44,9 @@ export default function Login({ setIsAuthenticated, setRole }) {
         );
         const adminSnapshot = await getDocs(adminQuery);
         if (!adminSnapshot.empty) {
-          userData = adminSnapshot.docs[0].data();
+          const adminDoc = adminSnapshot.docs[0];
+          userData = adminDoc.data();
+          userId = adminDoc.id;
           role = "super-admin";
         }
       }
@@ -58,6 +63,8 @@ export default function Login({ setIsAuthenticated, setRole }) {
       setRole(role);
       localStorage.setItem("userRole", role);
       localStorage.setItem("isAuthenticated", true);
+      localStorage.setItem("userId", userId); // 🔥 Store user ID correctly
+
       navigate("/dashboard");
     } catch (error) {
       setError("Login failed. Please check your credentials and try again.");
@@ -81,7 +88,7 @@ export default function Login({ setIsAuthenticated, setRole }) {
               Welcome Admin!
             </h2>
             {error && (
-              <p className="text-red-500 text-center mb-4 font-semibold">
+              <p className="text-red-600 text-center mb-4 font-semibold">
                 ⚠️ {error}
               </p>
             )}

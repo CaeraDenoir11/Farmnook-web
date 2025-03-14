@@ -18,7 +18,7 @@ export default function LoadingScreen() {
         ></motion.div>
 
         {/* Minimal Text */}
-        <p className="mt-5 text-[#1A4D2E] text-lg font-semibold tracking-wide animate-pulse">
+        <p className="mt-5 text-black text-lg font-bold tracking-wide animate-pulse">
           Loading...
         </p>
       </motion.div>

@@ -1,74 +1,55 @@
 import { useState, useEffect } from "react";
 import "../index.css";
-import profilePic from "../assets/images/profile.png";
+import { db } from "../../configs/firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import AddVehicleButton from "../assets/buttons/AddVehicleButton.jsx";
 
 export default function BusinessVehicles() {
-  const [users, setUsers] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const usersPerPage = 5;
+  const vehiclesPerPage = 5;
 
   useEffect(() => {
-    const fetchData = async () => {
-      const data = [
-        {
-          id: 1,
-          name: "Alice",
-          company: "Company A",
-          phone: "123-456-7890",
-          avatar: profilePic,
-        },
-        {
-          id: 2,
-          name: "Bob",
-          company: "Company B",
-          phone: "234-567-8901",
-          avatar: profilePic,
-        },
-        {
-          id: 3,
-          name: "Charlie",
-          company: "Company C",
-          phone: "345-678-9012",
-          avatar: profilePic,
-        },
-        {
-          id: 4,
-          name: "David",
-          company: "Company D",
-          phone: "456-789-0123",
-          avatar: profilePic,
-        },
-        {
-          id: 5,
-          name: "Eve",
-          company: "Company E",
-          phone: "567-890-1234",
-          avatar: profilePic,
-        },
-        {
-          id: 6,
-          name: "Frank",
-          company: "Company F",
-          phone: "678-901-2345",
-          avatar: profilePic,
-        },
-      ];
-      setUsers(data);
+    const fetchVehicles = async () => {
+      try {
+        const userId = localStorage.getItem("userId"); // 🔥 Correct reference
+        console.log("Fetching vehicles for userId:", userId); // Debugging
+
+        if (!userId) {
+          console.error("No user ID found.");
+          return;
+        }
+
+        const vehicleQuery = query(
+          collection(db, "vehicles"),
+          where("organizationId", "==", userId) // 🔥 Match userId with organizationId
+        );
+
+        const querySnapshot = await getDocs(vehicleQuery);
+        const vehicleList = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        console.log("Fetched Vehicles:", vehicleList); // Debugging
+        setVehicles(vehicleList);
+      } catch (error) {
+        console.error("Error fetching vehicles: ", error);
+      }
     };
-    fetchData();
+    fetchVehicles();
   }, []);
+
   const handleAddVehicle = (newVehicle) => {
-    setUsers((prevUsers) => [
-      ...prevUsers,
-      { ...newVehicle, avatar: profilePic },
-    ]);
+    setVehicles((prevVehicles) => [...prevVehicles, newVehicle]);
   };
 
-  const indexOfLastUser = currentPage * usersPerPage;
-  const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
-  const totalPages = Math.ceil(users.length / usersPerPage);
+  const indexOfLastVehicle = currentPage * vehiclesPerPage;
+  const indexOfFirstVehicle = indexOfLastVehicle - vehiclesPerPage;
+  const currentVehicles = vehicles.slice(
+    indexOfFirstVehicle,
+    indexOfLastVehicle
+  );
+  const totalPages = Math.ceil(vehicles.length / vehiclesPerPage);
 
   return (
     <div className="flex-1 h-screen p-6 bg-white flex flex-col items-center">
@@ -77,29 +58,22 @@ export default function BusinessVehicles() {
         <table className="w-full text-left">
           <thead>
             <tr className="bg-[#1A4D2E] text-white text-lg rounded-lg">
-              <th className="p-3">Name</th>
-              <th className="p-3">ID</th>
-              <th className="p-3">Company</th>
-              <th className="p-3">Phone</th>
+              <th className="p-3">Model</th>
+              <th className="p-3">Plate Number</th>
+              <th className="p-3">Max Weight (Kg)</th>
+              <th className="p-3">Size</th>
             </tr>
           </thead>
           <tbody>
-            {currentUsers.map((user) => (
+            {currentVehicles.map((vehicle) => (
               <tr
-                key={user.id}
+                key={vehicle.id}
                 className="hover:bg-[#1A4D2E]/10 transition-all rounded-lg"
               >
-                <td className="p-4 flex items-center gap-3">
-                  <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="rounded-full w-12 h-12"
-                  />
-                  <span className="text-lg font-medium">{user.name}</span>
-                </td>
-                <td className="p-4 text-gray-700">{user.id}</td>
-                <td className="p-4 text-gray-700">{user.company}</td>
-                <td className="p-4 text-gray-700">{user.phone}</td>
+                <td className="p-4 text-gray-700">{vehicle.model}</td>
+                <td className="p-4 text-gray-700">{vehicle.plateNumber}</td>
+                <td className="p-4 text-gray-700">{vehicle.maxWeightKg}</td>
+                <td className="p-4 text-gray-700">{vehicle.size}</td>
               </tr>
             ))}
           </tbody>
