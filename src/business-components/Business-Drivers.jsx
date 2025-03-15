@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import "../index.css";
-import profilePic from "../assets/images/profile.png";
+import { db } from "../../configs/firebase";
+import { collection, getDocs } from "firebase/firestore";
 import AddDriverButton from "../assets/buttons/AddDriverButton.jsx";
 
 export default function BusinessDrivers() {
@@ -9,61 +9,27 @@ export default function BusinessDrivers() {
   const usersPerPage = 5;
 
   useEffect(() => {
-    const fetchData = async () => {
-      const data = [
-        {
-          id: 1,
-          name: "Alice",
-          company: "Company A",
-          phone: "123-456-7890",
-          avatar: profilePic,
-        },
-        {
-          id: 2,
-          name: "Bob",
-          company: "Company B",
-          phone: "234-567-8901",
-          avatar: profilePic,
-        },
-        {
-          id: 3,
-          name: "Charlie",
-          company: "Company C",
-          phone: "345-678-9012",
-          avatar: profilePic,
-        },
-        {
-          id: 4,
-          name: "David",
-          company: "Company D",
-          phone: "456-789-0123",
-          avatar: profilePic,
-        },
-        {
-          id: 5,
-          name: "Eve",
-          company: "Company E",
-          phone: "567-890-1234",
-          avatar: profilePic,
-        },
-        {
-          id: 6,
-          name: "Frank",
-          company: "Company F",
-          phone: "678-901-2345",
-          avatar: profilePic,
-        },
-      ];
-      setUsers(data);
+    const fetchHaulers = async () => {
+      console.log("Fetching userId from localStorage...");
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        console.error("User ID not found.");
+        return;
+      }
+
+      const querySnapshot = await getDocs(collection(db, "haulers"));
+      const userList = querySnapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter((user) => user.organizationId === userId); // Filter by organizationId
+
+      setUsers(userList);
     };
-    fetchData();
+
+    fetchHaulers();
   }, []);
 
   const handleAddDriver = (newDriver) => {
-    setUsers((prevUsers) => [
-      ...prevUsers,
-      { ...newDriver, avatar: profilePic },
-    ]);
+    setUsers((prevUsers) => [...prevUsers, newDriver]);
   };
 
   const indexOfLastUser = currentPage * usersPerPage;
@@ -74,14 +40,12 @@ export default function BusinessDrivers() {
   return (
     <div className="flex-1 h-screen p-6 bg-white flex flex-col items-center">
       <h1 className="text-3xl font-bold text-[#1A4D2E]">Drivers List</h1>
+
       <div className="w-full max-w-4xl bg-[#F5EFE6] rounded-xl shadow-lg p-6 mt-6">
         <table className="w-full text-left">
           <thead>
             <tr className="bg-[#1A4D2E] text-white text-lg rounded-lg">
-              <th className="p-3">Name</th>
-              <th className="p-3">ID</th>
-              <th className="p-3">Company</th>
-              <th className="p-3">Phone</th>
+              <th className="p-3">Profile</th>
             </tr>
           </thead>
           <tbody>
@@ -92,21 +56,18 @@ export default function BusinessDrivers() {
               >
                 <td className="p-4 flex items-center gap-3">
                   <img
-                    src={user.avatar}
-                    alt={user.name}
+                    src={user.profileImg}
+                    alt="Driver"
                     className="rounded-full w-12 h-12"
                   />
-                  <span className="text-lg font-medium">{user.name}</span>
                 </td>
-                <td className="p-4 text-gray-700">{user.id}</td>
-                <td className="p-4 text-gray-700">{user.company}</td>
-                <td className="p-4 text-gray-700">{user.phone}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
+      {/* Pagination Controls */}
       <div className="flex items-center mt-6 space-x-4">
         <button
           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
@@ -129,6 +90,7 @@ export default function BusinessDrivers() {
         </button>
       </div>
 
+      {/* Add Driver Button */}
       <AddDriverButton onAddDriver={handleAddDriver} />
     </div>
   );
