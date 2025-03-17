@@ -74,13 +74,18 @@ function AddVehicleButton({ onAddVehicle }) {
   return (
     <>
       {/* Floating "Add Vehicle" button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 bg-[#1A4D2E] text-white px-6 py-4 flex items-center gap-2 rounded-full shadow-xl 
-          hover:scale-110 hover:shadow-2xl transition-transform duration-300"
-      >
-        <Plus size={20} /> Add Vehicle
-      </button>
+      <div className="group fixed bottom-6 right-6 flex justify-center items-center text-white text-sm font-bold">
+        {/* Button */}
+        <button
+          onClick={() => setIsOpen(true)}
+          className="shadow-md flex items-center group-hover:gap-2 bg-[#1A4D2E] text-[#F5EFE6] p-4 rounded-full cursor-pointer duration-300 hover:scale-110 hover:shadow-2xl"
+        >
+          <Plus className="fill-[#F5EFE6]" size={20} />
+          <span className="text-[0px] group-hover:text-sm duration-300">
+            Add Vehicle
+          </span>
+        </button>
+      </div>
 
       {/* Vehicle input modal */}
       {isOpen && (

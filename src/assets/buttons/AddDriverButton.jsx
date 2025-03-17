@@ -1,140 +1,124 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { db } from "../../../configs/firebase";
+import { db, storage } from "../../../configs/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-
-const webhookURL = import.meta.env.VITE_FIREBASE_VITE_DISCORD_WEBHOOK_URL;
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 function AddDriverButton({ onAddDriver }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    fname: "",
+    lname: "",
+    licenseNo: "",
+    phone: "",
+  });
   const [imageFile, setImageFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     setImageFile(file);
-
-    // Generate a preview URL
     const reader = new FileReader();
     reader.onloadend = () => setPreviewUrl(reader.result);
     reader.readAsDataURL(file);
   };
 
-  const uploadImageToDiscord = async () => {
+  const uploadImageToFirebase = async () => {
     if (!imageFile) return null;
-
-    const formData = new FormData();
-    formData.append("file", imageFile);
-
-    try {
-      const response = await fetch(webhookURL, {
-        method: "POST",
-        body: formData,
-        headers: { Accept: "application/json" },
-      });
-
-      if (!response.ok) throw new Error("Failed to upload image.");
-
-      const responseData = await response.json();
-      const imageUrl = responseData.attachments?.[0]?.url || null;
-
-      if (!imageUrl) throw new Error("Image URL not returned from Discord.");
-
-      console.log("Image successfully uploaded:", imageUrl);
-      return imageUrl;
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      alert("Failed to upload image. Please try again.");
-      return null;
-    }
+    const storageRef = ref(storage, `profileImages/haulers/${imageFile.name}`);
+    await uploadBytes(storageRef, imageFile);
+    return getDownloadURL(storageRef);
   };
 
   const handleSubmit = async () => {
     if (loading) return;
     setLoading(true);
 
-    let imageUrl = await uploadImageToDiscord();
-    if (!imageUrl) {
-      setLoading(false);
-      return;
-    }
-
     try {
-      console.log("Fetching userId from localStorage...");
       const userId = localStorage.getItem("userId");
-      if (!userId) {
-        console.error("User ID not found.");
-        alert("User ID is missing. Please log in again.");
-        setLoading(false);
-        return;
-      }
+      if (!userId) throw new Error("User ID not found.");
 
-      console.log("Adding new hauler to Firestore...");
-      await addDoc(collection(db, "haulers"), {
+      const imageUrl = imageFile ? await uploadImageToFirebase() : null;
+      const newDriver = {
+        ...formData,
         profileImg: imageUrl,
         organizationId: userId,
         createdAt: serverTimestamp(),
-      });
+        status: false, // Default passive state
+      };
 
-      alert("Image uploaded successfully!");
-    } catch (error) {
-      console.error("Error saving to Firestore:", error);
-      alert("Failed to save image. Check console for errors.");
-    } finally {
+      await addDoc(collection(db, "haulers"), newDriver);
+      console.log("Driver added successfully!");
       setIsOpen(false);
-      setImageFile(null);
+      setFormData({ fname: "", lname: "", licenseNo: "", phone: "" });
       setPreviewUrl(null);
+      setImageFile(null);
+    } catch (error) {
+      console.error("Error adding driver:", error);
+      console.log("Failed to add driver. Check console for details.");
+    } finally {
       setLoading(false);
     }
   };
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 bg-[#1A4D2E] text-white px-5 py-4 flex items-center gap-2 rounded-full shadow-xl hover:scale-110 hover:shadow-2xl transition-transform duration-300"
-      >
-        <Plus size={20} /> Add Driver
-      </button>
-
+      <div className="group fixed bottom-6 right-6 flex justify-center items-center text-white text-sm font-bold">
+        <button
+          onClick={() => setIsOpen(true)}
+          className="shadow-md flex items-center group-hover:gap-2 bg-[#1A4D2E] text-[#F5EFE6] p-4 rounded-full cursor-pointer duration-300 hover:scale-110 hover:shadow-2xl"
+        >
+          <Plus className="fill-[#F5EFE6]" size={20} />
+          <span className="text-[0px] group-hover:text-sm duration-300">
+            Add Driver
+          </span>
+        </button>
+      </div>
       {isOpen && (
         <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex justify-center items-center">
           <div className="bg-[#F5EFE6] p-8 rounded-2xl shadow-2xl w-96">
             <h2 className="text-2xl font-bold mb-6 text-[#1A4D2E] text-center">
-              Upload Driver Image
+              Add Driver
             </h2>
-
             {previewUrl && (
-              <div className="flex justify-center mb-4">
-                <img
-                  src={previewUrl}
-                  alt="Preview"
-                  className="w-24 h-24 rounded-full shadow-lg"
-                />
-              </div>
+              <img
+                src={previewUrl}
+                alt="Preview"
+                className="w-24 h-24 rounded-full shadow-lg mx-auto mb-4"
+              />
             )}
-
             <input
               type="file"
               accept="image/*"
               onChange={handleImageChange}
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#1A4D2E] outline-none"
+              className="w-full p-3 border rounded-lg"
             />
-
+            {Object.keys(formData).map((key) => (
+              <input
+                key={key}
+                name={key}
+                value={formData[key]}
+                onChange={(e) =>
+                  setFormData({ ...formData, [key]: e.target.value })
+                }
+                placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
+                className="w-full p-3 border rounded-lg my-2"
+              />
+            ))}
             <div className="flex justify-end mt-6 space-x-4">
               <button
                 onClick={() => setIsOpen(false)}
-                className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-all"
+                className="px-4 py-2 bg-gray-400 text-white rounded-lg"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="px-4 py-2 bg-[#1A4D2E] text-white rounded-lg hover:bg-[#145C38] transition-all"
+                className="px-4 py-2 bg-[#1A4D2E] text-white rounded-lg"
               >
-                {loading ? "Uploading..." : "Upload"}
+                {loading ? "Uploading..." : "Add Driver"}
               </button>
             </div>
           </div>
