@@ -89,7 +89,7 @@ function AddVehicleButton({ onAddVehicle }) {
 
       {/* Vehicle input modal */}
       {isOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 ">
           <div className="bg-[#F5EFE6] p-8 rounded-2xl shadow-2xl w-full max-w-md">
             <h2 className="text-2xl font-bold text-[#1A4D2E] text-center mb-6">
               Add Vehicle

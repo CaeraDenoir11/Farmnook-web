@@ -56,3 +56,14 @@ body {
 .opacity {
   opacity: 0.3;
 }
+/* Hide scrollbar by default */
+.auto-hide-scrollbar::-webkit-scrollbar {
+  width: 6px; /* Adjust thickness */
+  opacity: 0; /* Initially invisible */
+}
+
+/* Show scrollbar when hovering */
+.auto-hide-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: #1A4D2E; /* Scrollbar color */
+  border-radius: 6px;
+}
