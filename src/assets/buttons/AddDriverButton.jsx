@@ -224,6 +224,7 @@ function AddDriverButton({ onAddDriver }) {
                 className="px-2 md:px-4 py-1 md:py-2 bg-[#1A4D2E] text-white rounded-lg text-xs md:text-sm"
               >
                 {loading ? "Uploading..." : "Add Driver"}
+                {loading ? "Uploading..." : "Add Driver"}
               </button>
             </div>
           </div>
