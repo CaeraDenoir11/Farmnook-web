@@ -59,6 +59,9 @@ export default function BusinessVehicles() {
     (currentPage - 1) * vehiclesPerPage,
     currentPage * vehiclesPerPage
   );
+  const handleAddVehicle = (newVehicle) => {
+    setVehicles((prevVehicles) => [...prevVehicles, newVehicle]); // ✅ Correct state update
+  };
 
   return (
     <div className="antialiased bg-white flex flex-col items-center min-h-screen">
@@ -152,7 +155,7 @@ export default function BusinessVehicles() {
               </div>
             </div>
           </div>
-          <AddVehicleButton />
+          <AddVehicleButton onAddVehicle={handleAddVehicle} />
         </div>
       </div>
     </div>
