@@ -73,7 +73,7 @@ export default function App() {
                     setActivePage={setActivePage}
                     setIsAuthenticated={setIsAuthenticated}
                   />
-                  <div className="flex-1 bg-white">
+                  <div className="flex-1 bg-white overflow-auto h-screen">
                     <Routes>
                       <Route
                         path="/dashboard"
@@ -99,7 +99,7 @@ export default function App() {
                     setActivePage={setActivePage}
                     setIsAuthenticated={setIsAuthenticated}
                   />
-                  <div className="flex-1 bg-white">
+                  <div className="flex-1 bg-white overflow-auto h-screen">
                     <Routes>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/users" element={<Users />} />

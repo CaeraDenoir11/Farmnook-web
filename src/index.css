@@ -1,22 +1,69 @@
 @import "tailwindcss";
 
-@layer base {
-  [data-theme="ocean"] {
-    --color-primary: #f5efe6;
-  }
-
-  [data-theme="rainforest"] {
-    --color-primary: #56d0a0;
-  }
-
-  [data-theme="candy"] {
-    --color-primary: #f9a8d4;
-  }
+@font-face {
+  font-family: "Poppins";
+  src: url("./assets/fonts/Poppins-Thin.ttf") format("truetype");
+  font-weight: 100;
+  font-style: normal;
 }
+
+@font-face {
+  font-family: "Poppins";
+  src: url("./assets/fonts/Poppins-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Poppins";
+  src: url("./assets/fonts/Poppins-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Poppins";
+  src: url("./assets/fonts/Poppins-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Poppins";
+  src: url("./assets/fonts/Poppins-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Poppins";
+  src: url("./assets/fonts/Poppins-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Poppins";
+  src: url("./assets/fonts/Poppins-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+}
+
 body {
+  font-family: "Poppins", sans-serif;
   background-color: #f5efe6;
-  font-family: poppins, sans-serif;
 }
 .opacity {
   opacity: 0.3;
+}
+/* Hide scrollbar by default */
+.auto-hide-scrollbar::-webkit-scrollbar {
+  width: 6px; /* Adjust thickness */
+  opacity: 0; /* Initially invisible */
+}
+
+/* Show scrollbar when hovering */
+.auto-hide-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: #1A4D2E; /* Scrollbar color */
+  border-radius: 6px;
 }
