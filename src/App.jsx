@@ -14,6 +14,7 @@ import BusinessSidebar from "./business-components/Business-Sidebar.jsx";
 import BusinessDashboard from "./business-components/Business-Dashboard.jsx";
 import BusinessDrivers from "./business-components/Business-Drivers.jsx";
 import BusinessVehicles from "./business-components/Business-Vehicles.jsx";
+import BusinessReviews from "./business-components/Business-Reviews.jsx";
 import BusinessInbox from "./business-components/Business-Inbox.jsx";
 import BusinessProfile from "./business-components/Business-Profile.jsx";
 import logo from "./assets/images/document-logo.png";
@@ -82,6 +83,7 @@ export default function App() {
                       <Route path="/drivers" element={<BusinessDrivers />} />
                       <Route path="/vehicles" element={<BusinessVehicles />} />
                       <Route path="/inbox" element={<BusinessInbox />} />
+                      <Route path="/reviews" element={<BusinessReviews />} />
                       <Route path="/profile" element={<BusinessProfile />} />
                       <Route path="*" element={<Navigate to="/dashboard" />} />
                     </Routes>
