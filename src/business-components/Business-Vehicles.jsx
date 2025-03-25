@@ -67,7 +67,7 @@ export default function BusinessVehicles() {
     <div className="antialiased bg-white flex flex-col items-center min-h-screen">
       <div className="container mx-auto px-4 sm:px-8">
         <div className="py-8">
-          <h1 className="text-2xl font-semibold text-[#1A4D2E]">
+          <h1 className="px-8 text-2xl font-semibold text-[#1A4D2E]">
             Vehicles List
           </h1>
 

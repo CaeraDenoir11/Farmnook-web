@@ -50,9 +50,9 @@ export default function Sidebar({
   }, [isMobile, isOpen]);
 
   const menuItems = [
-    { name: "Dashboard", icon: dashboardIcon },
-    { name: "Users", icon: usersIcon },
-    { name: "Feedback", icon: feedbackIcon },
+    { id: 1, name: "Dashboard", icon: dashboardIcon },
+    { id: 2, name: "Users", icon: usersIcon },
+    { id: 3, name: "Feedback", icon: feedbackIcon },
   ];
 
   return (
@@ -60,7 +60,7 @@ export default function Sidebar({
       {/* ✅ Mobile overlay to close sidebar when clicking outside */}
       {isOpen && isMobile && (
         <div
-          className="fixed inset-0 backdrop-blur-sm bg-blend-overlay z-10 md:hidden"
+          className="fixed inset-0 bg-black/50 bg-blend-overlay z-10 md:hidden"
           onClick={() => setIsOpen(false)}
         ></div>
       )}
@@ -90,7 +90,7 @@ export default function Sidebar({
           <ul>
             {menuItems.map((item) => (
               <li
-                key={item.name}
+                key={item.id}
                 className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all ease-in-out duration-300 ${
                   activePage === item.name
                     ? "bg-green-800 text-white"
