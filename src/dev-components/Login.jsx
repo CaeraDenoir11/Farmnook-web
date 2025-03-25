@@ -7,6 +7,8 @@ import { Eye, EyeOff } from "lucide-react";
 import LoadingScreen from "../assets/loader/LoadingScreen.jsx";
 import "../login.css";
 import logo from "../assets/images/document-logo.png";
+import usernameIcon from "../assets/icons/username.svg";
+import passwordIcon from "../assets/icons/password.svg";
 
 export default function Login({ setIsAuthenticated, setRole }) {
   const [email, setEmail] = useState("");
@@ -54,6 +56,11 @@ export default function Login({ setIsAuthenticated, setRole }) {
       if (!userData) {
         setError("Invalid email or password");
         setLoading(false);
+
+        setTimeout(() => {
+          setError(null);
+        }, 3000);
+
         return;
       }
 
@@ -73,18 +80,21 @@ export default function Login({ setIsAuthenticated, setRole }) {
   };
 
   return (
-    <div className="h-screen w-full flex items-center justify-center bg-[#F5EFE6] p-6">
+    <div className="h-screen w-full flex items-center justify-center bg-[#50672b] p-6">
       {loading && <LoadingScreen />}
-      <div className="w-full max-w-4xl bg-[#1A4D2E] shadow-lg rounded-lg overflow-hidden flex flex-col md:flex-row">
-        <div className="hidden md:flex flex-col w-1/2 items-center justify-center text-center p-10 bg-[#1A4D2E]">
-          <img src={logo} alt="Farmnook Logo" className="w-40 md:w-82 mb-6" />
-          <h2 className="text-xl md:text-2xl font-semibold text-[#F5EFE6]">
+      <div className="w-full max-w-6xl bg-[#1A4D2E] shadow-lg rounded-lg overflow-hidden flex flex-col md:flex-row md:h-[85vh]">
+        {/* Left Section */}
+        <div className="md:w-5/8 flex flex-col items-center justify-center text-center p-10 bg-[#1A4D2E]">
+          <img src={logo} alt="Farmnook Logo" className="w-40 md:w-104 mb-4" />
+          <h2 className="text-xl md:text-3xl font-semibold text-[#F5EFE6]">
             Bridging Farms, Delivering Freshness
           </h2>
         </div>
-        <div className="w-full md:w-1/2 flex items-center justify-center p-8">
-          <div className="bg-[#F5EFE6] p-8 md:p-10 rounded-lg shadow-md w-full max-w-md">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1A4D2E] mb-6 text-center">
+
+        {/* Right Section */}
+        <div className="md:w-3/8 flex items-center justify-center p-6 bg-[#F5EFE6]">
+          <div className="p-6 md:p-10  w-full max-w-md">
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1A4D2E] mb-12 text-center">
               Welcome Admin!
             </h2>
             {error && (
@@ -93,26 +103,39 @@ export default function Login({ setIsAuthenticated, setRole }) {
               </p>
             )}
             <form onSubmit={handleLogin}>
-              <div className="mb-4">
+              <div className="mb-4 relative">
                 <label className="block text-gray-700 font-medium mb-1">
                   Email
                 </label>
-                <input
-                  type="email"
-                  className="w-full p-3 border rounded-lg bg-[#FCFFE0] focus:ring-2 focus:ring-[#1A4D2E] border-gray-300"
-                  placeholder="Enter email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+                <div className="relative flex items-center">
+                  <img
+                    src={usernameIcon}
+                    alt="EmailIcon"
+                    className="absolute left-3 w-5 h-5"
+                  />
+                  <input
+                    type="text"
+                    className="w-full p-3 pl-10 border-2 border-solid rounded-lg bg-[#FCFFE0] focus:ring-2 focus:ring-[#1A4D2E] border-black"
+                    placeholder="Enter email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
               </div>
+
               <div className="mb-4 relative">
                 <label className="block text-gray-700 font-medium mb-1">
                   Password
                 </label>
-                <div className="relative">
+                <div className="relative flex items-center">
+                  <img
+                    src={passwordIcon}
+                    alt="Password Icon"
+                    className="absolute left-3 w-5 h-5"
+                  />
                   <input
                     type={showPassword ? "text" : "password"}
-                    className="w-full p-3 border rounded-lg bg-[#FCFFE0] focus:ring-2 focus:ring-[#1A4D2E] border-gray-300 pr-10"
+                    className="w-full p-3 pl-10 pr-10 border-2 border-solid rounded-lg bg-[#FCFFE0] focus:ring-2 focus:ring-[#1A4D2E] border-black"
                     placeholder="Enter password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -126,7 +149,7 @@ export default function Login({ setIsAuthenticated, setRole }) {
                   </button>
                 </div>
               </div>
-              <button className="w-full bg-[#1A4D2E] text-white p-3 rounded-lg hover:bg-[#163C24] transition duration-200">
+              <button className="w-full font-semibold bg-[#1A4D2E] mt-4 text-white p-3 rounded-lg hover:bg-[#445a4c] transition duration-200">
                 Login
               </button>
             </form>

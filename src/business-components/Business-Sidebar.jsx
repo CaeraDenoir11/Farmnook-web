@@ -53,18 +53,18 @@ export default function Sidebar({
   }, [isMobile, isOpen]);
 
   const menuItems = [
-    { name: "Dashboard", icon: dashboardIcon, route: "/dashboard" },
-    { name: "Drivers", icon: driversIcon, route: "/drivers" },
-    { name: "Vehicles", icon: vehiclesIcon, route: "/vehicles" },
-    { name: "Inbox", icon: inboxIcon, route: "/inbox" },
-    { name: "Profile", icon: profileIcon, route: "/profile" },
+    { id: 1, name: "Dashboard", icon: dashboardIcon, route: "/dashboard" },
+    { id: 2, name: "Drivers", icon: driversIcon, route: "/drivers" },
+    { id: 3, name: "Vehicles", icon: vehiclesIcon, route: "/vehicles" },
+    { id: 4, name: "Inbox", icon: inboxIcon, route: "/inbox" },
+    { id: 5, name: "Profile", icon: profileIcon, route: "/profile" },
   ];
 
   return (
     <div className="flex h-screen relative">
       {isOpen && isMobile && (
         <div
-          className="fixed inset-0 backdrop-blur-sm bg-blend-overlay z-10 md:hidden"
+          className="fixed inset-0 bg-blend-overlay bg-black/50 z-10 md:hidden"
           onClick={() => setIsOpen(false)}
         ></div>
       )}
@@ -91,7 +91,7 @@ export default function Sidebar({
           <ul>
             {menuItems.map((item) => (
               <li
-                key={item.name}
+                key={item.id}
                 className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all ease-in-out duration-300
                   ${
                     activePage === item.name

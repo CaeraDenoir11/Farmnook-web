@@ -14,8 +14,8 @@ const vehicles = [
   { id: 1, name: "Truck A", details: "Large truck for bulk deliveries" },
   { id: 2, name: "Van B", details: "Mid-sized van for city transport" },
   { id: 3, name: "Bike C", details: "Eco-friendly bike for small packages" },
-  { id: 3, name: "Bike C", details: "Eco-friendly bike for small packages" },
-  { id: 3, name: "Bike C", details: "Eco-friendly bike for small packages" },
+  { id: 4, name: "Bike C", details: "Eco-friendly bike for small packages" },
+  { id: 5, name: "Bike C", details: "Eco-friendly bike for small packages" },
 ];
 
 const monthlyData = {
@@ -51,7 +51,7 @@ export default function BusinessDashboard() {
 
   return (
     <div className="min-h-screen flex flex-col items-center ">
-      <div className="h-[16.67vh] bg-[#1A4D2E] w-full flex py-8 px-8 shadow-md">
+      <div className="h-[16.67vh] bg-[#1A4D2E] w-full flex py-8 px-12 shadow-md">
         <h1 className="text-2xl font-semibold text-white">Dashboard</h1>
       </div>
       <div className="relative w-full max-w-8xl mt-[-50px] flex flex-col md:flex-row gap-6 px-6 pt-6">
