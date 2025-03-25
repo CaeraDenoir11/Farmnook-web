@@ -8,6 +8,7 @@ import driversIcon from "../assets/icons/drivers.svg";
 import vehiclesIcon from "../assets/icons/vehicles.svg";
 import profileIcon from "../assets/icons/profile.svg";
 import inboxIcon from "../assets/icons/message.svg";
+import reviewIcon from "../assets/icons/review.svg";
 
 export default function Sidebar({
   activePage,
@@ -56,8 +57,9 @@ export default function Sidebar({
     { id: 1, name: "Dashboard", icon: dashboardIcon, route: "/dashboard" },
     { id: 2, name: "Drivers", icon: driversIcon, route: "/drivers" },
     { id: 3, name: "Vehicles", icon: vehiclesIcon, route: "/vehicles" },
-    { id: 4, name: "Inbox", icon: inboxIcon, route: "/inbox" },
-    { id: 5, name: "Profile", icon: profileIcon, route: "/profile" },
+    { id: 4, name: "Reviews", icon: reviewIcon, route: "/reviews" },
+    { id: 5, name: "Inbox", icon: inboxIcon, route: "/inbox" },
+    { id: 6, name: "Profile", icon: profileIcon, route: "/profile" },
   ];
 
   return (
