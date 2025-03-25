@@ -21,9 +21,9 @@ export default function BusinessReviews() {
   }, []);
 
   return (
-    <div className="flex-1 bg-[#1A4D2E] flex justify-center items-center h-full p-10">
-      <div className="md:w-3/5 w-3/4 px-10 flex flex-col gap-2 p-5 bg-[#F5EFE6] text-[#1A4D2E] rounded-lg shadow-lg">
-        <h1 className="py-5 text-lg font-semibold">Reviews</h1>
+    <div className="flex-1 h-full flex justify-center items-center p-10 bg-white">
+      <div className="w-full max-w-5xl px-10 flex flex-col gap-4 p-6 bg-[#F5EFE6] text-[#1A4D2E] rounded-lg shadow-lg">
+        <h1 className="py-5 text-xl font-semibold">Reviews</h1>
 
         {/* Error Handling */}
         {error && (
@@ -33,7 +33,7 @@ export default function BusinessReviews() {
         )}
 
         {/* Search Bar */}
-        <div className="flex bg-[#1A4D2E] bg-opacity-20 border border-[#1A4D2E] rounded-md p-2">
+        <div className="flex bg-white border border-[#1A4D2E] rounded-md p-2">
           <IoSearchOutline className="text-[#1A4D2E] text-xl" />
           <input
             type="text"
@@ -45,13 +45,13 @@ export default function BusinessReviews() {
         </div>
 
         {/* Reviews */}
-        <div className="flex flex-col gap-3 mt-10">
+        <div className="flex flex-col gap-4 mt-6">
           {[
             {
               name: "Jess Hopkins",
               color: "bg-red-500",
               text: "Gorgeous design! Even more responsive than the previous version. A pleasure to use!",
-              rating: 4.5,
+              rating: 3.5,
             },
             {
               name: "Alice Banks",
@@ -62,7 +62,7 @@ export default function BusinessReviews() {
           ].map((review, index) => (
             <div
               key={index}
-              className="flex flex-col gap-4 bg-[#1A4D2E] p-4 rounded-md text-[#F5EFE6]"
+              className="flex flex-col gap-4 bg-white p-4 rounded-md text-[#1A4D2E] border border-[#1A4D2E]"
             >
               {/* Profile and Rating */}
               <div className="flex justify-between">
@@ -74,7 +74,7 @@ export default function BusinessReviews() {
                   </div>
                   <span>{review.name}</span>
                 </div>
-                <div className="flex p-1 gap-1 text-yellow-400">
+                <div className="flex p-1 gap-1 text-[#1A4D2E]">
                   {Array.from({ length: Math.floor(review.rating) }).map(
                     (_, i) => (
                       <IoStar key={i} />
@@ -88,7 +88,7 @@ export default function BusinessReviews() {
 
               <div className="flex justify-between">
                 <span>Feb 13, 2021</span>
-                <button className="p-1 px-2 bg-[#F5EFE6] text-[#1A4D2E] hover:bg-opacity-80 border border-[#F5EFE6] rounded-md flex items-center gap-1">
+                <button className="p-1 px-2 bg-[#F5EFE6] text-[#1A4D2E] hover:bg-opacity-80 border border-[#1A4D2E] rounded-md flex items-center gap-1">
                   <IoShareOutline /> Share
                 </button>
               </div>
