@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 @font-face {
   font-family: "Poppins";
@@ -64,6 +65,10 @@ body {
 
 /* Show scrollbar when hovering */
 .auto-hide-scrollbar:hover::-webkit-scrollbar-thumb {
-  background: #1A4D2E; /* Scrollbar color */
+  background: #1a4d2e; /* Scrollbar color */
   border-radius: 6px;
+}
+.map-container {
+  height: 400px; /* Ensure the container has a fixed height */
+  width: 100%;
 }
