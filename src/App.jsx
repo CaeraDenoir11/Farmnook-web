@@ -17,6 +17,7 @@ import BusinessVehicles from "./business-components/Business-Vehicles.jsx";
 import BusinessReviews from "./business-components/Business-Reviews.jsx";
 import BusinessInbox from "./business-components/Business-Inbox.jsx";
 import BusinessProfile from "./business-components/Business-Profile.jsx";
+import Maps from "./dev-components/Maps.jsx";
 import logo from "./assets/images/document-logo.png";
 
 export default function App() {
@@ -106,7 +107,7 @@ export default function App() {
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/users" element={<Users />} />
                       <Route path="/feedback" element={<Feedback />} />
-
+                      <Route path="/maps" element={<Maps />} />
                       <Route path="*" element={<Navigate to="/dashboard" />} />
                     </Routes>
                   </div>

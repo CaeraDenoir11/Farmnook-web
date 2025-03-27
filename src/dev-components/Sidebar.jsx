@@ -5,7 +5,7 @@ import logo from "../assets/images/logo.png";
 import dashboardIcon from "../assets/images/dashboard.svg";
 import usersIcon from "../assets/images/users.svg";
 import feedbackIcon from "../assets/images/feedback.svg";
-import settingsIcon from "../assets/images/settings.svg";
+import mapIcon from "../assets/icons/maps.svg";
 
 export default function Sidebar({
   activePage,
@@ -53,6 +53,7 @@ export default function Sidebar({
     { id: 1, name: "Dashboard", icon: dashboardIcon },
     { id: 2, name: "Users", icon: usersIcon },
     { id: 3, name: "Feedback", icon: feedbackIcon },
+    { id: 4, name: "Maps", icon: mapIcon },
   ];
 
   return (
