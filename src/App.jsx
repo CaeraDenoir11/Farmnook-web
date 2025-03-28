@@ -52,7 +52,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        {/* ✅ Public Route for Maps - Can be accessed without login */}
+        {/* ✅ Public Route for Maps - Always accessible */}
         <Route path="/maps" element={<Maps />} />
 
         {/* ✅ Login Route */}
