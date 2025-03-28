@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Menu, LogOut } from "lucide-react";
 import "../index.css";
 import logo from "../assets/images/logo.png";
 import dashboardIcon from "../assets/images/dashboard.svg";
 import usersIcon from "../assets/images/users.svg";
 import feedbackIcon from "../assets/images/feedback.svg";
-import mapIcon from "../assets/icons/maps.svg";
 
 export default function Sidebar({
   activePage,
@@ -15,6 +15,7 @@ export default function Sidebar({
   const [isOpen, setIsOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const sidebarRef = useRef(null);
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     setIsAuthenticated(false); // Logs the user out
@@ -32,6 +33,9 @@ export default function Sidebar({
 
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+  useEffect(() => {
+    console.log("Updated Active Page:", activePage);
+  }, [activePage]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -50,10 +54,9 @@ export default function Sidebar({
   }, [isMobile, isOpen]);
 
   const menuItems = [
-    { id: 1, name: "Dashboard", icon: dashboardIcon },
-    { id: 2, name: "Users", icon: usersIcon },
-    { id: 3, name: "Feedback", icon: feedbackIcon },
-    { id: 4, name: "Maps", icon: mapIcon },
+    { id: 1, name: "Dashboard", icon: dashboardIcon, route: "/dashboard" },
+    { id: 2, name: "Users", icon: usersIcon, route: "/users" },
+    { id: 3, name: "Feedback", icon: feedbackIcon, route: "/feedback" },
   ];
 
   return (
@@ -98,8 +101,9 @@ export default function Sidebar({
                     : "text-green-800"
                 }`}
                 onClick={() => {
-                  setActivePage(item.name); // ✅ Fix: Updates activePage correctly
-                  if (isMobile) setIsOpen(false); // ✅ Close sidebar on mobile after clicking
+                  setActivePage(item.name); //  Fix: Updates activePage correctly
+                  navigate(item.route); //  Navigates to the correct route
+                  if (isMobile) setIsOpen(false); //  Close sidebar on mobile after clicking
                 }}
               >
                 <img

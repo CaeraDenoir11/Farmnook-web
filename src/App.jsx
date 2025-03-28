@@ -17,7 +17,7 @@ import BusinessVehicles from "./business-components/Business-Vehicles.jsx";
 import BusinessReviews from "./business-components/Business-Reviews.jsx";
 import BusinessInbox from "./business-components/Business-Inbox.jsx";
 import BusinessProfile from "./business-components/Business-Profile.jsx";
-import Maps from "./dev-components/Maps.jsx";
+import Maps from "./map/Maps.jsx";
 import logo from "./assets/images/document-logo.png";
 
 export default function App() {
@@ -51,11 +51,11 @@ export default function App() {
 
   return (
     <Router>
-      {isAuthenticated && (
-        <Navigate to={`/${activePage.toLowerCase()}`} replace />
-      )}
       <Routes>
-        {/* Login Route */}
+        {/* ✅ Public Route for Maps - Can be accessed without login */}
+        <Route path="/maps" element={<Maps />} />
+
+        {/* ✅ Login Route */}
         <Route
           path="/login"
           element={
@@ -63,7 +63,7 @@ export default function App() {
           }
         />
 
-        {/* Protected Routes */}
+        {/* ✅ Protected Routes */}
         {isAuthenticated ? (
           role === "business-admin" ? (
             <Route
@@ -92,7 +92,7 @@ export default function App() {
                 </div>
               }
             />
-          ) : (
+          ) : role === "super-admin" ? (
             <Route
               path="/*"
               element={
@@ -107,13 +107,14 @@ export default function App() {
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/users" element={<Users />} />
                       <Route path="/feedback" element={<Feedback />} />
-                      <Route path="/maps" element={<Maps />} />
                       <Route path="*" element={<Navigate to="/dashboard" />} />
                     </Routes>
                   </div>
                 </div>
               }
             />
+          ) : (
+            <Route path="*" element={<Navigate to="/login" />} />
           )
         ) : (
           <Route path="*" element={<Navigate to="/login" />} />
