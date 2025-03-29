@@ -9,15 +9,14 @@ import Sidebar from "./dev-components/Sidebar.jsx";
 import Dashboard from "./dev-components/Dashboard.jsx";
 import Users from "./dev-components/Users.jsx";
 import Feedback from "./dev-components/Feedback.jsx";
-import Login from "./dev-components/Login.jsx";
+import Login from "./auth/Login.jsx";
 import BusinessSidebar from "./business-components/Business-Sidebar.jsx";
 import BusinessDashboard from "./business-components/Business-Dashboard.jsx";
 import BusinessDrivers from "./business-components/Business-Drivers.jsx";
 import BusinessVehicles from "./business-components/Business-Vehicles.jsx";
 import BusinessReviews from "./business-components/Business-Reviews.jsx";
-import BusinessInbox from "./business-components/Business-Inbox.jsx";
+import Maps from "./business-components/Maps.jsx";
 import BusinessProfile from "./business-components/Business-Profile.jsx";
-import Maps from "./dev-components/Maps.jsx";
 import logo from "./assets/images/document-logo.png";
 
 export default function App() {
@@ -30,7 +29,7 @@ export default function App() {
   );
 
   useEffect(() => {
-    document.title = `Farmnook`;
+    document.title = "Farmnook";
     const favicon = document.querySelector("link[rel='icon']");
     if (favicon) {
       favicon.href = logo;
@@ -51,11 +50,14 @@ export default function App() {
 
   return (
     <Router>
-      {isAuthenticated && (
-        <Navigate to={`/${activePage.toLowerCase()}`} replace />
-      )}
       <Routes>
-        {/* Login Route */}
+        {/* ✅ Redirect "/" to "/login" */}
+        <Route path="/" element={<Navigate to="/login" />} />
+
+        {/* ✅ Public Route for Maps - Always accessible */}
+        <Route path="/maps" element={<Maps />} />
+
+        {/* ✅ Login Route */}
         <Route
           path="/login"
           element={
@@ -63,7 +65,7 @@ export default function App() {
           }
         />
 
-        {/* Protected Routes */}
+        {/* ✅ Protected Routes */}
         {isAuthenticated ? (
           role === "business-admin" ? (
             <Route
@@ -83,16 +85,17 @@ export default function App() {
                       />
                       <Route path="/drivers" element={<BusinessDrivers />} />
                       <Route path="/vehicles" element={<BusinessVehicles />} />
-                      <Route path="/inbox" element={<BusinessInbox />} />
+                      <Route path="/maps" element={<Maps />} />
                       <Route path="/reviews" element={<BusinessReviews />} />
                       <Route path="/profile" element={<BusinessProfile />} />
+                      {/* ✅ Catch-all route to redirect to dashboard */}
                       <Route path="*" element={<Navigate to="/dashboard" />} />
                     </Routes>
                   </div>
                 </div>
               }
             />
-          ) : (
+          ) : role === "super-admin" ? (
             <Route
               path="/*"
               element={
@@ -107,13 +110,15 @@ export default function App() {
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/users" element={<Users />} />
                       <Route path="/feedback" element={<Feedback />} />
-                      <Route path="/maps" element={<Maps />} />
+                      {/* ✅ Catch-all route to redirect to dashboard */}
                       <Route path="*" element={<Navigate to="/dashboard" />} />
                     </Routes>
                   </div>
                 </div>
               }
             />
+          ) : (
+            <Route path="*" element={<Navigate to="/login" />} />
           )
         ) : (
           <Route path="*" element={<Navigate to="/login" />} />

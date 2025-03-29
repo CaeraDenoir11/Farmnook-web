@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { auth, db } from "../../configs/firebase";
+import { auth, db } from "../../configs/firebase.js";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
@@ -76,6 +76,10 @@ export default function Login({ setIsAuthenticated, setRole }) {
     } catch (error) {
       setError("Login failed. Please check your credentials and try again.");
       setLoading(false);
+
+      setTimeout(() => {
+        setError(null);
+      }, 3000);
     }
   };
 
