@@ -1,13 +1,7 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { getAuth, signInWithCustomToken } from "firebase/auth";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
-
-// Firebase Setup
-const auth = getAuth();
-const db = getFirestore();
 
 // Mapbox Configuration
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -20,47 +14,30 @@ const userIcon = new L.Icon({
   popupAnchor: [0, -35],
 });
 
+function ChangeView({ center }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center) {
+      map.setView(center, map.getZoom());
+    }
+  }, [center, map]);
+  return null;
+}
+
 export default function RealTimeMap() {
   const [position, setPosition] = useState(null);
-  const [authenticated, setAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
 
+  // Receive location from Android WebView
   useEffect(() => {
-    // Get token from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token");
-
-    if (token) {
-      authenticateUser(token);
-    } else {
-      setLoading(false);
-    }
+    window.updateUserLocation = (lat, lng) => {
+      setPosition([parseFloat(lat), parseFloat(lng)]);
+    };
+    return () => {
+      delete window.updateUserLocation;
+    };
   }, []);
 
-  async function authenticateUser(token) {
-    try {
-      const userCredential = await signInWithCustomToken(auth, token);
-      const user = userCredential.user;
-
-      // Check if user exists in Firestore
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        setAuthenticated(true);
-      } else {
-        console.log("User not found in Firestore");
-      }
-    } catch (error) {
-      console.error("Authentication failed:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return loading ? (
-    <h2>Loading...</h2>
-  ) : !authenticated ? (
-    <h2>Please log in to access the map.</h2>
-  ) : (
+  return (
     <MapContainer
       center={position || [10.3157, 123.8854]}
       zoom={15}
@@ -72,9 +49,12 @@ export default function RealTimeMap() {
       />
 
       {position && (
-        <Marker position={position} icon={userIcon}>
-          <Popup>You are here!</Popup>
-        </Marker>
+        <>
+          <ChangeView center={position} />
+          <Marker position={position} icon={userIcon}>
+            <Popup>Your Current Location</Popup>
+          </Marker>
+        </>
       )}
     </MapContainer>
   );
