@@ -67,7 +67,7 @@ export default function RealTimeMap() {
             icon={userIcon}
             eventHandlers={{ add: (e) => e.target.openPopup() }}
           >
-            <Popup>Your Current Location</Popup>
+            <Popup>Your Are Here</Popup>
           </Marker>
         </>
       )}

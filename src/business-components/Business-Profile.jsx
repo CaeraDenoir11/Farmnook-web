@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth"; // Firebase Auth
 import { db } from "/configs/firebase"; // Firebase Firestore instance
 import { doc, getDoc } from "firebase/firestore";
 import "../index.css";
-import profilePic from "../assets/images/profile.png";
+import profilePic from "../assets/images/default.png";
 
 export default function BusinessProfile() {
   const [admin, setAdmin] = useState(null);
@@ -38,7 +38,11 @@ export default function BusinessProfile() {
   }, [auth, navigate]);
 
   if (loading) {
-    return <div className="h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -59,39 +63,56 @@ export default function BusinessProfile() {
         </div>
         <div className="pt-24 pb-10 px-6 md:px-12 flex flex-col items-start text-left bg-[#F5EFE6] rounded-t-3xl shadow-md w-full -mt-20">
           <div className="mt-6 p-6 md:p-8 w-full">
-            <h2 className="text-2xl font-semibold mb-4 text-[#1A4D2E]">Admin Details</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-[#1A4D2E]">
+              Admin Details
+            </h2>
             {admin ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8">
                 <div className="flex flex-col items-start">
-                  <span className="text-sm font-medium text-gray-600">Full Name</span>
+                  <span className="text-sm font-medium text-gray-600">
+                    Full Name
+                  </span>
                   <span className="text-lg font-semibold text-[#1A4D2E]">
                     {admin.firstName} {admin.lastName}
                   </span>
                 </div>
                 <div className="flex flex-col items-start break-words">
-                  <span className="text-sm font-medium text-gray-600">Email</span>
-                  <span className="text-lg font-semibold text-[#1A4D2E]">{admin.email}</span>
+                  <span className="text-sm font-medium text-gray-600">
+                    Email
+                  </span>
+                  <span className="text-lg font-semibold text-[#1A4D2E]">
+                    {admin.email}
+                  </span>
                 </div>
                 <div className="flex flex-col items-start">
-                  <span className="text-sm font-medium text-gray-600">Phone</span>
-                  <span className="text-lg font-semibold text-[#1A4D2E]">{admin.phoneNum}</span>
+                  <span className="text-sm font-medium text-gray-600">
+                    Total Vehicles
+                  </span>
+                  <span className="text-lg font-semibold text-[#1A4D2E]">
+                    {admin.totalVehicles}
+                  </span>
                 </div>
                 <div className="flex flex-col items-start">
-                <span className="text-sm font-medium text-gray-600">Date Joined</span>
-                <span className="text-lg font-semibold text-[#1A4D2E]">
-                  {admin.dateJoined
-                    ? (() => {
-                        const [day, month, year] = admin.dateJoined.split('-'); // Split into parts
-                        const formattedDate = new Date(`${year}-${month}-${day}`); // Rearrange to YYYY-MM-DD
-                        return formattedDate.toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        });
-                      })()
-                    : "N/A"}
-                </span>
-              </div>
+                  <span className="text-sm font-medium text-gray-600">
+                    Date Joined
+                  </span>
+                  <span className="text-lg font-semibold text-[#1A4D2E]">
+                    {admin.dateJoined
+                      ? (() => {
+                          const [day, month, year] =
+                            admin.dateJoined.split("-"); // Split into parts
+                          const formattedDate = new Date(
+                            `${year}-${month}-${day}`
+                          ); // Rearrange to YYYY-MM-DD
+                          return formattedDate.toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          });
+                        })()
+                      : "N/A"}
+                  </span>
+                </div>
               </div>
             ) : (
               <p>No admin details available.</p>

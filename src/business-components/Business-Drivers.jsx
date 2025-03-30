@@ -3,6 +3,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../../configs/firebase";
 import { collection, query, onSnapshot, where } from "firebase/firestore";
 import AddDriverButton from "../assets/buttons/AddDriverButton.jsx";
+import defaultImg from "../assets/images/default.png";
 
 export default function BusinessDrivers() {
   const [users, setUsers] = useState([]);
@@ -31,7 +32,7 @@ export default function BusinessDrivers() {
     const q = query(
       collection(db, "users"),
       where("businessAdminId", "==", currentUser.uid), // Only show haulers added by logged-in user
-      where("userType", "==", "Hauler"),
+      where("userType", "==", "Hauler")
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -46,10 +47,9 @@ export default function BusinessDrivers() {
   }, [currentUser]);
 
   const filteredUsers = users.filter((user) => {
-    const matchesSearch = 
-    `${user.firstName} ${user.lastName} ${user.licenseNo}`
-    .toLowerCase()
-    .includes(searchTerm.toLowerCase());
+    const matchesSearch = `${user.firstName} ${user.lastName} ${user.licenseNo}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
     const matchesStatus =
       filterStatus === "All" ||
       (user.status ? "On Ride" : "Active") === filterStatus;
@@ -110,9 +110,7 @@ export default function BusinessDrivers() {
                     >
                       <td className="px-5 py-5 border-b border-gray-200 flex items-center gap-4">
                         <img
-                          src={
-                            user.profileImg || "/icons/default-profile.png"
-                          }
+                          src={user.profileImg || defaultImg}
                           alt="Driver"
                           className="rounded-full w-12 h-12 border-2 border-[#1A4D2E]"
                         />
