@@ -1,9 +1,33 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { db, storage, auth } from "../../../configs/firebase"; // Import auth
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { createUserWithEmailAndPassword } from "firebase/auth"; // Firebase Auth
+import { db, storage, auth } from "../../../configs/firebase";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+} from "firebase/storage";
+
+// ✅ NEW: Setup a secondary Firebase App and Auth instance
+import { initializeApp } from "firebase/app";
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+
+const secondaryApp = initializeApp(
+  {
+    apiKey: import.meta.env.VITE_FIREBASE_APIKEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTHDOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECTID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGEBUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGINGSENDERID,
+    appId: import.meta.env.VITE_FIREBASE_APPID,
+  },
+  "Secondary"
+);
+const secondaryAuth = getAuth(secondaryApp);
 
 function AddDriverButton({ onAddDriver }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,14 +38,11 @@ function AddDriverButton({ onAddDriver }) {
     lname: "",
     licenseNo: "",
     phone: "",
-    username: "", // Hauler's login email
+    username: "",
     password: "",
     confirmPassword: "",
   });
-  const [imageFile, setImageFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
 
-  // Handle image preview
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     setImageFile(file);
@@ -30,7 +51,6 @@ function AddDriverButton({ onAddDriver }) {
     reader.readAsDataURL(file);
   };
 
-  // Upload image to Firebase Storage
   const uploadImageToFirebase = async () => {
     if (!imageFile) return null;
     const storageRef = ref(storage, `profileImages/haulers/${imageFile.name}`);
@@ -38,16 +58,12 @@ function AddDriverButton({ onAddDriver }) {
     return getDownloadURL(storageRef);
   };
 
-  // Form validation
   const validateForm = () => {
     let newErrors = {};
-
-    // Required fields
     Object.keys(formData).forEach((key) => {
       if (!formData[key]) newErrors[key] = "This field is required";
     });
 
-    // Password validation
     if (formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
     }
@@ -59,43 +75,43 @@ function AddDriverButton({ onAddDriver }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
   const handleSubmit = async () => {
     if (loading) return;
     if (!validateForm()) return;
 
     setLoading(true);
     try {
-      const adminId = localStorage.getItem("userId");
+      const adminId = auth.currentUser?.uid;
       if (!adminId) throw new Error("Admin User ID not found.");
 
-      // Step 1: Create hauler account in Firebase Auth
+      // ✅ Create hauler account using secondaryAuth
       const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.username, // This is the hauler's login email
+        secondaryAuth,
+        formData.username,
         formData.password
       );
-      const haulerUid = userCredential.user.uid; // Get hauler's unique ID
+      const haulerUid = userCredential.user.uid;
 
-      // Step 2: Upload profile image
-      const imageUrl = imageFile ? await uploadImageToFirebase() : null;
+      // ✅ Sign out of secondaryAuth to clean up session
+      await secondaryAuth.signOut();
 
-      // Step 3: Store hauler details in Firestore
       const newHauler = {
-        uid: haulerUid, // Link Firebase Auth account to Firestore
-        fname: formData.fname,
-        lname: formData.lname,
+        userId: haulerUid,
+        firstName: formData.fname,
+        lastName: formData.lname,
         licenseNo: formData.licenseNo,
-        phone: formData.phone,
-        profileImg: imageUrl,
-        organizationId: adminId, // Link to business admin
+        phoneNum: formData.phone,
+        profileImg: "", 
+        businessAdminId: adminId,
         createdAt: serverTimestamp(),
-        status: false, // Default status
+        userType: "Hauler",
+        status: false,
       };
 
-      await addDoc(collection(db, "haulers"), newHauler);
+      await addDoc(collection(db, "users"), newHauler);
       console.log("Hauler account created successfully!");
 
+      // Reset state
       setIsOpen(false);
       setFormData({
         fname: "",
@@ -129,6 +145,7 @@ function AddDriverButton({ onAddDriver }) {
           </span>
         </button>
       </div>
+
       {isOpen && (
         <div className="fixed inset-0 backdrop-blur-sm bg-black/40 flex justify-center items-center p-2 md:p-4">
           <div className="bg-[#F5EFE6] p-3 md:p-6 rounded-xl md:rounded-2xl shadow-2xl w-full max-w-xs sm:max-w-md md:max-w-2xl lg:max-w-3xl transition-all duration-300">
@@ -192,25 +209,6 @@ function AddDriverButton({ onAddDriver }) {
               </div>
             </div>
 
-            <div className="mt-3 md:mt-4 p-3 md:p-4 rounded-lg text-center">
-              <label className="block font-semibold mb-1 md:mb-2 text-sm md:text-base">
-                Profile Image
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="w-full p-2 md:p-3 border rounded-lg text-sm md:text-base"
-              />
-              {previewUrl && (
-                <img
-                  src={previewUrl}
-                  alt="Preview"
-                  className="w-16 h-16 md:w-24 md:h-24 rounded-full shadow-lg mx-auto mt-2"
-                />
-              )}
-            </div>
-
             <div className="flex justify-end mt-3 md:mt-4 space-x-2 md:space-x-4">
               <button
                 onClick={() => setIsOpen(false)}
@@ -223,7 +221,6 @@ function AddDriverButton({ onAddDriver }) {
                 disabled={loading}
                 className="px-2 md:px-4 py-1 md:py-2 bg-[#1A4D2E] text-white rounded-lg text-xs md:text-sm"
               >
-                {loading ? "Uploading..." : "Add Driver"}
                 {loading ? "Uploading..." : "Add Driver"}
               </button>
             </div>
