@@ -1,31 +1,46 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // For redirecting unauthorized users
-import { getAuth, onAuthStateChanged } from "firebase/auth"; // Firebase Auth
-import { db } from "/configs/firebase"; // Firebase Firestore instance
-import { doc, getDoc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { db } from "/configs/firebase";
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import "../index.css";
 import profilePic from "../assets/images/default.png";
 
 export default function BusinessProfile() {
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [totalVehicles, setTotalVehicles] = useState(0);
   const navigate = useNavigate();
   const auth = getAuth();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        navigate("/login"); // Redirect to login page if not authenticated
+        navigate("/login");
         return;
       }
 
       try {
-        const userId = user.uid; // Get the authenticated user ID
+        const userId = user.uid;
         const userRef = doc(db, "users", userId);
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
-          setAdmin(userSnap.data());
+          const adminData = userSnap.data();
+          setAdmin(adminData);
+
+          // Fetch total vehicles for the admin's organization
+          const vehiclesRef = collection(db, "vehicles");
+          const q = query(vehiclesRef, where("organizationId", "==", userId));
+          const querySnapshot = await getDocs(q);
+          setTotalVehicles(querySnapshot.size);
         }
       } catch (error) {
         console.error("Error fetching admin data:", error);
@@ -53,7 +68,7 @@ export default function BusinessProfile() {
             <h1 className="text-3xl md:text-4xl font-extrabold text-white">
               {admin ? `${admin.businessName}` : "No Data Available"}
             </h1>
-            <p className="text-lg font-medium text-white">{admin.userType}</p>
+            <p className="text-lg font-medium text-white">{admin?.userType}</p>
           </div>
           <img
             src={profilePic}
@@ -89,7 +104,7 @@ export default function BusinessProfile() {
                     Total Vehicles
                   </span>
                   <span className="text-lg font-semibold text-[#1A4D2E]">
-                    {admin.totalVehicles}
+                    {totalVehicles}
                   </span>
                 </div>
                 <div className="flex flex-col items-start">
@@ -100,10 +115,10 @@ export default function BusinessProfile() {
                     {admin.dateJoined
                       ? (() => {
                           const [day, month, year] =
-                            admin.dateJoined.split("-"); // Split into parts
+                            admin.dateJoined.split("-");
                           const formattedDate = new Date(
                             `${year}-${month}-${day}`
-                          ); // Rearrange to YYYY-MM-DD
+                          );
                           return formattedDate.toLocaleDateString("en-US", {
                             year: "numeric",
                             month: "long",
