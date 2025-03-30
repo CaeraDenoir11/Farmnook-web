@@ -23,65 +23,68 @@ export default function Login({ setIsAuthenticated, setRole }) {
     e.preventDefault();
     setError("");
     setLoading(true);
+  
     try {
-      const userQuery = query(
-        collection(db, "users_business_admin"),
-        where("email", "==", email.toLowerCase())
-      );
-      const querySnapshot = await getDocs(userQuery);
-
-      let userData = null;
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;// Authenticated user
+  
       let role = "";
       let userId = "";
-
-      if (!querySnapshot.empty) {
-        const userDoc = querySnapshot.docs[0];
-        userData = userDoc.data();
-        userId = userDoc.id; // This is the Firestore-generated ID
+  
+      // Check if the user is a Hauler Business Admin
+      const userQuery = query(
+        collection(db, "users"),
+        where("email", "==", email.toLowerCase()),
+        where("userType", "==", "Hauler Business Admin"),
+      );
+  
+      const userSnapshot = await getDocs(userQuery);
+  
+      if (!userSnapshot.empty) {
+        const userDoc = userSnapshot.docs[0];
+        userId = userDoc.id;
         role = "business-admin";
       } else {
+        // Check if the user is a Super Admin
         const adminQuery = query(
           collection(db, "users_super_admin"),
           where("email", "==", email.toLowerCase())
         );
+  
         const adminSnapshot = await getDocs(adminQuery);
+  
         if (!adminSnapshot.empty) {
           const adminDoc = adminSnapshot.docs[0];
-          userData = adminDoc.data();
           userId = adminDoc.id;
           role = "super-admin";
         }
       }
-
-      if (!userData) {
-        setError("Invalid email or password");
+  
+      // If the user is neither Hauler Business Admin nor Super Admin, deny access
+      if (!role) {
+        setError("Access denied. Only Hauler Business Admins and Super Admins can log in.");
         setLoading(false);
-
-        setTimeout(() => {
-          setError(null);
-        }, 3000);
-
         return;
       }
-
-      await signInWithEmailAndPassword(auth, email, password);
-
+  
+      // Store authentication state
       setIsAuthenticated(true);
       setRole(role);
       localStorage.setItem("userRole", role);
       localStorage.setItem("isAuthenticated", true);
-      localStorage.setItem("userId", userId); // 🔥 Store user ID correctly
-
+      localStorage.setItem("userId", userId);
+  
       navigate("/dashboard");
     } catch (error) {
       setError("Login failed. Please check your credentials and try again.");
       setLoading(false);
-
+  
       setTimeout(() => {
         setError(null);
       }, 3000);
     }
   };
+  
 
   return (
     <div className="h-screen w-full flex items-center justify-center bg-[#50672b] p-6">

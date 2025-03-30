@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../../configs/firebase";
 import { collection, query, onSnapshot, where } from "firebase/firestore";
 import AddDriverButton from "../assets/buttons/AddDriverButton.jsx";
@@ -8,16 +9,31 @@ export default function BusinessDrivers() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [currentUser, setCurrentUser] = useState(null); // Store logged-in user
   const usersPerPage = 5;
 
   useEffect(() => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) return;
+    const auth = getAuth();
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUser(user);
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) return;
 
     const q = query(
-      collection(db, "haulers"),
-      where("organizationId", "==", userId)
+      collection(db, "users"),
+      where("businessAdminId", "==", currentUser.uid), // Only show haulers added by logged-in user
+      where("userType", "==", "Hauler"),
     );
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const haulers = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -25,13 +41,15 @@ export default function BusinessDrivers() {
       }));
       setUsers(haulers);
     });
+
     return () => unsubscribe();
-  }, []);
+  }, [currentUser]);
 
   const filteredUsers = users.filter((user) => {
-    const matchesSearch = `${user.fname} ${user.lname} ${user.licenseNo}`
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+    const matchesSearch = 
+    `${user.firstName} ${user.lastName} ${user.licenseNo}`
+    .toLowerCase()
+    .includes(searchTerm.toLowerCase());
     const matchesStatus =
       filterStatus === "All" ||
       (user.status ? "On Ride" : "Active") === filterStatus;
@@ -93,20 +111,20 @@ export default function BusinessDrivers() {
                       <td className="px-5 py-5 border-b border-gray-200 flex items-center gap-4">
                         <img
                           src={
-                            user.profileImg || "https://via.placeholder.com/50"
+                            user.profileImg || "/icons/default-profile.png"
                           }
                           alt="Driver"
                           className="rounded-full w-12 h-12 border-2 border-[#1A4D2E]"
                         />
                         <span className="font-light text-[#1A4D2E]">
-                          {user.fname} {user.lname}
+                          {user.firstName} {user.lastName}
                         </span>
                       </td>
                       <td className="px-5 py-5 border-b border-gray-300 text-[#1A4D2E]">
                         {user.licenseNo}
                       </td>
                       <td className="px-5 py-5 border-b border-gray-300 text-[#1A4D2E]">
-                        {user.phone}
+                        {user.phoneNum}
                       </td>
                       <td className="px-5 py-5 border-b border-gray-300">
                         <span
