@@ -47,7 +47,20 @@ export default function RealTimeMap() {
       delete window.updateUserLocation;
     };
   }, []);
+  useEffect(() => {
+    window.updateUserLocation = (lat, lng) => {
+      console.log("Received from Android:", lat, lng);
+      const parsedLat = parseFloat(lat);
+      const parsedLng = parseFloat(lng);
+      if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
+        setPosition([parsedLat, parsedLng]);
+      }
+    };
 
+    return () => {
+      delete window.updateUserLocation;
+    };
+  }, []);
   return (
     <MapContainer
       center={position || [10.3157, 123.8854]} // fallback default
