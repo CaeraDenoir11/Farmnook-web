@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
@@ -7,12 +14,18 @@ import L from "leaflet";
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`;
 
-// Custom Marker Icon
+// Custom Marker Icons
 const userIcon = new L.Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
   iconSize: [35, 35],
   iconAnchor: [17, 35],
   popupAnchor: [0, -35],
+});
+
+const pinIcon = new L.Icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+  iconSize: [35, 35],
+  iconAnchor: [17, 35],
 });
 
 // Recenter map when position changes
@@ -26,27 +39,22 @@ function ChangeView({ center }) {
   return null;
 }
 
-export default function RealTimeMap() {
+// Allow user to pick a location by clicking
+function MapClickHandler({ setMarkerPos }) {
+  useMapEvents({
+    click: (e) => {
+      const { lat, lng } = e.latlng;
+      setMarkerPos([lat, lng]);
+    },
+  });
+  return null;
+}
+
+export default function RealTimeLocationPickerMap() {
   const [position, setPosition] = useState(null);
+  const [markerPos, setMarkerPos] = useState(null);
 
-  // Register function so Android WebView can send location
-  useEffect(() => {
-    window.updateUserLocation = (lat, lng) => {
-      console.log("Received from Android:", lat, lng);
-      const parsedLat = parseFloat(lat);
-      const parsedLng = parseFloat(lng);
-      if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
-        setPosition([parsedLat, parsedLng]);
-      }
-    };
-
-    // Optional: test hardcoded location
-    // setTimeout(() => window.updateUserLocation(10.3163, 123.8979), 1000);
-
-    return () => {
-      delete window.updateUserLocation;
-    };
-  }, []);
+  // Register function for Android WebView to update location
   useEffect(() => {
     window.updateUserLocation = (lat, lng) => {
       console.log("Received from Android:", lat, lng);
@@ -61,9 +69,22 @@ export default function RealTimeMap() {
       delete window.updateUserLocation;
     };
   }, []);
+
+  // Expose function for Android to retrieve selected location
+  useEffect(() => {
+    window.getSelectedLocation = () => {
+      if (!markerPos) return null;
+      return { lat: markerPos[0], lng: markerPos[1] };
+    };
+
+    return () => {
+      delete window.getSelectedLocation;
+    };
+  }, [markerPos]);
+
   return (
     <MapContainer
-      center={position || [10.3157, 123.8854]} // fallback default
+      center={position || [10.3157, 123.8854]} // Default fallback
       zoom={15}
       style={{ height: "100vh", width: "100%" }}
     >
@@ -71,18 +92,21 @@ export default function RealTimeMap() {
         url={MAPBOX_TILE_URL}
         attribution='&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a>'
       />
-
+      <MapClickHandler setMarkerPos={setMarkerPos} />
       {position && (
         <>
           <ChangeView center={position} />
-          <Marker
-            position={position}
-            icon={userIcon}
-            eventHandlers={{ add: (e) => e.target.openPopup() }}
-          >
+          <Marker position={position} icon={userIcon}>
             <Popup>Your Are Here</Popup>
           </Marker>
         </>
+      )}
+      {markerPos && (
+        <Marker position={markerPos} icon={pinIcon}>
+          <Popup>
+            Lat: {markerPos[0].toFixed(5)}, Lng: {markerPos[1].toFixed(5)}
+          </Popup>
+        </Marker>
       )}
     </MapContainer>
   );
