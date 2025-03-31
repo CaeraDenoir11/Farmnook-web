@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+// BusinessDashboard.jsx
+import { useState, useEffect, useMemo } from "react";
 import {
   AreaChart,
   Area,
@@ -9,14 +10,17 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { motion } from "framer-motion";
-
-const vehicles = [
-  { id: 1, name: "Truck A", details: "Large truck for bulk deliveries" },
-  { id: 2, name: "Van B", details: "Mid-sized van for city transport" },
-  { id: 3, name: "Bike C", details: "Eco-friendly bike for small packages" },
-  { id: 4, name: "Bike C", details: "Eco-friendly bike for small packages" },
-  { id: 5, name: "Bike C", details: "Eco-friendly bike for small packages" },
-];
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  getDoc,
+} from "firebase/firestore";
+import { auth, db } from "../../configs/firebase";
+import Maps from "./Maps";
+import Modal from "react-modal";
 
 const monthlyData = {
   January: [
@@ -41,6 +45,43 @@ const monthlyData = {
 
 export default function BusinessDashboard() {
   const [selectedMonth, setSelectedMonth] = useState("March");
+  const [requests, setRequests] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [mapPoints, setMapPoints] = useState({ pickup: "", drop: "" });
+
+  useEffect(() => {
+    const fetchRequests = async () => {
+      const userId = auth.currentUser?.uid;
+      if (!userId) return;
+
+      const q = query(
+        collection(db, "deliveryRequests"),
+        where("businessId", "==", userId),
+        where("isAccepted", "==", false)
+      );
+
+      const snapshot = await getDocs(q);
+
+      const enrichedRequests = await Promise.all(
+        snapshot.docs.map(async (docSnap) => {
+          const data = docSnap.data();
+          const vehicleRef = doc(db, "vehicles", data.vehicleId);
+          const vehicleDoc = await getDoc(vehicleRef);
+          return {
+            ...data,
+            id: docSnap.id,
+            vehicleName: vehicleDoc.exists()
+              ? vehicleDoc.data().model || "Unknown"
+              : "Unknown",
+          };
+        })
+      );
+
+      setRequests(enrichedRequests);
+    };
+
+    fetchRequests();
+  }, []);
 
   const totalTransactions = useMemo(() => {
     return monthlyData[selectedMonth].reduce(
@@ -48,6 +89,11 @@ export default function BusinessDashboard() {
       0
     );
   }, [selectedMonth]);
+
+  const openMapModal = (pickup, drop) => {
+    setMapPoints({ pickup, drop });
+    setModalOpen(true);
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center ">
@@ -60,17 +106,20 @@ export default function BusinessDashboard() {
             Pending Orders
           </h2>
           <div className="space-y-4 overflow-y-auto max-h-100 auto-hide-scrollbar">
-            {" "}
-            {/* Scrollable area */}
-            {vehicles.map((vehicle) => (
-              <div
-                key={vehicle.id}
-                className="p-4 bg-gray-100 rounded-lg shadow"
-              >
-                <p className="text-[#1A4D2E] font-semibold">{vehicle.name}</p>
-                <p className="text-sm text-gray-600">{vehicle.details}</p>
-                <button className="bg-[#1A4D2E] text-white px-4 py-2 mt-2 rounded-lg hover:bg-green-700">
-                  Accept
+            {requests.map((req) => (
+              <div key={req.id} className="p-4 bg-gray-100 rounded-lg shadow">
+                <p className="text-[#1A4D2E] font-semibold">
+                  {req.vehicleName}
+                </p>
+                <p className="text-sm text-gray-600">{req.vehicleType}</p>
+                <p className="text-sm text-gray-600">{req.productType}</p>
+                <button
+                  className="text-blue-600 text-sm underline mt-2"
+                  onClick={() =>
+                    openMapModal(req.pickupLocation, req.destinationLocation)
+                  }
+                >
+                  Details
                 </button>
               </div>
             ))}
@@ -142,6 +191,30 @@ export default function BusinessDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Map Modal */}
+      <Modal
+        isOpen={modalOpen}
+        onRequestClose={() => setModalOpen(false)}
+        className="fixed inset-0 bg-black/50 flex items-center justify-center px-4"
+        overlayClassName="ReactModal__Overlay"
+      >
+        <div className="bg-white rounded-xl w-full max-w-4xl h-[80vh] p-4 relative shadow-xl">
+          <button
+            className="absolute top-4 right-4 text-red-600 font-bold"
+            onClick={() => setModalOpen(false)}
+          >
+            Close
+          </button>
+          <Maps
+            pickupLocation={mapPoints.pickup}
+            destinationLocation={mapPoints.drop}
+            disablePicker={true}
+            routeColor="blue"
+            showTooltips={true}
+          />
+        </div>
+      </Modal>
     </div>
   );
 }
