@@ -9,6 +9,7 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { useSearchParams } from "react-router-dom"; // Import for reading URL params
 
 // Mapbox Configuration
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -39,7 +40,7 @@ function ChangeView({ center }) {
   return null;
 }
 
-// Allow user to pick a location by clicking
+// Allow user to pick a location by clicking (Only if enabled)
 function MapClickHandler({ setMarkerPos }) {
   useMapEvents({
     click: (e) => {
@@ -50,7 +51,10 @@ function MapClickHandler({ setMarkerPos }) {
   return null;
 }
 
-export default function RealTimeLocationPickerMap() {
+export default function Maps() {
+  const [searchParams] = useSearchParams();
+  const disablePicker = searchParams.get("disablePicker") === "true"; // Check if picking is disabled
+
   const [position, setPosition] = useState(null);
   const [markerPos, setMarkerPos] = useState(null);
 
@@ -92,7 +96,8 @@ export default function RealTimeLocationPickerMap() {
         url={MAPBOX_TILE_URL}
         attribution='&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a>'
       />
-      <MapClickHandler setMarkerPos={setMarkerPos} />
+      {!disablePicker && <MapClickHandler setMarkerPos={setMarkerPos} />}{" "}
+      {/* Disable picking if flagged */}
       {position && (
         <>
           <ChangeView center={position} />
@@ -101,13 +106,14 @@ export default function RealTimeLocationPickerMap() {
           </Marker>
         </>
       )}
-      {markerPos && (
-        <Marker position={markerPos} icon={pinIcon}>
-          <Popup>
-            Lat: {markerPos[0].toFixed(5)}, Lng: {markerPos[1].toFixed(5)}
-          </Popup>
-        </Marker>
-      )}
+      {markerPos &&
+        !disablePicker && ( // Only show selected marker if picking is enabled
+          <Marker position={markerPos} icon={pinIcon}>
+            <Popup>
+              Lat: {markerPos[0].toFixed(5)}, Lng: {markerPos[1].toFixed(5)}
+            </Popup>
+          </Marker>
+        )}
     </MapContainer>
   );
 }
