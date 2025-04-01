@@ -15,6 +15,7 @@ import "leaflet-routing-machine";
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`;
 
+// Custom icon for user location
 const userIcon = new L.Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
   iconSize: [35, 35],
@@ -22,22 +23,25 @@ const userIcon = new L.Icon({
   popupAnchor: [0, -35],
 });
 
+// Custom icon for destination/picked location
 const pinIcon = new L.Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
   iconSize: [35, 35],
   iconAnchor: [17, 35],
 });
 
+// Changes the map view when the user location is updated
 function ChangeView({ center }) {
   const map = useMap();
   useEffect(() => {
     if (center) {
-      map.setView(center, 13);
+      map.setView(center, 15); // More zoom-in for clarity on Android
     }
   }, [center, map]);
   return null;
 }
 
+// Reverse geocoding helper to convert coordinates to human-readable names
 async function reverseGeocode(lat, lng) {
   try {
     const response = await fetch(
@@ -51,6 +55,7 @@ async function reverseGeocode(lat, lng) {
   }
 }
 
+// Adds the route line and optional markers with labels between pickup and drop
 function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
   const map = useMap();
 
@@ -104,6 +109,7 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
   return null;
 }
 
+// Captures map clicks to update marker position (disabled for Android WebView use)
 function MapClickHandler({ setMarkerPos }) {
   useMapEvents({
     click: (e) => {
@@ -114,10 +120,18 @@ function MapClickHandler({ setMarkerPos }) {
   return null;
 }
 
+/**
+ * Main Maps component to render Leaflet map
+ * @param {string} pickupLocation - Comma-separated lat,lng string for pickup
+ * @param {string} destinationLocation - Comma-separated lat,lng string for destination
+ * @param {boolean} disablePicker - If true, disables map click selection (always true for Android)
+ * @param {string} routeColor - Optional color for route line
+ * @param {boolean} showTooltips - Whether to show location names on markers
+ */
 export default function Maps({
   pickupLocation,
   destinationLocation,
-  disablePicker = false,
+  disablePicker = true, // force disabled for Android WebView context
   routeColor = "blue",
   showTooltips = false,
 }) {
@@ -128,6 +142,7 @@ export default function Maps({
     ? pickupLocation.split(",").map(Number)
     : [10.3157, 123.8854];
 
+  // Expose global method to update user location externally
   useEffect(() => {
     window.updateUserLocation = (lat, lng) => {
       const parsedLat = parseFloat(lat);
@@ -139,6 +154,7 @@ export default function Maps({
     return () => delete window.updateUserLocation;
   }, []);
 
+  // Expose selected location for external JavaScript to retrieve
   useEffect(() => {
     window.getSelectedLocation = () => {
       if (!markerPos) return null;
@@ -158,6 +174,8 @@ export default function Maps({
           url={MAPBOX_TILE_URL}
           attribution='&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a>'
         />
+
+        {/* Location picker disabled on Android (disablePicker forced true) */}
         {!disablePicker && <MapClickHandler setMarkerPos={setMarkerPos} />}
 
         {position && (
