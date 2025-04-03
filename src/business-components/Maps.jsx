@@ -92,7 +92,7 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
       // Delay fitBounds to ensure map container is rendered
       setTimeout(() => {
         map.invalidateSize(); // crucial!
-        map.fitBounds(bounds.pad(0.3));
+        // map.fitBounds(bounds.pad(0.3));
       }, 200);
 
       if (showTooltips) {
@@ -140,6 +140,7 @@ export default function Maps({
   disablePicker = true, // force disabled for Android WebView context
   routeColor = "blue",
   showTooltips = false,
+  height = "100vh",
 }) {
   const [position, setPosition] = useState(null);
   const [markerPos, setMarkerPos] = useState(null);
@@ -170,7 +171,7 @@ export default function Maps({
   }, [markerPos]);
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full" style={{ height }}>
       <MapContainer
         center={defaultCenter}
         zoom={13}
@@ -206,6 +207,7 @@ export default function Maps({
             drop={destinationLocation}
             routeColor={routeColor}
             showTooltips={showTooltips}
+            fullScreen={true}
           />
         )}
       </MapContainer>
