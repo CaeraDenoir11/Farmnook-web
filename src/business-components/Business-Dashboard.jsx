@@ -103,7 +103,7 @@ export default function BusinessDashboard() {
       <div className="relative w-full max-w-8xl mt-[-50px] flex flex-col md:flex-row gap-6 px-6 pt-6">
         <div className="bg-white p-6 rounded-2xl shadow-lg w-full md:w-3/4">
           <h2 className="text-xl font-bold text-[#1A4D2E] mb-4">
-            Pending Orders
+            Delivery Requests
           </h2>
           <div className="space-y-4 overflow-y-auto max-h-100 auto-hide-scrollbar">
             {requests.map((req) => (
@@ -193,28 +193,30 @@ export default function BusinessDashboard() {
       </div>
 
       {/* Map Modal */}
-      <Modal
-        isOpen={modalOpen}
-        onRequestClose={() => setModalOpen(false)}
-        className="fixed inset-0 bg-black/50 flex items-center justify-center px-4"
-        overlayClassName="ReactModal__Overlay"
-      >
-        <div className="bg-white rounded-xl w-full max-w-4xl h-[80vh] p-4 relative shadow-xl">
-          <button
-            className="absolute top-4 right-4 text-red-600 font-bold"
-            onClick={() => setModalOpen(false)}
-          >
-            Close
-          </button>
-          <Maps
-            pickupLocation={mapPoints.pickup}
-            destinationLocation={mapPoints.drop}
-            disablePicker={true}
-            routeColor="blue"
-            showTooltips={true}
-          />
+      {modalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 z-50">
+          <div className="bg-white p-4 rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] relative flex flex-col">
+            <h2 className="text-xl font-bold text-[#1A4D2E] text-center mb-4">
+              Delivery Route
+            </h2>
+            <button
+              onClick={() => setModalOpen(false)}
+              className="absolute top-4 right-4 text-red-600 font-bold"
+            >
+              Close
+            </button>
+            <div className="flex-1 overflow-hidden rounded-lg">
+              <Maps
+                pickupLocation={mapPoints.pickup}
+                destinationLocation={mapPoints.drop}
+                disablePicker={true}
+                routeColor="blue"
+                showTooltips={true}
+              />
+            </div>
+          </div>
         </div>
-      </Modal>
+      )}
     </div>
   );
 }

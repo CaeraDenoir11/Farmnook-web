@@ -72,7 +72,7 @@ function AddVehicleButton({ onAddVehicle }) {
   };
 
   return (
-    <>
+    <  >
       {/* Floating "Add Vehicle" button */}
       <div className="group fixed bottom-6 right-6 flex justify-center items-center text-white text-sm font-bold">
         {/* Button */}

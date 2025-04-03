@@ -83,7 +83,7 @@ export default function App() {
                         path="/dashboard"
                         element={<BusinessDashboard />}
                       />
-                      <Route path="/drivers" element={<BusinessDrivers />} />
+                      <Route path="/haulers" element={<BusinessDrivers />} />
                       <Route path="/vehicles" element={<BusinessVehicles />} />
                       <Route path="/maps" element={<Maps />} />
                       <Route path="/reviews" element={<BusinessReviews />} />

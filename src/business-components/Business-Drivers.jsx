@@ -71,7 +71,7 @@ export default function BusinessDrivers() {
       <div className="container mx-auto px-4 sm:px-8">
         <div className="py-8">
           <h1 className="text-2xl px-8 font-semibold text-[#1A4D2E]">
-            Drivers List
+            Haulers List
           </h1>
           <div className="my-4 flex items-center gap-4 w-full">
             <select

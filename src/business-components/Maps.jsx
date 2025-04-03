@@ -73,7 +73,7 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
       routeWhileDragging: false,
       addWaypoints: false,
       draggableWaypoints: false,
-      fitSelectedRoutes: true,
+      fitSelectedRoutes: false,
       lineOptions: {
         styles: [{ color: routeColor, weight: 6 }],
       },
@@ -96,9 +96,12 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
           .bindPopup(dropLabel)
           .openPopup();
 
-        control.on("routesfound", () => {
-          pickupMarker.openPopup();
-          dropMarker.openPopup();
+        control.on("routesfound", function (e) {
+          const route = e.routes[0];
+          const bounds = L.latLngBounds(
+            route.coordinates.map((coord) => L.latLng(coord.lat, coord.lng))
+          );
+          map.fitBounds(bounds.pad(0.2)); // Adds padding for better visibility
         });
       }
     })();
