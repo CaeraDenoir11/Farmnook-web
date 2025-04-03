@@ -56,7 +56,7 @@ export default function Sidebar({
 
   const menuItems = [
     { id: 1, name: "Dashboard", icon: dashboardIcon, route: "/dashboard" },
-    { id: 2, name: "Drivers", icon: driversIcon, route: "/drivers" },
+    { id: 2, name: "Haulers", icon: driversIcon, route: "/haulers" },
     { id: 3, name: "Vehicles", icon: vehiclesIcon, route: "/vehicles" },
     { id: 4, name: "Reviews", icon: reviewIcon, route: "/reviews" },
     { id: 5, name: "Map", icon: mapIcon, route: "/maps" },
