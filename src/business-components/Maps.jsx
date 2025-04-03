@@ -92,7 +92,7 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
       // Delay fitBounds to ensure map container is rendered
       setTimeout(() => {
         map.invalidateSize(); // crucial!
-        map.fitBounds(bounds.pad(0.3));
+        // map.fitBounds(bounds.pad(0.3));
       }, 200);
 
       if (showTooltips) {
