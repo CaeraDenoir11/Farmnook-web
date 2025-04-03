@@ -1,4 +1,3 @@
-// BusinessDashboard.jsx
 import { useState, useEffect, useMemo } from "react";
 import {
   AreaChart,
@@ -19,8 +18,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { auth, db } from "../../configs/firebase";
-import Maps from "./Maps";
-import Modal from "react-modal";
+import MapModal from "../map/MapModal.jsx";
 
 const monthlyData = {
   January: [
@@ -192,31 +190,13 @@ export default function BusinessDashboard() {
         </div>
       </div>
 
-      {/* Map Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 z-50">
-          <div className="bg-white p-4 rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] relative flex flex-col">
-            <h2 className="text-xl font-bold text-[#1A4D2E] text-center mb-4">
-              Delivery Route
-            </h2>
-            <button
-              onClick={() => setModalOpen(false)}
-              className="absolute top-4 right-4 text-red-600 font-bold"
-            >
-              Close
-            </button>
-            <div className="flex-1 overflow-hidden rounded-lg">
-              <Maps
-                pickupLocation={mapPoints.pickup}
-                destinationLocation={mapPoints.drop}
-                disablePicker={true}
-                routeColor="blue"
-                showTooltips={true}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Map Modal Component */}
+      <MapModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        pickup={mapPoints.pickup}
+        drop={mapPoints.drop}
+      />
     </div>
   );
 }
