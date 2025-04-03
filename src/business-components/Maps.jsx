@@ -140,6 +140,7 @@ export default function Maps({
   disablePicker = true, // force disabled for Android WebView context
   routeColor = "blue",
   showTooltips = false,
+  fullScreen = true, // NEW PROP
 }) {
   const [position, setPosition] = useState(null);
   const [markerPos, setMarkerPos] = useState(null);
@@ -170,7 +171,13 @@ export default function Maps({
   }, [markerPos]);
 
   return (
-    <div className="w-full h-full">
+    <div
+      className="w-full"
+      style={{
+        height: fullScreen ? "100vh" : "100%",
+        minHeight: fullScreen ? undefined : "400px", // fallback if no height from parent
+      }}
+    >
       <MapContainer
         center={defaultCenter}
         zoom={13}
@@ -206,6 +213,7 @@ export default function Maps({
             drop={destinationLocation}
             routeColor={routeColor}
             showTooltips={showTooltips}
+            fullScreen={true}
           />
         )}
       </MapContainer>
