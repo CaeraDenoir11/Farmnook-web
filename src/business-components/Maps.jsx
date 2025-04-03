@@ -207,6 +207,7 @@ export default function Maps({
             drop={destinationLocation}
             routeColor={routeColor}
             showTooltips={showTooltips}
+            fullScreen={true}
           />
         )}
       </MapContainer>
