@@ -60,7 +60,7 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
   const map = useMap();
 
   useEffect(() => {
-    if (!pickup || !drop) return;
+    if (!pickup || !drop || !map) return;
 
     const [startLat, startLng] = pickup.split(",").map(Number);
     const [endLat, endLng] = drop.split(",").map(Number);
@@ -68,58 +68,61 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
     const start = L.latLng(startLat, startLng);
     const end = L.latLng(endLat, endLng);
 
+    // Create the routing control
     const control = L.Routing.control({
       waypoints: [start, end],
-      routeWhileDragging: false,
-      addWaypoints: false,
-      draggableWaypoints: false,
-      fitSelectedRoutes: false,
       lineOptions: {
         styles: [{ color: routeColor, weight: 6 }],
       },
-      router: L.Routing.mapbox(MAPBOX_ACCESS_TOKEN),
       createMarker: () => null,
-    }).addTo(map);
+      routeWhileDragging: false,
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: false, // We'll do this manually
+      show: false,
+      router: L.Routing.mapbox(MAPBOX_ACCESS_TOKEN),
+    });
 
-    (async () => {
+    control.addTo(map);
+
+    // Fit route bounds once it's computed
+    control.on("routesfound", async () => {
+      const bounds = L.latLngBounds([start, end]);
+
+      // Delay fitBounds to ensure map container is rendered
+      setTimeout(() => {
+        map.invalidateSize(); // crucial!
+        map.fitBounds(bounds.pad(0.3));
+      }, 200);
+
       if (showTooltips) {
         const pickupLabel = await reverseGeocode(startLat, startLng);
         const dropLabel = await reverseGeocode(endLat, endLng);
 
-        const pickupMarker = L.marker(start, { icon: userIcon })
+        L.marker(start, { icon: userIcon })
           .addTo(map)
           .bindPopup(pickupLabel)
           .openPopup();
 
-        const dropMarker = L.marker(end, { icon: pinIcon })
+        L.marker(end, { icon: pinIcon })
           .addTo(map)
           .bindPopup(dropLabel)
           .openPopup();
-
-        control.on("routesfound", function (e) {
-          const route = e.routes[0];
-          const bounds = L.latLngBounds(
-            route.coordinates.map((coord) => L.latLng(coord.lat, coord.lng))
-          );
-          map.fitBounds(bounds.pad(0.2)); // Adds padding for better visibility
-        });
       }
-    })();
+    });
 
-    return () => map.removeControl(control);
+    return () => {
+      // Safely remove control on unmount
+      if (map && control) {
+        try {
+          map.removeControl(control);
+        } catch (err) {
+          console.warn("Failed to remove control:", err);
+        }
+      }
+    };
   }, [pickup, drop, routeColor, showTooltips, map]);
 
-  return null;
-}
-
-// Captures map clicks to update marker position (disabled for Android WebView use)
-function MapClickHandler({ setMarkerPos }) {
-  useMapEvents({
-    click: (e) => {
-      const { lat, lng } = e.latlng;
-      setMarkerPos([lat, lng]);
-    },
-  });
   return null;
 }
 
@@ -167,7 +170,7 @@ export default function Maps({
   }, [markerPos]);
 
   return (
-    <div style={{ height: "100vh", width: "100%" }}>
+    <div className="w-full h-full">
       <MapContainer
         center={defaultCenter}
         zoom={13}
@@ -178,7 +181,6 @@ export default function Maps({
           attribution='&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a>'
         />
 
-        {/* Location picker disabled on Android (disablePicker forced true) */}
         {!disablePicker && <MapClickHandler setMarkerPos={setMarkerPos} />}
 
         {position && (
