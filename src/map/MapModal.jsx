@@ -23,6 +23,7 @@ export default function MapModal({ isOpen, onClose, pickup, drop }) {
             disablePicker={true}
             routeColor="blue"
             showTooltips={true}
+            height="100%"
           />
         </div>
       </div>
