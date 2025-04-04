@@ -31,7 +31,7 @@ export default function BusinessVehicles() {
         }
         const vehicleQuery = query(
           collection(db, "vehicles"),
-          where("organizationId", "==", userId)
+          where("businessId", "==", userId)
         );
         const querySnapshot = await getDocs(vehicleQuery);
         const vehicleList = querySnapshot.docs.map((doc) => ({

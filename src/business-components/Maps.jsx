@@ -78,7 +78,7 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
       routeWhileDragging: false,
       addWaypoints: false,
       draggableWaypoints: false,
-      fitSelectedRoutes: false, // We'll do this manually
+      fitSelectedRoutes: true, // We'll do this manually
       show: false,
       router: L.Routing.mapbox(MAPBOX_ACCESS_TOKEN),
     });
@@ -212,5 +212,6 @@ export default function Maps({
         )}
       </MapContainer>
     </div>
+    
   );
 }

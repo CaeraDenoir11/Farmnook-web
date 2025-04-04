@@ -45,7 +45,7 @@ export default function BusinessProfile() {
 
           // Fetch total vehicles
           const vehiclesRef = collection(db, "vehicles");
-          const q = query(vehiclesRef, where("organizationId", "==", userId));
+          const q = query(vehiclesRef, where("businessId", "==", userId));
           const querySnapshot = await getDocs(q);
           setTotalVehicles(querySnapshot.size);
 
