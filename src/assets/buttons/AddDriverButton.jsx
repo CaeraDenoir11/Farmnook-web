@@ -1,16 +1,8 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { db, storage, auth } from "../../../configs/firebase";
-import {
-  collection,
-  addDoc,
-  serverTimestamp,
-} from "firebase/firestore";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from "firebase/storage";
+import { setDoc, doc, serverTimestamp } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 // ✅ NEW: Setup a secondary Firebase App and Auth instance
 import { initializeApp } from "firebase/app";
@@ -38,7 +30,7 @@ function AddDriverButton({ onAddDriver }) {
     lname: "",
     licenseNo: "",
     phone: "",
-    username: "",
+    email: "",
     password: "",
     confirmPassword: "",
   });
@@ -87,7 +79,7 @@ function AddDriverButton({ onAddDriver }) {
       // ✅ Create hauler account using secondaryAuth
       const userCredential = await createUserWithEmailAndPassword(
         secondaryAuth,
-        formData.username,
+        formData.email,
         formData.password
       );
       const haulerUid = userCredential.user.uid;
@@ -100,15 +92,16 @@ function AddDriverButton({ onAddDriver }) {
         firstName: formData.fname,
         lastName: formData.lname,
         licenseNo: formData.licenseNo,
+        email: formData.email,
         phoneNum: formData.phone,
-        profileImg: "", 
+        profileImg: "",
         businessAdminId: adminId,
         createdAt: serverTimestamp(),
         userType: "Hauler",
         status: false,
       };
 
-      await addDoc(collection(db, "users"), newHauler);
+      await setDoc(doc(db, "users", haulerUid), newHauler);
       console.log("Hauler account created successfully!");
 
       // Reset state
@@ -118,7 +111,7 @@ function AddDriverButton({ onAddDriver }) {
         lname: "",
         licenseNo: "",
         phone: "",
-        username: "",
+        email: "",
         password: "",
         confirmPassword: "",
       });
@@ -164,7 +157,7 @@ function AddDriverButton({ onAddDriver }) {
                 <label className="block font-semibold mb-1 md:mb-2 text-sm md:text-base">
                   Hauler Account
                 </label>
-                {["username", "password", "confirmPassword"].map((key) => (
+                {["email", "password", "confirmPassword"].map((key) => (
                   <div key={key} className="mb-1 md:mb-2">
                     <input
                       type={

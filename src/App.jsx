@@ -18,6 +18,7 @@ import BusinessReviews from "./business-components/Business-Reviews.jsx";
 import Maps from "./business-components/Maps.jsx";
 import BusinessProfile from "./business-components/Business-Profile.jsx";
 import logo from "./assets/images/document-logo.png";
+// import BusinessSubscriptionPayment from "./business-components/Business-Subscription-Payment";
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -88,6 +89,11 @@ export default function App() {
                       <Route path="/maps" element={<Maps />} />
                       <Route path="/reviews" element={<BusinessReviews />} />
                       <Route path="/profile" element={<BusinessProfile />} />
+                      {/* <Route
+                        path="/subscription-payment"
+                        element={<BusinessSubscriptionPayment />}
+                      /> */}
+
                       {/* ✅ Catch-all route to redirect to dashboard */}
                       <Route path="*" element={<Navigate to="/dashboard" />} />
                     </Routes>
