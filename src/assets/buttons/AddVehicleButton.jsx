@@ -71,7 +71,7 @@ function AddVehicleButton({ onAddVehicle }) {
       // ✅ Count all vehicles belonging to this user
       const vehicleQuery = query(
         collection(db, "vehicles"),
-        where("organizationId", "==", userId)
+        where("businessId", "==", userId)
       );
       const vehicleSnapshot = await getDocs(vehicleQuery);
       const totalVehicles = vehicleSnapshot.size;
