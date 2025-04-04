@@ -110,7 +110,7 @@ export default function BusinessDrivers() {
                     >
                       <td className="px-5 py-5 border-b border-gray-200 flex items-center gap-4">
                         <img
-                          src={user.profileImg || defaultImg}
+                          src={user.profileImageUrl || defaultImg}
                           alt="Driver"
                           className="rounded-full w-12 h-12 border-2 border-[#1A4D2E]"
                         />

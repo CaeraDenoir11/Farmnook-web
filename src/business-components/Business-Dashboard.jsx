@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { motion } from "framer-motion";
 import {
   AreaChart,
   Area,
@@ -8,7 +9,6 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
-import { motion } from "framer-motion";
 import {
   collection,
   query,
@@ -19,6 +19,9 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "../../configs/firebase";
 import MapModal from "../map/MapModal.jsx";
+import Maps from "./Maps";
+import Modal from "react-modal";
+import NotificationButton from "../assets/buttons/NotificationButton.jsx";
 
 const monthlyData = {
   January: [
@@ -47,6 +50,12 @@ export default function BusinessDashboard() {
   const [modalOpen, setModalOpen] = useState(false);
   const [mapPoints, setMapPoints] = useState({ pickup: "", drop: "" });
 
+  // Notification states
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch pending delivery requests
   useEffect(() => {
     const fetchRequests = async () => {
       const userId = auth.currentUser?.uid;
@@ -81,6 +90,42 @@ export default function BusinessDashboard() {
     fetchRequests();
   }, []);
 
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const userId = auth.currentUser?.uid;
+        if (!userId) return;
+
+        const q = query(
+          collection(db, "notifications"),
+          where("recipientId", "==", userId)
+        );
+        const snapshot = await getDocs(q);
+
+        const loadedNotifications = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            time: data.time?.toDate().toLocaleString() || "N/A",
+          };
+        });
+
+        setNotifications(loadedNotifications);
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+        setError("Failed to load notifications");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
   const totalTransactions = useMemo(() => {
     return monthlyData[selectedMonth].reduce(
       (total, entry) => total + entry.transactions,
@@ -97,7 +142,15 @@ export default function BusinessDashboard() {
     <div className="min-h-screen flex flex-col items-center ">
       <div className="h-[16.67vh] bg-[#1A4D2E] w-full flex py-8 px-12 shadow-md">
         <h1 className="text-2xl font-semibold text-white">Dashboard</h1>
+
+        {/* Notification Button */}
+        <NotificationButton
+          notifications={notifications}
+          loading={loading}
+          error={error}
+        />
       </div>
+
       <div className="relative w-full max-w-8xl mt-[-50px] flex flex-col md:flex-row gap-6 px-6 pt-6">
         <div className="bg-white p-6 rounded-2xl shadow-lg w-full md:w-3/4">
           <h2 className="text-xl font-bold text-[#1A4D2E] mb-4">

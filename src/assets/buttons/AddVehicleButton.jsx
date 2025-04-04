@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { db } from "../../../configs/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  query,
+  where,
+  getDocs,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 
 function AddVehicleButton({ onAddVehicle }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,18 +23,15 @@ function AddVehicleButton({ onAddVehicle }) {
     size: "",
   });
 
-  // License plate validation regex
   const plateRegex =
     /^(?:[A-Z]{3} \d{4}|\d{3}[A-Z]{3}|[A-Z]\d{3}[A-Z]{2}|[A-Z]{2}\d{3}[A-Z])$/;
 
-  // Handles input changes dynamically
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handles form submission and Firestore upload
   const handleSubmit = async () => {
-    setError(""); // Reset error before validation
+    setError("");
 
     if (
       !formData.model ||
@@ -52,18 +58,30 @@ function AddVehicleButton({ onAddVehicle }) {
 
       const newVehicle = {
         ...formData,
-        maxWeightKg: Number(formData.maxWeightKg), // Ensure correct data type
-        organizationId: userId, // Link vehicle to business admin
-        assignedDriverId: null, // No driver assigned initially
-        createdAt: serverTimestamp(), // Firestore-generated timestamp
+        maxWeightKg: Number(formData.maxWeightKg),
+        organizationId: userId,
+        assignedDriverId: null,
+        createdAt: serverTimestamp(),
       };
 
       const docRef = await addDoc(collection(db, "vehicles"), newVehicle);
       const savedVehicle = { id: docRef.id, ...newVehicle };
+      onAddVehicle(savedVehicle);
 
-      onAddVehicle(savedVehicle); // Update UI instantly
-      setIsOpen(false); // Close modal
-      setFormData({ model: "", plateNumber: "", maxWeightKg: "", size: "" }); // Reset form
+      // ✅ Count all vehicles belonging to this user
+      const vehicleQuery = query(
+        collection(db, "vehicles"),
+        where("organizationId", "==", userId)
+      );
+      const vehicleSnapshot = await getDocs(vehicleQuery);
+      const totalVehicles = vehicleSnapshot.size;
+
+      // ✅ Update the current user's totalVehicle field
+      const userDocRef = doc(db, "users", userId);
+      await updateDoc(userDocRef, { totalVehicle: totalVehicles });
+
+      setIsOpen(false);
+      setFormData({ model: "", plateNumber: "", maxWeightKg: "", size: "" });
     } catch (error) {
       console.error("Error adding vehicle:", error);
     } finally {
@@ -75,7 +93,6 @@ function AddVehicleButton({ onAddVehicle }) {
     <  >
       {/* Floating "Add Vehicle" button */}
       <div className="group fixed bottom-6 right-6 flex justify-center items-center text-white text-sm font-bold">
-        {/* Button */}
         <button
           onClick={() => setIsOpen(true)}
           className="shadow-md flex items-center group-hover:gap-2 bg-[#1A4D2E] text-[#F5EFE6] p-4 rounded-full cursor-pointer duration-300 hover:scale-110 hover:shadow-2xl"
@@ -87,22 +104,19 @@ function AddVehicleButton({ onAddVehicle }) {
         </button>
       </div>
 
-      {/* Vehicle input modal */}
       {isOpen && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 ">
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40">
           <div className="bg-[#F5EFE6] p-8 rounded-2xl shadow-2xl w-full max-w-md">
             <h2 className="text-2xl font-bold text-[#1A4D2E] text-center mb-6">
               Add Vehicle
             </h2>
 
-            {/* Error message */}
             {error && (
               <p className="text-red-600 text-center mb-4 font-semibold">
                 ⚠️ {error}
               </p>
             )}
 
-            {/* Input Fields */}
             <div className="space-y-4">
               <input
                 type="text"
@@ -141,7 +155,6 @@ function AddVehicleButton({ onAddVehicle }) {
               </select>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex justify-end mt-6 space-x-4">
               <button
                 onClick={() => setIsOpen(false)}
