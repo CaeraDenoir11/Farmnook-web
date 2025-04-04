@@ -58,10 +58,10 @@ function AddVehicleButton({ onAddVehicle }) {
 
       const newVehicle = {
         ...formData,
-        maxWeightKg: Number(formData.maxWeightKg),
-        organizationId: userId,
-        assignedDriverId: null,
-        createdAt: serverTimestamp(),
+        maxWeightKg: Number(formData.maxWeightKg), // Ensure correct data type
+        organizationId: userId, // Link vehicle to business admin
+        assignedDriverId: null, // No driver assigned initially
+        createdAt: serverTimestamp(), // Firestore-generated timestamp
       };
 
       const docRef = await addDoc(collection(db, "vehicles"), newVehicle);
@@ -90,7 +90,7 @@ function AddVehicleButton({ onAddVehicle }) {
   };
 
   return (
-    <  >
+    <>
       {/* Floating "Add Vehicle" button */}
       <div className="group fixed bottom-6 right-6 flex justify-center items-center text-white text-sm font-bold">
         <button
