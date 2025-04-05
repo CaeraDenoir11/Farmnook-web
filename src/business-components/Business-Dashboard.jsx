@@ -23,8 +23,9 @@ import MapModal from "../map/MapModal.jsx";
 import Maps from "./Maps";
 import Modal from "react-modal";
 import NotificationButton from "../assets/buttons/NotificationButton.jsx";
+import AcceptRequestButton from "../assets/buttons/AcceptRequestButton.jsx";
 
-// Static data for transaction chart
+// Mock transaction chart data
 const monthlyData = {
   January: [
     { week: "Week 1", transactions: 10 },
@@ -47,30 +48,27 @@ const monthlyData = {
 };
 
 export default function BusinessDashboard() {
-   // State variables
-   const [selectedMonth, setSelectedMonth] = useState("March"); // selected month for transaction chart
-   const [requests, setRequests] = useState([]); // delivery requests to display
-   const [loading, setLoading] = useState(true); // loading flag while fetching requests
-   const [modalOpen, setModalOpen] = useState(false); // map modal visibility
-   const [mapPoints, setMapPoints] = useState({ pickup: "", drop: "" }); // pickup & drop coordinates
-
-
-     // Notification states
+  // === State Setup ===
+  const [selectedMonth, setSelectedMonth] = useState("March");
+  const [requests, setRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [mapPoints, setMapPoints] = useState({ pickup: "", drop: "" });
+  const [haulerModalOpen, setHaulerModalOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch pending delivery requests
+  // === Fetch Pending Delivery Requests ===
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         setRequests([]);
-        setLoading(false);
+        setLoadingRequests(false);
         return;
       }
 
       try {
-        // Query delivery requests assigned to this business, not yet accepted
         const q = query(
           collection(db, "deliveryRequests"),
           where("businessId", "==", user.uid),
@@ -79,24 +77,34 @@ export default function BusinessDashboard() {
 
         const snapshot = await getDocs(q);
 
-        // For each request, enrich it with vehicle and farmer info
         const enrichedRequests = await Promise.all(
           snapshot.docs.map(async (docSnap) => {
             const data = docSnap.data();
 
-            // Get vehicle name
-            const vehicleRef = doc(db, "vehicles", data.vehicleId);
-            const vehicleDoc = await getDoc(vehicleRef);
-            const vehicleName = vehicleDoc.exists()
-              ? vehicleDoc.data().model || "Unknown"
-              : "Unknown";
+            // === Vehicle Info Fetch ===
+            let vehicleName = "Unknown";
+            try {
+              const vehicleRef = doc(db, "vehicles", data.vehicleId);
+              const vehicleDoc = await getDoc(vehicleRef);
+              if (vehicleDoc.exists()) {
+                vehicleName = vehicleDoc.data().model || "Unknown";
+              }
+            } catch (err) {
+              console.error("Error fetching vehicle:", err);
+            }
 
-            // Get farmer name from 'users' collection
-            const farmerRef = doc(db, "users", data.farmerId);
-            const farmerDoc = await getDoc(farmerRef);
-            const farmerName = farmerDoc.exists()
-              ? `${farmerDoc.data().firstName} ${farmerDoc.data().lastName}`
-              : "Unknown Farmer";
+            // === Farmer Info Fetch ===
+            let farmerName = "Unknown Farmer";
+            try {
+              const farmerRef = doc(db, "users", data.farmerId);
+              const farmerDoc = await getDoc(farmerRef);
+              if (farmerDoc.exists()) {
+                const farmerData = farmerDoc.data();
+                farmerName = `${farmerData.firstName} ${farmerData.lastName}`;
+              }
+            } catch (err) {
+              console.error("Error fetching farmer:", err);
+            }
 
             return {
               ...data,
@@ -108,28 +116,30 @@ export default function BusinessDashboard() {
         );
 
         setRequests(enrichedRequests);
+        console.log("Requests length:", enrichedRequests.length);
       } catch (error) {
         console.error("Error fetching delivery requests:", error);
       } finally {
-        setLoading(false);
+        setLoadingRequests(false);
       }
     });
 
-    return () => unsubscribe(); // Cleanup listener on unmount
+    return () => unsubscribe();
   }, []);
 
-  // Fetch notifications
+  // === Fetch Notifications ===
   useEffect(() => {
-    const fetchNotifications = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const userId = auth.currentUser?.uid;
-        if (!userId) return;
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setNotifications([]);
+        setLoadingNotifications(false);
+        return;
+      }
 
+      try {
         const q = query(
           collection(db, "notifications"),
-          where("recipientId", "==", userId)
+          where("recipientId", "==", user.uid)
         );
         const snapshot = await getDocs(q);
 
@@ -147,50 +157,14 @@ export default function BusinessDashboard() {
         console.error("Error fetching notifications:", err);
         setError("Failed to load notifications");
       } finally {
-        setLoading(false);
+        setLoadingNotifications(false);
       }
-    };
+    });
 
-    fetchNotifications();
+    return () => unsubscribe();
   }, []);
 
-  // Fetch notifications
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const userId = auth.currentUser?.uid;
-        if (!userId) return;
-
-        const q = query(
-          collection(db, "notifications"),
-          where("recipientId", "==", userId)
-        );
-        const snapshot = await getDocs(q);
-
-        const loadedNotifications = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            time: data.time?.toDate().toLocaleString() || "N/A",
-          };
-        });
-
-        setNotifications(loadedNotifications);
-      } catch (err) {
-        console.error("Error fetching notifications:", err);
-        setError("Failed to load notifications");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNotifications();
-  }, []);
-
-  // Calculate total transactions for selected month
+  // === Chart Calculation ===
   const totalTransactions = useMemo(() => {
     return monthlyData[selectedMonth].reduce(
       (total, entry) => total + entry.transactions,
@@ -198,37 +172,35 @@ export default function BusinessDashboard() {
     );
   }, [selectedMonth]);
 
-  // Open the map modal with pickup/drop locations
+  // === Map Modal Trigger ===
   const openMapModal = (pickup, drop) => {
     setMapPoints({ pickup, drop });
     setModalOpen(true);
   };
 
+  // === Render ===
   return (
     <div className="min-h-screen flex flex-col items-center">
-      {/* Top Header */}
+      {/* === Top Header === */}
       <div className="h-[16.67vh] bg-[#1A4D2E] w-full flex py-8 px-12 shadow-md">
         <h1 className="text-2xl font-semibold text-white">Dashboard</h1>
-
-        {/* Notification Button */}
         <NotificationButton
           notifications={notifications}
-          loading={loading}
+          loading={loadingNotifications}
           error={error}
         />
       </div>
 
-      {/* Main content area */}
+      {/* === Main Content === */}
       <div className="relative w-full max-w-8xl mt-[-50px] flex flex-col md:flex-row gap-6 px-6 pt-6">
-        {/* Left panel: Delivery Requests */}
+        {/* === Delivery Requests Panel === */}
         <div className="bg-white p-6 rounded-2xl shadow-lg w-full md:w-3/4">
           <h2 className="text-xl font-bold text-[#1A4D2E] mb-4">
             Delivery Requests
           </h2>
 
           <div className="space-y-4 overflow-y-auto max-h-100 auto-hide-scrollbar">
-            {/* Show loading state */}
-            {loading ? (
+            {loadingRequests ? (
               <p className="text-gray-400">Loading requests...</p>
             ) : requests.length === 0 ? (
               <p className="text-gray-500">No pending delivery requests.</p>
@@ -236,7 +208,7 @@ export default function BusinessDashboard() {
               requests.map((req) => (
                 <div
                   key={req.id}
-                  className="p-4 bg-[#F5EFE6]  rounded-lg shadow flex justify-between items-start"
+                  className="p-4 bg-[#F5EFE6] rounded-lg shadow flex justify-between items-start"
                 >
                   <div>
                     <p className="text-lg text-[#1A4D2E]">
@@ -246,9 +218,7 @@ export default function BusinessDashboard() {
                       {req.vehicleName}
                     </h4>
                   </div>
-
                   <div className="flex flex-col items-end justify-between gap-2">
-                    {/* Button to open map modal */}
                     <button
                       className="text-blue-600 text-sm underline"
                       onClick={() =>
@@ -260,9 +230,10 @@ export default function BusinessDashboard() {
                     >
                       Details
                     </button>
-
-                    {/* Accept button (future functionality) */}
-                    <button className="mt-2 px-4 py-1 bg-[#1A4D2E] text-white text-sm rounded-lg">
+                    <button
+                      className="mt-2 px-4 py-1 bg-[#1A4D2E] text-white text-sm rounded-lg"
+                      onClick={() => setHaulerModalOpen(true)}
+                    >
                       Accept
                     </button>
                   </div>
@@ -272,7 +243,7 @@ export default function BusinessDashboard() {
           </div>
         </div>
 
-        {/* Right panel: Monthly Transactions Graph */}
+        {/* === Monthly Transactions Panel === */}
         <div className="bg-white p-6 rounded-2xl shadow-lg w-full md:w-3/8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-[#1A4D2E]">
@@ -291,7 +262,6 @@ export default function BusinessDashboard() {
             </select>
           </div>
 
-          {/* Animated total count */}
           <motion.p
             className="text-lg font-semibold text-[#1A4D2E] mb-2 text-center"
             initial={{ opacity: 0 }}
@@ -301,7 +271,6 @@ export default function BusinessDashboard() {
             Total Transactions: {totalTransactions}
           </motion.p>
 
-          {/* Chart */}
           <div className="w-full h-72 bg-gray-100 p-4 rounded-lg">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
@@ -342,8 +311,12 @@ export default function BusinessDashboard() {
           </div>
         </div>
       </div>
+      <AcceptRequestButton
+        isOpen={haulerModalOpen}
+        onClose={() => setHaulerModalOpen(false)}
+      />
 
-      {/* Map Modal to show pickup/destination route */}
+      {/* === Map Modal === */}
       <MapModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
