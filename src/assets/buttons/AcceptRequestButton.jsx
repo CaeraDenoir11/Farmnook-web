@@ -4,8 +4,14 @@ import { db } from "../../../configs/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import defaultImg from "../../assets/images/default.png";
 import Modal from "react-modal";
+import SendPushNotifications from "../../business-components/features/SendPushNotifications.jsx";
 
-export default function AcceptRequestButton({ isOpen, onClose }) {
+export default function AcceptRequestButton({
+  isOpen,
+  onClose,
+  req,
+  setRequests,
+}) {
   const [haulers, setHaulers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -66,15 +72,7 @@ export default function AcceptRequestButton({ isOpen, onClose }) {
                   {hauler.firstName} {hauler.lastName}
                 </span>
               </div>
-              <button
-                className="bg-[#1A4D2E] text-white text-sm px-4 py-1 rounded-lg hover:bg-[#163b22] transition"
-                onClick={() => {
-                  // assign logic here later
-                  console.log("Assign", hauler.id);
-                }}
-              >
-                Assign
-              </button>
+              <SendPushNotifications req={req} setRequests={setRequests} />
             </div>
           ))
         )}

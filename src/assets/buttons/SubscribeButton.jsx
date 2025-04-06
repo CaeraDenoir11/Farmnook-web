@@ -50,7 +50,7 @@ export default function SubscribeButton() {
     try {
       const subscriptionsRef = collection(db, "subscriptions");
       const subscriptionRef = await addDoc(subscriptionsRef, {
-        userId: user.uid,
+        businessId: user.uid,
         dateTimeAvailment: serverTimestamp(),
       });
 
