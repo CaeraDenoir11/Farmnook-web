@@ -23,7 +23,7 @@ import MapModal from "../map/MapModal.jsx";
 import Maps from "./Maps";
 import Modal from "react-modal";
 import NotificationButton from "../assets/buttons/NotificationButton.jsx";
-import AcceptRequestButton from "../assets/buttons/AcceptRequestButton.jsx";
+import AcceptRequestModal from "../assets/buttons/AcceptRequestButton.jsx";
 
 // Mock transaction chart data
 const monthlyData = {
@@ -55,7 +55,7 @@ export default function BusinessDashboard() {
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [mapPoints, setMapPoints] = useState({ pickup: "", drop: "" });
-  const [haulerModalOpen, setHaulerModalOpen] = useState(false);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
   const [error, setError] = useState(null);
@@ -235,7 +235,7 @@ export default function BusinessDashboard() {
                       className="mt-2 px-4 py-1 bg-[#1A4D2E] text-white text-sm rounded-lg"
                       onClick={() => {
                         setSelectedRequest(req);
-                        setHaulerModalOpen(true);
+                        setAssignModalOpen(true);
                       }}
                     >
                       Accept
@@ -315,9 +315,14 @@ export default function BusinessDashboard() {
           </div>
         </div>
       </div>
-      <AcceptRequestButton
-        isOpen={haulerModalOpen}
-        onClose={() => setHaulerModalOpen(false)}
+      <AcceptRequestModal
+        isOpen={assignModalOpen}
+        onClose={() => setAssignModalOpen(false)}
+        onAssign={(hauler) => {
+          console.log("You selected hauler:", hauler);
+          // TODO: Add assignment logic here
+          setAssignModalOpen(false);
+        }}
         req={selectedRequest}
         setRequests={setRequests}
       />
