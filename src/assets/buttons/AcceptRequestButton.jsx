@@ -3,18 +3,9 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../../../configs/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import defaultImg from "../../assets/images/default.png";
+import Modal from "react-modal";
 
-/**
- * AcceptRequestModal Component
- * - Displays a modal that allows assigning a hauler to a request.
- * - Fetches haulers tied to current authenticated business admin.
- *
- * Props:
- * @param {boolean} isOpen - Determines if modal is visible.
- * @param {Function} onClose - Callback to close the modal.
- * @param {Function} onAssign - Callback triggered when a hauler is assigned.
- */
-function AcceptRequestModal({ isOpen, onClose, onAssign }) {
+export default function AcceptRequestButton({ isOpen, onClose }) {
   const [haulers, setHaulers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -69,39 +60,46 @@ function AcceptRequestModal({ isOpen, onClose, onAssign }) {
           Assign a Hauler
         </h2>
 
-        <div className="overflow-y-auto max-h-[65vh] pr-1 custom-scroll">
-          {haulers.length === 0 ? (
-            <p className="text-gray-400 text-center text-sm">
-              No haulers found.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {haulers.map((hauler) => (
-                <div
-                  key={hauler.id}
-                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-3 bg-white rounded-xl border border-[#1A4D2E] shadow"
-                >
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={hauler.profileImageUrl || defaultImg}
-                      alt="Hauler"
-                      className="w-10 h-10 rounded-full border-2 border-[#1A4D2E]"
-                    />
-                    <span className="text-[#1A4D2E] font-medium">
-                      {hauler.firstName} {hauler.lastName}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => onAssign?.(hauler)}
-                    className="bg-[#1A4D2E] text-white text-sm px-4 py-1 rounded-lg hover:bg-[#145C38] transition-all"
-                  >
-                    Assign
-                  </button>
-                </div>
-              ))}
+      <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scroll">
+        {haulers.length === 0 ? (
+          <p className="text-gray-400 text-sm">No haulers found.</p>
+        ) : (
+          haulers.map((hauler) => (
+            <div
+              key={hauler.id}
+              className="flex items-center justify-between p-3 bg-[#F5EFE6] rounded-lg shadow"
+            >
+              <div className="flex items-center gap-4">
+                <img
+                  src={hauler.profileImageUrl || defaultImg}
+                  alt="Profile"
+                  className="w-10 h-10 rounded-full border-2 border-[#1A4D2E]"
+                />
+                <span className="text-[#1A4D2E] font-medium">
+                  {hauler.firstName} {hauler.lastName}
+                </span>
+              </div>
+              <button
+                className="bg-[#1A4D2E] text-white text-sm px-4 py-1 rounded-lg hover:bg-[#163b22] transition"
+                onClick={() => {
+                  // assign logic here later
+                  console.log("Assign", hauler.id);
+                }}
+              >
+                Assign
+              </button>
             </div>
-          )}
-        </div>
+          ))
+        )}
+      </div>
+
+      <div className="mt-6 flex justify-end">
+        <button
+          className="text-sm text-[#1A4D2E] hover:underline"
+          onClick={onClose}
+        >
+          Close
+        </button>
       </div>
     </div>
   );
