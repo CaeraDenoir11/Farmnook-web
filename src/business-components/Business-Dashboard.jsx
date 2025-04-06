@@ -51,6 +51,7 @@ export default function BusinessDashboard() {
   // === State Setup ===
   const [selectedMonth, setSelectedMonth] = useState("March");
   const [requests, setRequests] = useState([]);
+  const [selectedRequest, setSelectedRequest] = useState(null);
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [mapPoints, setMapPoints] = useState({ pickup: "", drop: "" });
@@ -232,7 +233,10 @@ export default function BusinessDashboard() {
                     </button>
                     <button
                       className="mt-2 px-4 py-1 bg-[#1A4D2E] text-white text-sm rounded-lg"
-                      onClick={() => setHaulerModalOpen(true)}
+                      onClick={() => {
+                        setSelectedRequest(req);
+                        setHaulerModalOpen(true);
+                      }}
                     >
                       Accept
                     </button>
@@ -314,6 +318,8 @@ export default function BusinessDashboard() {
       <AcceptRequestButton
         isOpen={haulerModalOpen}
         onClose={() => setHaulerModalOpen(false)}
+        req={selectedRequest}
+        setRequests={setRequests}
       />
 
       {/* === Map Modal === */}
