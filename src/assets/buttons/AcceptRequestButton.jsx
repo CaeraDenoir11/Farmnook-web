@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../../../configs/firebase";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  doc,
+  updateDoc,
+  addDoc,
+} from "firebase/firestore";
 import defaultImg from "../../assets/images/default.png";
 
 /**
@@ -13,10 +21,14 @@ import defaultImg from "../../assets/images/default.png";
  * @param {boolean} isOpen - Determines if modal is visible.
  * @param {Function} onClose - Callback to close the modal.
  * @param {Function} onAssign - Callback triggered when a hauler is assigned.
+ * @param {Object} req - The selected delivery request.
+ * @param {Function} setRequests - Function to update the delivery requests list.
  */
-function AcceptRequestModal({ isOpen, onClose, onAssign }) {
+function AcceptRequestModal({ isOpen, onClose, onAssign, req, setRequests }) {
   const [haulers, setHaulers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [loadingHaulerId, setLoadingHaulerId] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
 
   // === Monitor auth state to track logged-in user ===
   useEffect(() => {
@@ -67,6 +79,13 @@ function AcceptRequestModal({ isOpen, onClose, onAssign }) {
           Assign a Hauler
         </h2>
 
+        {/* Success Alert */}
+        {successMessage && (
+          <div className="bg-green-100 text-green-700 text-sm px-4 py-2 mb-4 rounded-lg text-center">
+            {successMessage}
+          </div>
+        )}
+
         {/* Hauler List */}
         <div className="overflow-y-auto max-h-[65vh] pr-1 custom-scroll">
           {haulers.length === 0 ? (
@@ -91,27 +110,51 @@ function AcceptRequestModal({ isOpen, onClose, onAssign }) {
                     </span>
                   </div>
                   <button
-                    onClick={() => {
-                      onAssign?.(hauler);
+                    onClick={async () => {
+                      try {
+                        setLoadingHaulerId(hauler.id);
+
+                        // 1. Update deliveryRequest
+                        const requestRef = doc(db, "deliveryRequests", req.id);
+                        await updateDoc(requestRef, { isAccepted: true });
+
+                        // 2. Create new delivery entry
+                        await addDoc(collection(db, "deliveries"), {
+                          requestId: req.id,
+                          haulerAssignedId: hauler.id,
+                          createdAt: new Date(),
+                        });
+
+                        // 3. Update parent requests list
+                        setRequests((prev) =>
+                          prev.filter((item) => item.id !== req.id)
+                        );
+
+                        // 4. Optional external callback
+                        onAssign?.(hauler);
+
+                        // 5. Show alert
+                        setSuccessMessage("Successfully assigned hauler!");
+
+                        setTimeout(() => {
+                          setSuccessMessage("");
+                          setLoadingHaulerId(null);
+                          onClose();
+                        }, 2000); // enough time to view alert
+                      } catch (error) {
+                        console.error("Assignment failed:", error);
+                        setLoadingHaulerId(null);
+                      }
                     }}
-                    className="bg-[#1A4D2E] text-white text-sm px-4 py-1 rounded-lg hover:bg-[#145C38] transition-all"
+                    className="bg-[#1A4D2E] text-white text-sm px-4 py-1 rounded-lg hover:bg-[#145C38] transition-all disabled:opacity-60"
+                    disabled={loadingHaulerId !== null}
                   >
-                    Assign
+                    {loadingHaulerId === hauler.id ? "Assigning..." : "Assign"}
                   </button>
                 </div>
               ))}
             </div>
           )}
-        </div>
-
-        {/* Footer (optional) */}
-        <div className="mt-6 flex justify-end">
-          <button
-            className="px-4 py-2 bg-[#1A4D2E] text-white rounded-lg hover:bg-[#145C38] transition-all"
-            onClick={onClose}
-          >
-            Close
-          </button>
         </div>
       </div>
     </div>
