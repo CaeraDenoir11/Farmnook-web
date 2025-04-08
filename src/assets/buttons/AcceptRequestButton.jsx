@@ -1,36 +1,35 @@
+// === AcceptRequestModal.jsx ===
+// Modal for assigning a hauler to a delivery request.
+// Now handles Firestore update, delivery creation, and OneSignal push notification to the Android phone.
+
 import { useEffect, useState } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { db } from "../../../configs/firebase";
 import {
   collection,
   query,
   where,
   onSnapshot,
   doc,
-  updateDoc,
+  setDoc,
   addDoc,
+  getDoc,
+  Timestamp,
 } from "firebase/firestore";
+import { db } from "../../../configs/firebase";
 import defaultImg from "../../assets/images/default.png";
 
-/**
- * AcceptRequestModal Component
- * - Displays a modal that allows assigning a hauler to a request.
- * - Fetches haulers tied to current authenticated business admin.
- *
- * Props:
- * @param {boolean} isOpen - Determines if modal is visible.
- * @param {Function} onClose - Callback to close the modal.
- * @param {Function} onAssign - Callback triggered when a hauler is assigned.
- * @param {Object} req - The selected delivery request.
- * @param {Function} setRequests - Function to update the delivery requests list.
- */
-function AcceptRequestModal({ isOpen, onClose, onAssign, req, setRequests }) {
+export default function AcceptRequestModal({
+  isOpen,
+  onClose,
+  onAssign,
+  req,
+  setRequests,
+}) {
   const [haulers, setHaulers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [loadingHaulerId, setLoadingHaulerId] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
 
-  // === Monitor auth state to track logged-in user ===
   useEffect(() => {
     const auth = getAuth();
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -39,16 +38,13 @@ function AcceptRequestModal({ isOpen, onClose, onAssign, req, setRequests }) {
     return () => unsub();
   }, []);
 
-  // === Fetch haulers for the authenticated admin ===
   useEffect(() => {
     if (!currentUser) return;
-
     const q = query(
       collection(db, "users"),
       where("businessAdminId", "==", currentUser.uid),
       where("userType", "==", "Hauler")
     );
-
     const unsub = onSnapshot(q, (snapshot) => {
       const haulerList = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -56,37 +52,119 @@ function AcceptRequestModal({ isOpen, onClose, onAssign, req, setRequests }) {
       }));
       setHaulers(haulerList);
     });
-
     return () => unsub();
   }, [currentUser]);
+
+  const sendPushNotification = async (playerIds, title, message) => {
+    try {
+      const response = await fetch(
+        "https://onesignal.com/api/v1/notifications",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              "Basic os_v2_app_jzlhh64njvhonitip6vz2oil46g64bdagwdumafaqquyisuuucapph6jnfwofmjcs3oaauutfhxzdq6sbyu72jgbiktprkewj5uty5y",
+          },
+          body: JSON.stringify({
+            app_id: "4e5673fb-8d4d-4ee6-a268-7fab9d390be7",
+            include_player_ids: playerIds,
+            headings: { en: title },
+            contents: { en: message },
+            data: { openTarget: "NotificationActivity" },
+          }),
+        }
+      );
+      const result = await response.json();
+      console.log("Push notification sent:", result);
+    } catch (error) {
+      console.error("Error sending push notification:", error);
+    }
+  };
+
+  const handleAssign = async (hauler) => {
+    try {
+      setLoadingHaulerId(hauler.id);
+
+      // 1. Mark request as accepted
+      await setDoc(doc(db, "deliveryRequests", req.id), {
+        ...req,
+        isAccepted: true,
+      });
+
+      // 2. Add to deliveries collection
+      await addDoc(collection(db, "deliveries"), {
+        requestId: req.id,
+        haulerAssignedId: hauler.id,
+        createdAt: new Date(),
+      });
+
+      // 3. Update UI
+      setRequests((prev) => prev.filter((item) => item.id !== req.id));
+      onAssign?.(hauler);
+
+      // 4. Create Firestore notification
+      const businessId = currentUser.uid;
+      const businessDoc = await getDoc(doc(db, "users", businessId));
+      const businessData = businessDoc.exists() ? businessDoc.data() : {};
+      const businessName = businessData?.businessName || "Your Business";
+      const message = `Your delivery request has been accepted, the hauler is on your way ${businessName}`;
+
+      const notifRef = doc(collection(db, "notifications"));
+      await setDoc(notifRef, {
+        notificationId: notifRef.id,
+        farmerId: req.farmerId,
+        recipientId: req.farmerId,
+        title: businessName,
+        message,
+        timestamp: Timestamp.now(),
+        isRead: false,
+      });
+
+      // 5. Send OneSignal push
+      const farmerDoc = await getDoc(doc(db, "users", req.farmerId));
+      const farmerData = farmerDoc.exists() ? farmerDoc.data() : null;
+      const validPlayerIds = (farmerData?.playerIds || []).filter(
+        (id) => typeof id === "string" && id.length >= 10
+      );
+      if (validPlayerIds.length) {
+        await sendPushNotification(validPlayerIds, businessName, message);
+      } else {
+        console.warn("No valid playerIds found for farmer:", req.farmerId);
+      }
+
+      // 6. Show success message
+      setSuccessMessage("Successfully assigned hauler!");
+      setTimeout(() => {
+        setSuccessMessage("");
+        onClose();
+      }, 2000);
+    } catch (err) {
+      console.error("Error assigning hauler:", err);
+    } finally {
+      setLoadingHaulerId(null);
+    }
+  };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 z-50 p-4">
-      <div className="relative bg-[#F5EFE6] p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-hidden">
-        {/* Close Button */}
+      <div className="relative bg-[#F5EFE6] p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-[#1A4D2E] hover:text-[#145C38] text-xl font-bold"
-          aria-label="Close"
+          className="absolute top-4 right-4 text-[#1A4D2E] text-xl font-bold"
         >
           ×
         </button>
-
-        {/* Title */}
         <h2 className="text-2xl font-bold text-[#1A4D2E] text-center mb-6">
           Assign a Hauler
         </h2>
-
-        {/* Success Alert */}
         {successMessage && (
           <div className="bg-green-100 text-green-700 text-sm px-4 py-2 mb-4 rounded-lg text-center">
             {successMessage}
           </div>
         )}
-
-        {/* Hauler List */}
         <div className="overflow-y-auto max-h-[65vh] pr-1 custom-scroll">
           {haulers.length === 0 ? (
             <p className="text-gray-400 text-center text-sm">
@@ -110,43 +188,8 @@ function AcceptRequestModal({ isOpen, onClose, onAssign, req, setRequests }) {
                     </span>
                   </div>
                   <button
-                    onClick={async () => {
-                      try {
-                        setLoadingHaulerId(hauler.id);
-
-                        // 1. Update deliveryRequest
-                        const requestRef = doc(db, "deliveryRequests", req.id);
-                        await updateDoc(requestRef, { isAccepted: true });
-
-                        // 2. Create new delivery entry
-                        await addDoc(collection(db, "deliveries"), {
-                          requestId: req.id,
-                          haulerAssignedId: hauler.id,
-                          createdAt: new Date(),
-                        });
-
-                        // 3. Update parent requests list
-                        setRequests((prev) =>
-                          prev.filter((item) => item.id !== req.id)
-                        );
-
-                        // 4. Optional external callback
-                        onAssign?.(hauler);
-
-                        // 5. Show alert
-                        setSuccessMessage("Successfully assigned hauler!");
-
-                        setTimeout(() => {
-                          setSuccessMessage("");
-                          setLoadingHaulerId(null);
-                          onClose();
-                        }, 2000); // enough time to view alert
-                      } catch (error) {
-                        console.error("Assignment failed:", error);
-                        setLoadingHaulerId(null);
-                      }
-                    }}
-                    className="bg-[#1A4D2E] text-white text-sm px-4 py-1 rounded-lg hover:bg-[#145C38] transition-all disabled:opacity-60"
+                    onClick={() => handleAssign(hauler)}
+                    className="bg-[#1A4D2E] text-white text-sm px-4 py-1 rounded-lg hover:bg-[#145C38] transition-all disabled:opacity-50"
                     disabled={loadingHaulerId !== null}
                   >
                     {loadingHaulerId === hauler.id ? "Assigning..." : "Assign"}
@@ -160,5 +203,3 @@ function AcceptRequestModal({ isOpen, onClose, onAssign, req, setRequests }) {
     </div>
   );
 }
-
-export default AcceptRequestModal;
