@@ -18,6 +18,7 @@ import BusinessReviews from "./business-components/Business-Reviews.jsx";
 import Maps from "./business-components/Maps.jsx";
 import BusinessProfile from "./business-components/Business-Profile.jsx";
 import logo from "./assets/images/document-logo.png";
+import Onesignal from 'react-onesignal';
 // import BusinessSubscriptionPayment from "./business-components/Business-Subscription-Payment";
 
 export default function App() {
@@ -48,6 +49,20 @@ export default function App() {
     localStorage.setItem("userRole", role);
     localStorage.setItem("activePage", activePage);
   }, [isAuthenticated, role, activePage]);
+
+  useEffect(() => {
+    window.OneSignal = window.OneSignal || [];
+    OneSignal.push(() => {
+      OneSignal.init({
+        appId: "4e5673fb-8d4d-4ee6-a268-7fab9d390be7",
+        notifyButton: { enable: true },
+        allowLocalhostAsSecureOrigin: true,
+      });
+
+      // Optional: Prompt for permissions
+      OneSignal.showSlidedownPrompt();
+    });
+  }, []);
 
   return (
     <Router>

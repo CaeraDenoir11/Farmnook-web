@@ -136,7 +136,7 @@ export default function BusinessDashboard() {
       try {
         const q = query(
           collection(db, "notifications"),
-          where("recipientId", "==", user.uid)
+          where("businessId", "==", user.uid)
         );
         const snapshot = await getDocs(q);
         const loadedNotifications = snapshot.docs.map((doc) => {
