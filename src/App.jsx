@@ -18,7 +18,7 @@ import BusinessReviews from "./business-components/Business-Reviews.jsx";
 import Maps from "./business-components/Maps.jsx";
 import BusinessProfile from "./business-components/Business-Profile.jsx";
 import logo from "./assets/images/document-logo.png";
-import Onesignal from 'react-onesignal';
+import OneSignal from "react-onesignal";
 // import BusinessSubscriptionPayment from "./business-components/Business-Subscription-Payment";
 
 export default function App() {
@@ -51,24 +51,33 @@ export default function App() {
   }, [isAuthenticated, role, activePage]);
 
   useEffect(() => {
-    window.OneSignal = window.OneSignal || [];
-    OneSignal.push(() => {
+    if (typeof window !== "undefined" && !window.OneSignalInitialized) {
       OneSignal.init({
         appId: "4e5673fb-8d4d-4ee6-a268-7fab9d390be7",
-        notifyButton: { enable: true },
         allowLocalhostAsSecureOrigin: true,
+        notifyButton: {
+          enable: false,
+        },
       });
-
-      // Optional: Prompt for permissions
-      OneSignal.showSlidedownPrompt();
-    });
+      window.OneSignalInitialized = true;
+      console.log("✅ OneSignal initialized!");
+    }
   }, []);
 
   return (
     <Router>
       <Routes>
         {/* ✅ Redirect "/" to "/login" */}
-        <Route path="/" element={<Navigate to="/login" />} />
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/dashboard" />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
 
         {/* ✅ Public Route for Maps - Always accessible */}
         <Route path="/maps" element={<Maps />} />

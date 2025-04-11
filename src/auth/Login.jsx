@@ -8,7 +8,7 @@ import {
   getDocs,
   doc,
   setDoc,
-  arrayUnion
+  arrayUnion,
 } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
@@ -33,8 +33,12 @@ export default function Login({ setIsAuthenticated, setRole }) {
     setLoading(true);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const uid = userCredential.user.uid;// Authenticated user
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const uid = userCredential.user.uid; // Authenticated user
 
       let role = "";
       let userId = "";
@@ -43,7 +47,7 @@ export default function Login({ setIsAuthenticated, setRole }) {
       const userQuery = query(
         collection(db, "users"),
         where("email", "==", email.toLowerCase()),
-        where("userType", "==", "Hauler Business Admin"),
+        where("userType", "==", "Hauler Business Admin")
       );
 
       const userSnapshot = await getDocs(userQuery);
@@ -70,59 +74,12 @@ export default function Login({ setIsAuthenticated, setRole }) {
 
       // If the user is neither Hauler Business Admin nor Super Admin, deny access
       if (!role) {
-        setError("Access denied. Only Hauler Business Admins and Super Admins can log in.");
+        setError(
+          "Access denied. Only Hauler Business Admins and Super Admins can log in."
+        );
         setLoading(false);
         return;
       }
-
-      const OneSignal = window.OneSignal;
-
-      async function getPlayerId(timeout = 5000) {
-        return new Promise((resolve, reject) => {
-          const startTime = Date.now();
-
-          const check = async () => {
-            try {
-              const id = OneSignal?.User?.PushSubscription?.id;
-
-              if (id) {
-                resolve(id);
-              } else if (Date.now() - startTime >= timeout) {
-                reject("Timeout waiting for OneSignal playerId");
-              } else {
-                setTimeout(check, 500);
-              }
-            } catch (e) {
-              reject("Error getting playerId: " + e.message);
-            }
-          };
-
-          check();
-        });
-      }
-
-      try {
-        // Ask for push permission
-        await OneSignal.User.PushSubscription.optIn();
-
-        const playerId = await getPlayerId();
-        console.log("📡 Player ID:", playerId);
-
-        if (playerId && userId && role === "business-admin") {
-          await setDoc(
-            doc(db, "users", userId),
-            {
-              playerIds: arrayUnion(playerId),
-            },
-            { merge: true }
-          );
-        }
-      } catch (err) {
-        console.warn("❌ Failed to get OneSignal playerId:", err);
-      }
-      console.log("🔍 Subscribed:", await OneSignal.User.PushSubscription.optedIn);
-      console.log("OneSignal Object:", OneSignal);
-      console.log("PushSubscription ID:", OneSignal?.User?.PushSubscription?.id);
 
       // Store authentication state
       setIsAuthenticated(true);
@@ -132,6 +89,29 @@ export default function Login({ setIsAuthenticated, setRole }) {
       localStorage.setItem("userId", userId);
 
       navigate("/dashboard");
+
+      setTimeout(async () => {
+        try {
+          await OneSignal.User.PushSubscription.optIn();
+          const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
+          if (!isSubscribed) return;
+
+          const playerId = OneSignal.User.PushSubscription.id;
+          console.log("📡 Player ID:", playerId);
+
+          if (playerId && role === "business-admin") {
+            await setDoc(
+              doc(db, "users", userId),
+              {
+                playerIds: arrayUnion(playerId),
+              },
+              { merge: true }
+            );
+          }
+        } catch (err) {
+          console.warn("❌ Failed to set OneSignal playerId:", err);
+        }
+      }, 0);
     } catch (error) {
       console.error("🔥 Login error:", error); // <== Add this
       setError("Login failed. Please check your credentials and try again.");

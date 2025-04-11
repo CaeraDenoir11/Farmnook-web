@@ -24,8 +24,10 @@ export default function NotificationButton({
       </button>
 
       {showNotifications && (
-        <div className="absolute right-0 w-[420px] bg-white text-black rounded-md shadow-lg max-h-[400px] overflow-y-auto z-50">
-          <h3 className="font-semibold px-4 py-2 border-b">Notifications</h3>
+        <div className="absolute right-0 w-[500px] bg-white text-black rounded-md shadow-lg max-h-[400px] overflow-y-auto z-50">
+          <h3 className="font-semibold px-4 py-2 border-b mb-2">
+            Notifications
+          </h3>
 
           {loading ? (
             <p className="px-4 py-2">Loading...</p>
@@ -39,7 +41,7 @@ export default function NotificationButton({
             notifications.map((notif) => (
               <div
                 key={notif.id}
-                className="flex justify-between items-center bg-gray-200 rounded-md px-4 py-2 mb-2 mx-2"
+                className="flex justify-between items-center bg-gray-200 rounded-md px-1 py-2 mb-2 mx-2"
               >
                 <div className="flex-1">
                   <p className="font-bold text-sm mb-1">{notif.title}</p>
@@ -47,8 +49,10 @@ export default function NotificationButton({
                     {notif.message}
                   </p>
                 </div>
-                <div className="text-right text-sm text-gray-600 whitespace-nowrap px-4">
-                  <p>{notif.time}</p>
+                <div className="text-right text-sm text-gray-600 whitespace-nowrap px-4 flex flex-col items-end">
+                  <p>
+                    {notif.time}, {notif.date}
+                  </p>
                 </div>
               </div>
             ))
