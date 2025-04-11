@@ -9,6 +9,11 @@ export default function NotificationButton({
 }) {
   const [showNotifications, setShowNotifications] = useState(false);
 
+  const sortedNotifications = notifications.slice().sort((a, b) => {
+    const aDate = new Date(`${a.date} ${a.time}`);
+    const bDate = new Date(`${b.date} ${b.time}`);
+    return bDate - aDate;
+  });
   return (
     <div className="relative ml-auto">
       <button
@@ -38,7 +43,7 @@ export default function NotificationButton({
           ) : notifications.length === 0 ? (
             <p className="px-4 py-2">No new notifications</p>
           ) : (
-            notifications.map((notif) => (
+            sortedNotifications.map((notif) => (
               <div
                 key={notif.id}
                 className="flex justify-between items-center bg-gray-200 rounded-md px-1 py-2 mb-2 mx-2"
