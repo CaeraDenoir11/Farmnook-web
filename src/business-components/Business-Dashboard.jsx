@@ -1,7 +1,3 @@
-// === BusinessDashboard.jsx ===
-// Dashboard for hauler business admins to view delivery requests.
-// Now uses onSnapshot() to show real-time updates to requests.
-
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
@@ -124,42 +120,71 @@ export default function BusinessDashboard() {
     return () => unsubscribeAuth();
   }, []);
 
-  // === Notifications (non-realtime) ===
+  // Realtime Notifications (NEW WAY)
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (!user) {
         setNotifications([]);
         setLoadingNotifications(false);
         return;
       }
 
-      try {
-        const q = query(
-          collection(db, "notifications"),
-          where("businessId", "==", user.uid)
-        );
-        const snapshot = await getDocs(q);
-        const loadedNotifications = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            time: data.timestamp?.toDate().toLocaleString() || "N/A",
-          };
-        });
-        setNotifications(loadedNotifications);
-      } catch (err) {
-        console.error("Error fetching notifications:", err);
-        setError("Failed to load notifications");
-      } finally {
-        setLoadingNotifications(false);
-      }
+      const q = query(
+        collection(db, "notifications"),
+        where("businessId", "==", user.uid)
+      );
+
+      const unsubscribeSnapshot = onSnapshot(
+        q,
+        (snapshot) => {
+          const loadedNotifications = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            const dateObj = data.timestamp?.toDate();
+
+            const formattedDate = dateObj
+              ? dateObj.toLocaleDateString("en-US", {
+                  month: "2-digit",
+                  day: "2-digit",
+                  year: "2-digit", // two-digit year
+                })
+              : "N/A";
+
+            const formattedTime = dateObj
+              ? dateObj.toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: undefined,
+                  hour12: true,
+                })
+              : "N/A";
+            return {
+              id: doc.id,
+              ...data,
+              date: formattedDate,
+              time: formattedTime,
+            };
+          });
+          setNotifications(loadedNotifications);
+          setLoadingNotifications(false);
+        },
+        (err) => {
+          console.error("Error fetching notifications:", err);
+          setError("Failed to load notifications");
+          setLoadingNotifications(false);
+        }
+      );
+
+      return () => unsubscribeSnapshot();
     });
-    return () => unsubscribe();
+
+    return () => unsubscribeAuth();
   }, []);
 
   const totalTransactions = useMemo(() => {
-    return monthlyData[selectedMonth].reduce((total, entry) => total + entry.transactions, 0);
+    return monthlyData[selectedMonth].reduce(
+      (total, entry) => total + entry.transactions,
+      0
+    );
   }, [selectedMonth]);
 
   const openMapModal = (pickup, drop) => {
@@ -179,7 +204,9 @@ export default function BusinessDashboard() {
       </div>
       <div className="relative w-full max-w-8xl mt-[-50px] flex flex-col md:flex-row gap-6 px-6 pt-6">
         <div className="bg-white p-6 rounded-2xl shadow-lg w-full md:w-3/4">
-          <h2 className="text-xl font-bold text-[#1A4D2E] mb-4">Delivery Requests</h2>
+          <h2 className="text-xl font-bold text-[#1A4D2E] mb-4">
+            Delivery Requests
+          </h2>
           <div className="space-y-4 overflow-y-auto max-h-100 auto-hide-scrollbar">
             {loadingRequests ? (
               <p className="text-gray-400">Loading requests...</p>
@@ -187,21 +214,50 @@ export default function BusinessDashboard() {
               <p className="text-gray-500">No pending delivery requests.</p>
             ) : (
               requests.map((req) => (
-                <div key={req.id} className="p-4 bg-[#F5EFE6] rounded-lg shadow flex justify-between items-start">
+                <div
+                  key={req.id}
+                  className="p-4 bg-[#F5EFE6] rounded-lg shadow flex justify-between items-start"
+                >
                   <div>
                     <p className="text-lg text-[#1A4D2E]">
                       <span className="font-bold">{req.farmerName}</span>
                     </p>
-                    <h4 className="text-md font-semibold text-gray-800">{req.vehicleName}</h4>
+                    <h4 className="text-md font-semibold text-gray-800">
+                      {req.vehicleName}
+                    </h4>
                   </div>
                   <div className="flex flex-col items-end justify-between gap-2">
-                    <button className="text-blue-600 text-sm underline" onClick={() => openMapModal(req.pickupLocation, req.destinationLocation)}>
-                      Details
-                    </button>
-                    <button className="mt-2 px-4 py-1 bg-[#1A4D2E] text-white text-sm rounded-lg" onClick={() => {
-                      setSelectedRequest(req);
-                      setAssignModalOpen(true);
-                    }}>
+                    {/* Top row: Map and Details buttons */}
+                    <div className="flex flex-row items-center gap-2">
+                      <button
+                        className="text-blue-600 text-sm underline"
+                        onClick={() => {
+                          // Handle Details button action here
+                        }}
+                      >
+                        Details
+                      </button>
+                      <button
+                        className="text-blue-600 text-sm underline"
+                        onClick={() =>
+                          openMapModal(
+                            req.pickupLocation,
+                            req.destinationLocation
+                          )
+                        }
+                      >
+                        Map
+                      </button>
+                    </div>
+
+                    {/* Bottom row: Accept button */}
+                    <button
+                      className="mt-2 px-4 py-1 bg-[#1A4D2E] text-white text-sm rounded-lg"
+                      onClick={() => {
+                        setSelectedRequest(req);
+                        setAssignModalOpen(true);
+                      }}
+                    >
                       Accept
                     </button>
                   </div>
@@ -212,34 +268,64 @@ export default function BusinessDashboard() {
         </div>
         <div className="bg-white p-6 rounded-2xl shadow-lg w-full md:w-3/8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-[#1A4D2E]">Monthly Transactions</h2>
+            <h2 className="text-xl font-bold text-[#1A4D2E]">
+              Monthly Transactions
+            </h2>
             <select
               className="p-2 border rounded-lg bg-[#FCFFE0] text-[#1A4D2E]"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
             >
               {Object.keys(monthlyData).map((month) => (
-                <option key={month} value={month}>{month}</option>
+                <option key={month} value={month}>
+                  {month}
+                </option>
               ))}
             </select>
           </div>
-          <motion.p className="text-lg font-semibold text-[#1A4D2E] mb-2 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }}>
+          <motion.p
+            className="text-lg font-semibold text-[#1A4D2E] mb-2 text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1 }}
+          >
             Total Transactions: {totalTransactions}
           </motion.p>
           <div className="w-full h-72 bg-gray-100 p-4 rounded-lg">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyData[selectedMonth]} margin={{ top: 20, right: 30, left: 0, bottom: 10 }}>
+              <AreaChart
+                data={monthlyData[selectedMonth]}
+                margin={{ top: 20, right: 30, left: 0, bottom: 10 }}
+              >
                 <defs>
-                  <linearGradient id="colorTransactions" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient
+                    id="colorTransactions"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
                     <stop offset="5%" stopColor="#1A4D2E" stopOpacity={0.9} />
                     <stop offset="95%" stopColor="#F5EFE6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} stroke="#1A4D2E" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.2}
+                  stroke="#1A4D2E"
+                />
                 <XAxis dataKey="week" tick={{ fill: "#1A4D2E" }} />
                 <YAxis tick={{ fill: "#1A4D2E" }} />
                 <Tooltip cursor={{ fill: "rgba(26, 77, 46, 0.1)" }} />
-                <Area type="monotone" dataKey="transactions" stroke="#1A4D2E" strokeWidth={3} fillOpacity={1} fill="url(#colorTransactions)" activeDot={{ r: 6, fill: "#1A4D2E" }} />
+                <Area
+                  type="monotone"
+                  dataKey="transactions"
+                  stroke="#1A4D2E"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorTransactions)"
+                  activeDot={{ r: 6, fill: "#1A4D2E" }}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
