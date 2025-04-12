@@ -1,0 +1,27 @@
+const vehicleTypeList = [
+    "Motorcyle with Box (1–200 kg)",
+    "Tricycle (201–500 kg)",
+    "Small Multicab (501–1,000 kg)",
+    "Large Multicab (1,001–1,500 kg)",
+    "Elf Truck (1,501–3,500 kg)",
+    "Small Pickup Truck (801–1,200 kg)",
+    "Medium Pickup Truck (1,201–1,500 kg)",
+    "Large Pickup Truck (2,000–3,500 kg)",
+    "Heavy Duty Pickup Truck (3,501–4,500 kg)",
+    "Dropside Truck (4,501–9,000 kg)",
+    "10 Wheeler Cargo Truck (9,001–12,000 kg)",
+    "10 Wheeler Dump Truck (12,001–15,000 kg)",
+    "Small Refrigerated Van (1–800 kg)",
+    "Medium Refrigerated Van (801–1,200 kg)",
+    "Large Refrigerated Van (1,201–1,500 kg)",
+    "Small Refrigerated Truck (1,501–3,000 kg)",
+    "Medium Refrigerated Truck (3,001–5,000 kg)",
+    "Large Refrigerated Truck (5,001–9,000 kg)",
+    "10 Wheeler Reefer Truck (9,001–12,000 kg)",
+    "Small Livestock Truck (1–1,500 kg)",
+    "Medium Livestock Truck (1,501–3,000 kg)",
+    "Large Livestock Truck (3,001–7,000 kg)",
+    "10 Wheeler Livestock Truck (7,001–12,000 kg)",
+];
+
+export default vehicleTypeList;

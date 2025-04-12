@@ -11,20 +11,21 @@ import {
   doc,
   updateDoc,
 } from "firebase/firestore";
+import vehicleTypeList from "../../data/Vehicle-Types-List.js";
 
 function AddVehicleButton({ onAddVehicle }) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
+    vehicleType: "",
     model: "",
     plateNumber: "",
-    maxWeightKg: "",
-    size: "",
   });
 
   const plateRegex =
     /^(?:[A-Z]{3} \d{4}|\d{3}[A-Z]{3}|[A-Z]\d{3}[A-Z]{2}|[A-Z]{2}\d{3}[A-Z])$/;
+
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -33,17 +34,14 @@ function AddVehicleButton({ onAddVehicle }) {
   const handleSubmit = async () => {
     setError("");
 
-    if (
-      !formData.model ||
-      !formData.plateNumber ||
-      !formData.maxWeightKg ||
-      !formData.size
-    ) {
+    const { vehicleType, model, plateNumber } = formData;
+
+    if (!vehicleType || !model || !plateNumber) {
       setError("All fields are required!");
       return;
     }
 
-    if (!plateRegex.test(formData.plateNumber)) {
+    if (!plateRegex.test(plateNumber)) {
       setError("Invalid plate number format!");
       return;
     }
@@ -56,12 +54,25 @@ function AddVehicleButton({ onAddVehicle }) {
         return;
       }
 
+      // ✅ Check for existing plate number (case-insensitive)
+      const plateQuery = query(
+        collection(db, "vehicles"),
+        where("plateNumber", "==", formData.plateNumber.toUpperCase())
+      );
+      const existingSnapshot = await getDocs(plateQuery);
+
+      if (!existingSnapshot.empty) {
+        setError("This plate number already exists!");
+        setLoading(false);
+        return;
+      }
+
       const newVehicle = {
-        ...formData,
-        maxWeightKg: Number(formData.maxWeightKg), // Ensure correct data type
-        organizationId: userId, // Link vehicle to business admin
-        assignedDriverId: null, // No driver assigned initially
-        createdAt: serverTimestamp(), // Firestore-generated timestamp
+        vehicleType: formData.vehicleType.split(" (")[0], // Only store the type
+        model: formData.model,
+        plateNumber: formData.plateNumber.toUpperCase(), // Standardize case
+        businessId: userId,
+        createdAt: serverTimestamp(),
       };
 
       const docRef = await addDoc(collection(db, "vehicles"), newVehicle);
@@ -81,7 +92,7 @@ function AddVehicleButton({ onAddVehicle }) {
       await updateDoc(userDocRef, { totalVehicle: totalVehicles });
 
       setIsOpen(false);
-      setFormData({ model: "", plateNumber: "", maxWeightKg: "", size: "" });
+      setFormData({ vehicleType: "", model: "", plateNumber: "" });
     } catch (error) {
       console.error("Error adding vehicle:", error);
     } finally {
@@ -118,6 +129,20 @@ function AddVehicleButton({ onAddVehicle }) {
             )}
 
             <div className="space-y-4">
+              <select
+                name="vehicleType"
+                value={formData.vehicleType}
+                onChange={handleChange}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#1A4D2E] outline-none"
+              >
+                <option value="">Select Vehicle Type</option>
+                {vehicleTypeList.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+
               <input
                 type="text"
                 name="model"
@@ -126,6 +151,7 @@ function AddVehicleButton({ onAddVehicle }) {
                 onChange={handleChange}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#1A4D2E] outline-none"
               />
+
               <input
                 type="text"
                 name="plateNumber"
@@ -134,25 +160,6 @@ function AddVehicleButton({ onAddVehicle }) {
                 onChange={handleChange}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#1A4D2E] outline-none"
               />
-              <input
-                type="number"
-                name="maxWeightKg"
-                placeholder="Max Weight (Kg)"
-                value={formData.maxWeightKg}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#1A4D2E] outline-none"
-              />
-              <select
-                name="size"
-                value={formData.size}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#1A4D2E] outline-none"
-              >
-                <option value="">Select Size</option>
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
-              </select>
             </div>
 
             <div className="flex justify-end mt-6 space-x-4">

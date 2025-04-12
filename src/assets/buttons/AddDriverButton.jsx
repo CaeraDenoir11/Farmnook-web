@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { db, storage, auth } from "../../../configs/firebase";
-import { setDoc, doc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { query, where, getDocs, collection, setDoc, doc, serverTimestamp } from "firebase/firestore";
 
 // ✅ NEW: Setup a secondary Firebase App and Auth instance
 import { initializeApp } from "firebase/app";
@@ -29,32 +28,22 @@ function AddDriverButton({ onAddDriver }) {
     fname: "",
     lname: "",
     licenseNo: "",
-    phone: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    setImageFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setPreviewUrl(reader.result);
-    reader.readAsDataURL(file);
-  };
-
-  const uploadImageToFirebase = async () => {
-    if (!imageFile) return null;
-    const storageRef = ref(storage, `profileImages/haulers/${imageFile.name}`);
-    await uploadBytes(storageRef, imageFile);
-    return getDownloadURL(storageRef);
-  };
 
   const validateForm = () => {
     let newErrors = {};
     Object.keys(formData).forEach((key) => {
       if (!formData[key]) newErrors[key] = "This field is required";
     });
+
+    const licensePattern = /^[A-Z]\d{2}-\d{2}-\d{6}$/;
+    if (formData.licenseNo && !licensePattern.test(formData.licenseNo)) {
+      newErrors.licenseNo = "License must follow format: LNN-NN-NNNNNN (e.g. D12-34-567890)";
+    }
 
     if (formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
@@ -69,14 +58,26 @@ function AddDriverButton({ onAddDriver }) {
 
   const handleSubmit = async () => {
     if (loading) return;
-    if (!validateForm()) return;
+
+    if (!validateForm()) {
+      return;
+    }
 
     setLoading(true);
     try {
       const adminId = auth.currentUser?.uid;
-      if (!adminId) throw new Error("Admin User ID not found.");
 
-      // ✅ Create hauler account using secondaryAuth
+      const licenseQuery = query(
+        collection(db, "users"),
+        where("licenseNo", "==", formData.licenseNo)
+      );
+      const licenseSnap = await getDocs(licenseQuery);
+      if (!licenseSnap.empty) {
+        setErrors({ licenseNo: "This license number is already registered." });
+        setLoading(false);
+        return;
+      }
+
       const userCredential = await createUserWithEmailAndPassword(
         secondaryAuth,
         formData.email,
@@ -84,8 +85,17 @@ function AddDriverButton({ onAddDriver }) {
       );
       const haulerUid = userCredential.user.uid;
 
-      // ✅ Sign out of secondaryAuth to clean up session
       await secondaryAuth.signOut();
+
+      const now = new Date();
+      const formattedDate = now.toLocaleString("en-US", {
+        month: "short",
+        day: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
 
       const newHauler = {
         userId: haulerUid,
@@ -93,32 +103,35 @@ function AddDriverButton({ onAddDriver }) {
         lastName: formData.lname,
         licenseNo: formData.licenseNo,
         email: formData.email,
-        phoneNum: formData.phone,
+        phoneNum: "",
         profileImg: "",
-        businessAdminId: adminId,
-        createdAt: serverTimestamp(),
+        businessId: adminId,
+        dateJoined: formattedDate,
         userType: "Hauler",
         status: false,
       };
 
       await setDoc(doc(db, "users", haulerUid), newHauler);
-      console.log("Hauler account created successfully!");
+      console.log("✅ Hauler account added!");
 
-      // Reset state
+      if (onAddDriver) {
+        onAddDriver({
+          userId: haulerUid,
+          ...newHauler,
+        });
+      }
+
       setIsOpen(false);
       setFormData({
         fname: "",
         lname: "",
         licenseNo: "",
-        phone: "",
         email: "",
         password: "",
         confirmPassword: "",
       });
-      setPreviewUrl(null);
-      setImageFile(null);
+      setErrors({});
     } catch (error) {
-      console.error("Error adding hauler:", error);
       setErrors({ general: error.message });
     } finally {
       setLoading(false);
@@ -149,6 +162,11 @@ function AddDriverButton({ onAddDriver }) {
             {errors.general && (
               <p className="text-red-500 text-center text-xs md:text-sm">
                 {errors.general}
+              </p>
+            )}
+            {errors.licenseNo && (
+              <p className="text-red-500 text-center md:text-sm mt-1">
+                {errors.licenseNo}
               </p>
             )}
 
@@ -185,7 +203,7 @@ function AddDriverButton({ onAddDriver }) {
                 <label className="block font-semibold mb-1 md:mb-2 text-sm md:text-base">
                   Driver Details
                 </label>
-                {["fname", "lname", "licenseNo", "phone"].map((key) => (
+                {["fname", "lname", "licenseNo"].map((key) => (
                   <div key={key} className="mb-1 md:mb-2">
                     <input
                       type="text"
@@ -194,9 +212,14 @@ function AddDriverButton({ onAddDriver }) {
                       onChange={(e) =>
                         setFormData({ ...formData, [key]: e.target.value })
                       }
-                      placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
+                      placeholder={key === "licenseNo"
+                        ? "A00-00-000000"
+                        : key === "fname"
+                          ? "First Name"
+                          : "Last Name"}
                       className="w-full p-2 md:p-3 border rounded-lg text-sm md:text-base"
                     />
+
                   </div>
                 ))}
               </div>
