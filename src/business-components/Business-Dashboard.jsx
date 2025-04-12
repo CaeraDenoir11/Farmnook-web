@@ -57,6 +57,10 @@ export default function BusinessDashboard() {
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
   const [error, setError] = useState(null);
+  const [readRequests, setReadRequests] = useState(() => {
+    const saved = localStorage.getItem("readRequests");
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // === Real-time Fetch Pending Delivery Requests ===
   useEffect(() => {
@@ -196,7 +200,7 @@ export default function BusinessDashboard() {
     );
   }, [selectedMonth]);
 
-  const openMapModal = (pickup, drop, farmerName, purpose, productType, weight, timestamp) => {
+  const openMapModal = (pickup, drop, farmerName, purpose, productType, weight, timestamp, id) => {
     setMapPoints({
       pickup, drop,
       farmerName,
@@ -204,6 +208,12 @@ export default function BusinessDashboard() {
       productType,
       weight,
       timestamp,
+    });
+
+    setReadRequests((prev) => {
+      const updated = [...new Set([...prev, id])]; // avoid duplicates
+      localStorage.setItem("readRequests", JSON.stringify(updated));
+      return updated;
     });
     setModalOpen(true);
   };
@@ -245,7 +255,8 @@ export default function BusinessDashboard() {
                 return (
                   <div
                     key={req.id}
-                    className="p-4 bg-[#F5EFE6] rounded-lg shadow flex justify-between items-start"
+                    className={`p-4 rounded-lg shadow flex justify-between items-start ${readRequests.includes(req.id) ? "bg-[#F5EFE6]" : "bg-[#DAC5C5]"
+                      }`}
                   >
                     <div>
                       <p className="text-lg text-[#1A4D2E]">
@@ -269,7 +280,8 @@ export default function BusinessDashboard() {
                             req.purpose,
                             req.productType,
                             req.weight,
-                            req.timestamp
+                            req.timestamp,
+                            req.id //
                           )
                         }
                       >

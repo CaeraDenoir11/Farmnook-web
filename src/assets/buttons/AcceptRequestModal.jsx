@@ -41,18 +41,36 @@ export default function AcceptRequestModal({
 
   useEffect(() => {
     if (!currentUser) return;
+
     const q = query(
       collection(db, "users"),
-      where("businessAdminId", "==", currentUser.uid),
+      where("businessId", "==", currentUser.uid),
       where("userType", "==", "Hauler")
     );
-    const unsub = onSnapshot(q, (snapshot) => {
+
+    const unsub = onSnapshot(q, async (snapshot) => {
       const haulerList = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      setHaulers(haulerList);
+
+      // ✅ Fetch the current admin's profile and add to list
+      const adminDoc = await getDoc(doc(db, "users", currentUser.uid));
+      if (adminDoc.exists()) {
+        const adminData = adminDoc.data();
+        const adminAsHauler = {
+          id: currentUser.uid,
+          ...adminData,
+        };
+
+        // Only add if not already in haulerList
+        const combined = [adminAsHauler, ...haulerList.filter(h => h.id !== currentUser.uid)];
+        setHaulers(combined);
+      } else {
+        setHaulers(haulerList);
+      }
     });
+
     return () => unsub();
   }, [currentUser]);
 
@@ -83,13 +101,12 @@ export default function AcceptRequestModal({
       const businessDoc = await getDoc(doc(db, "users", businessId));
       const businessData = businessDoc.exists() ? businessDoc.data() : {};
       const businessName = businessData?.businessName || "Your Business";
-      const message = `Your delivery request has been accepted, the hauler is on your way ${businessName}`;
+      const message = `Your delivery request has been accepted by ${businessName}`;
 
       const notifRef = doc(collection(db, "notifications"));
       await setDoc(notifRef, {
         notificationId: notifRef.id,
         farmerId: req.farmerId,
-        recipientId: req.farmerId,
         title: businessName,
         message,
         timestamp: Timestamp.now(),
@@ -108,7 +125,35 @@ export default function AcceptRequestModal({
         console.warn("No valid playerIds found for farmer:", req.farmerId);
       }
 
-      // 6. Show success message
+      // 6. ✅ Notify the assigned hauler
+      const haulerDoc = await getDoc(doc(db, "users", hauler.id));
+      const haulerData = haulerDoc.exists() ? haulerDoc.data() : null;
+
+      const haulerMessage = "You have been assigned to a delivery.";
+
+      if (haulerData) {
+        // Firestore notification for hauler
+        const haulerNotifRef = doc(collection(db, "notifications"));
+        await setDoc(haulerNotifRef, {
+          notificationId: haulerNotifRef.id,
+          haulerId: hauler.id,
+          title: "New Delivery Assignment",
+          message: haulerMessage,
+          timestamp: Timestamp.now(),
+          isRead: false,
+        });
+
+        const haulerPlayerIds = (haulerData.playerIds || []).filter(
+          (id) => typeof id === "string" && id.length >= 10
+        );
+
+        if (haulerPlayerIds.length) {
+          await sendPushNotification(haulerPlayerIds, "New Delivery Assignment", haulerMessage);
+        } else {
+          console.warn("No valid playerIds found for hauler:", hauler.id);
+        }
+      }
+      // 7. Show success
       setSuccessMessage("Successfully assigned hauler!");
       setTimeout(() => {
         setSuccessMessage("");
