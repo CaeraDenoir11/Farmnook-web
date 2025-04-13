@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../../configs/firebase";
-import { collection, query, onSnapshot, where } from "firebase/firestore";
+import { collection, query, onSnapshot, where, doc, getDoc } from "firebase/firestore";
 import AddDriverButton from "../assets/buttons/AddDriverButton.jsx";
 import defaultImg from "../assets/images/default.png";
 
@@ -29,21 +29,46 @@ export default function BusinessDrivers() {
   useEffect(() => {
     if (!currentUser) return;
 
+    console.log("[BusinessDrivers] Current User ID:", currentUser.uid);
+
     const q = query(
       collection(db, "users"),
-      where("businessAdminId", "==", currentUser.uid), // Only show haulers added by logged-in user
+      where("businessId", "==", currentUser.uid),
       where("userType", "==", "Hauler")
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+
       const haulers = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      setUsers(haulers);
+
+
+      const adminDocRef = doc(db, "users", currentUser.uid);
+      const adminSnap = await getDoc(adminDocRef);
+      let adminAsHauler = null;
+
+      if (adminSnap.exists()) {
+        const adminData = adminSnap.data();
+
+        adminAsHauler = {
+          id: currentUser.uid,
+          ...adminData,
+          isAdmin: true, // for display/debugging
+        };
+      } else {
+        console.warn("[BusinessDrivers] Admin user record not found in Firestore.");
+      }
+
+      const finalHaulers = adminAsHauler ? [adminAsHauler, ...haulers] : haulers;
+
+      setUsers(finalHaulers);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+    };
   }, [currentUser]);
 
   const filteredUsers = users.filter((user) => {
@@ -126,9 +151,8 @@ export default function BusinessDrivers() {
                       </td>
                       <td className="px-5 py-5 border-b border-gray-300">
                         <span
-                          className={`px-3 py-1 font-semibold text-white rounded-full ${
-                            user.status ? "bg-yellow-500" : "bg-green-500"
-                          }`}
+                          className={`px-3 py-1 font-semibold text-white rounded-full ${user.status ? "bg-yellow-500" : "bg-green-500"
+                            }`}
                         >
                           {user.status ? "On Ride" : "Active"}
                         </span>

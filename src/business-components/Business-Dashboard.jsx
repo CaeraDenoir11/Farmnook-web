@@ -23,7 +23,7 @@ import MapModal from "../map/MapModal.jsx";
 import Maps from "./Maps";
 import Modal from "react-modal";
 import NotificationButton from "../assets/buttons/NotificationButton.jsx";
-import AcceptRequestModal from "../assets/buttons/AcceptRequestButton.jsx";
+import AcceptRequestModal from "../assets/buttons/AcceptRequestModal.jsx";
 
 const monthlyData = {
   January: [
@@ -57,6 +57,10 @@ export default function BusinessDashboard() {
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
   const [error, setError] = useState(null);
+  const [readRequests, setReadRequests] = useState(() => {
+    const saved = localStorage.getItem("readRequests");
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // === Real-time Fetch Pending Delivery Requests ===
   useEffect(() => {
@@ -78,6 +82,7 @@ export default function BusinessDashboard() {
           snapshot.docs.map(async (docSnap) => {
             const data = docSnap.data();
 
+            // vehicleName
             let vehicleName = "Unknown";
             try {
               const vehicleRef = doc(db, "vehicles", data.vehicleId);
@@ -89,6 +94,7 @@ export default function BusinessDashboard() {
               console.error("Error fetching vehicle:", err);
             }
 
+            // farmerName
             let farmerName = "Unknown Farmer";
             try {
               const farmerRef = doc(db, "users", data.farmerId);
@@ -109,6 +115,13 @@ export default function BusinessDashboard() {
             };
           })
         );
+
+        // ✅ SORT BY TIMESTAMP DESCENDING
+        enrichedRequests.sort((a, b) => {
+          const aTime = a.timestamp?.toDate?.() || 0;
+          const bTime = b.timestamp?.toDate?.() || 0;
+          return bTime - aTime;
+        });
 
         setRequests(enrichedRequests);
         setLoadingRequests(false);
@@ -143,19 +156,19 @@ export default function BusinessDashboard() {
 
             const formattedDate = dateObj
               ? dateObj.toLocaleDateString("en-US", {
-                  month: "2-digit",
-                  day: "2-digit",
-                  year: "2-digit", // two-digit year
-                })
+                month: "2-digit",
+                day: "2-digit",
+                year: "2-digit", // two-digit year
+              })
               : "N/A";
 
             const formattedTime = dateObj
               ? dateObj.toLocaleTimeString("en-US", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: undefined,
-                  hour12: true,
-                })
+                hour: "2-digit",
+                minute: "2-digit",
+                second: undefined,
+                hour12: true,
+              })
               : "N/A";
             return {
               id: doc.id,
@@ -187,10 +200,24 @@ export default function BusinessDashboard() {
     );
   }, [selectedMonth]);
 
-  const openMapModal = (pickup, drop) => {
-    setMapPoints({ pickup, drop });
+  const openMapModal = (pickup, drop, farmerName, purpose, productType, weight, timestamp, id) => {
+    setMapPoints({
+      pickup, drop,
+      farmerName,
+      purpose,
+      productType,
+      weight,
+      timestamp,
+    });
+
+    setReadRequests((prev) => {
+      const updated = [...new Set([...prev, id])]; // avoid duplicates
+      localStorage.setItem("readRequests", JSON.stringify(updated));
+      return updated;
+    });
     setModalOpen(true);
   };
+
 
   return (
     <div className="min-h-screen flex flex-col items-center">
@@ -213,56 +240,66 @@ export default function BusinessDashboard() {
             ) : requests.length === 0 ? (
               <p className="text-gray-500">No pending delivery requests.</p>
             ) : (
-              requests.map((req) => (
-                <div
-                  key={req.id}
-                  className="p-4 bg-[#F5EFE6] rounded-lg shadow flex justify-between items-start"
-                >
-                  <div>
-                    <p className="text-lg text-[#1A4D2E]">
-                      <span className="font-bold">{req.farmerName}</span>
-                    </p>
-                    <h4 className="text-md font-semibold text-gray-800">
-                      {req.vehicleName}
-                    </h4>
-                  </div>
-                  <div className="flex flex-col items-end justify-between gap-2">
-                    {/* Top row: Map and Details buttons */}
-                    <div className="flex flex-row items-center gap-2">
-                      <button
-                        className="text-blue-600 text-sm underline"
-                        onClick={() => {
-                          // Handle Details button action here
-                        }}
-                      >
-                        Details
-                      </button>
+              requests.map((req) => {
+                const formattedTime = req.timestamp?.toDate
+                  ? req.timestamp.toDate().toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                  })
+                  : "N/A";
+
+                return (
+                  <div
+                    key={req.id}
+                    className={`p-4 rounded-lg shadow flex justify-between items-start ${readRequests.includes(req.id) ? "bg-[#F5EFE6]" : "bg-[#DAC5C5]"
+                      }`}
+                  >
+                    <div>
+                      <p className="text-lg text-[#1A4D2E]">
+                        <span className="font-bold">{req.farmerName}</span>
+                      </p>
+                      <h4 className="text-md font-semibold text-gray-800">
+                        {req.vehicleName}
+                      </h4>
+                      <h4 className="text-md font-semibold text-gray-800">
+                        {formattedTime}
+                      </h4>
+                    </div>
+                    <div className="flex flex-col items-end justify-between gap-2">
                       <button
                         className="text-blue-600 text-sm underline"
                         onClick={() =>
                           openMapModal(
                             req.pickupLocation,
-                            req.destinationLocation
+                            req.destinationLocation,
+                            req.farmerName,
+                            req.purpose,
+                            req.productType,
+                            req.weight,
+                            req.timestamp,
+                            req.id //
                           )
                         }
                       >
-                        Map
+                        Details
+                      </button>
+                      <button
+                        className="mt-2 px-4 py-1 bg-[#1A4D2E] text-white text-sm rounded-lg"
+                        onClick={() => {
+                          setSelectedRequest(req);
+                          setAssignModalOpen(true);
+                        }}
+                      >
+                        Accept
                       </button>
                     </div>
-
-                    {/* Bottom row: Accept button */}
-                    <button
-                      className="mt-2 px-4 py-1 bg-[#1A4D2E] text-white text-sm rounded-lg"
-                      onClick={() => {
-                        setSelectedRequest(req);
-                        setAssignModalOpen(true);
-                      }}
-                    >
-                      Accept
-                    </button>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -343,6 +380,11 @@ export default function BusinessDashboard() {
         onClose={() => setModalOpen(false)}
         pickup={mapPoints.pickup}
         drop={mapPoints.drop}
+        farmerName={mapPoints.farmerName}
+        purpose={mapPoints.purpose}
+        productType={mapPoints.productType}
+        weight={mapPoints.weight}
+        timestamp={mapPoints.timestamp}
       />
     </div>
   );
