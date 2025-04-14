@@ -19,6 +19,7 @@ import Maps from "./business-components/Maps.jsx";
 import BusinessProfile from "./business-components/Business-Profile.jsx";
 import logo from "./assets/images/document-logo.png";
 import OneSignal from "react-onesignal";
+import MapViewer from "./map/MapViewer.jsx"
 // import BusinessSubscriptionPayment from "./business-components/Business-Subscription-Payment";
 
 export default function App() {
@@ -81,6 +82,7 @@ export default function App() {
 
         {/* ✅ Public Route for Maps - Always accessible */}
         <Route path="/maps" element={<Maps />} />
+        <Route path="/map-viewer" element={<MapViewer />} />
 
         {/* ✅ Login Route */}
         <Route

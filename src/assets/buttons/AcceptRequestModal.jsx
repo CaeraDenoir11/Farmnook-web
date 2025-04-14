@@ -13,6 +13,7 @@ import {
   setDoc,
   addDoc,
   getDoc,
+  updateDoc,
   Timestamp,
 } from "firebase/firestore";
 import { db } from "../../../configs/firebase";
@@ -86,10 +87,13 @@ export default function AcceptRequestModal({
       });
 
       // 2. Add to deliveries collection
-      await addDoc(collection(db, "deliveries"), {
+      const docRef = await addDoc(collection(db, "deliveries"), {
         requestId: req.id,
         haulerAssignedId: hauler.id,
         createdAt: new Date(),
+      });
+      await updateDoc(docRef, {
+        deliveryId: docRef.id,
       });
 
       // 3. Update UI
