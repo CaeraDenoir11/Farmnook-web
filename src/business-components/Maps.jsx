@@ -1,4 +1,3 @@
-// Maps.jsx with centered route and cleaner UI
 import { useEffect, useState, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -9,7 +8,6 @@ const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const isAndroidWebView =
   /Android/.test(navigator.userAgent) && /wv/.test(navigator.userAgent);
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`;
-const mapRef = useRef();
 
 // Custom icons
 const userIcon = new L.Icon({
@@ -24,7 +22,7 @@ const pinIcon = new L.Icon({
   iconAnchor: [17, 35],
 });
 
-// Map logic to add route and markers
+// Route logic
 function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
   const map = useMap();
 
@@ -38,8 +36,8 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
 
     const control = L.Routing.control({
       waypoints: [start, end],
-      plan: isAndroidWebView ? null : undefined, // Hide plan UI on Android WebView only
-      show: !isAndroidWebView, // Hide direction step panel only on Android
+      plan: isAndroidWebView ? null : undefined,
+      show: !isAndroidWebView,
       lineOptions: {
         styles: [{ color: routeColor, weight: 6 }],
       },
@@ -58,8 +56,8 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
       setTimeout(() => {
         map.invalidateSize();
         map.fitBounds(bounds, {
-          padding: [100, 100], // ⬅️ padding for spacing
-          maxZoom: 15, // ⬅️ prevent zooming in too much
+          padding: [100, 100],
+          maxZoom: 15,
         });
       }, 300);
 
@@ -68,7 +66,6 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
         const dropLabel = await reverseGeocode(endLat, endLng);
 
         L.marker(start, { icon: userIcon }).addTo(map).bindPopup(pickupLabel);
-
         L.marker(end, { icon: pinIcon }).addTo(map).bindPopup(dropLabel);
       }
     });
@@ -84,32 +81,8 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
 
   return null;
 }
-useEffect(() => {
-  if (!mapRef.current) return;
 
-  window.zoomToLocation = (lat, lng) => {
-    const parsedLat = parseFloat(lat);
-    const parsedLng = parseFloat(lng);
-    if (isNaN(parsedLat) || isNaN(parsedLng)) return;
-
-    const map = mapRef.current;
-    const target = [parsedLat, parsedLng];
-
-    // Center and zoom in
-    map.setView(target, 17, { animate: true });
-
-    // Reset after 10 seconds
-    setTimeout(() => {
-      map.setView(defaultCenter, 13, { animate: true });
-    }, 10000);
-  };
-
-  return () => {
-    delete window.zoomToLocation;
-  };
-}, [defaultCenter]);
-
-// Geocoding for popup labels
+// Geocode helper
 async function reverseGeocode(lat, lng) {
   try {
     const response = await fetch(
@@ -123,7 +96,7 @@ async function reverseGeocode(lat, lng) {
   }
 }
 
-// Main map component
+// Main component
 export default function Maps({
   pickupLocation,
   destinationLocation,
@@ -134,12 +107,13 @@ export default function Maps({
 }) {
   const [position, setPosition] = useState(null);
   const [markerPos, setMarkerPos] = useState(null);
+  const mapRef = useRef();
 
   const defaultCenter = pickupLocation
     ? pickupLocation.split(",").map(Number)
     : [10.3157, 123.8854];
 
-  // Expose updateUserLocation globally
+  // Update marker from Android WebView
   useEffect(() => {
     window.updateUserLocation = (lat, lng) => {
       const parsedLat = parseFloat(lat);
@@ -151,7 +125,7 @@ export default function Maps({
     return () => delete window.updateUserLocation;
   }, []);
 
-  // Expose getSelectedLocation globally
+  // Expose picker logic
   useEffect(() => {
     window.getSelectedLocation = () => {
       if (!markerPos) return null;
@@ -160,22 +134,41 @@ export default function Maps({
     return () => delete window.getSelectedLocation;
   }, [markerPos]);
 
+  // Zoom-to-user function with timeout
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    window.zoomToLocation = (lat, lng) => {
+      const parsedLat = parseFloat(lat);
+      const parsedLng = parseFloat(lng);
+      if (isNaN(parsedLat) || isNaN(parsedLng)) return;
+
+      const map = mapRef.current;
+      const target = [parsedLat, parsedLng];
+
+      map.setView(target, 17, { animate: true });
+
+      setTimeout(() => {
+        map.setView(defaultCenter, 13, { animate: true });
+      }, 10000);
+    };
+
+    return () => delete window.zoomToLocation;
+  }, [defaultCenter]);
+
   return (
     <div className="w-full" style={{ height }}>
       <MapContainer
         center={defaultCenter}
         zoom={13}
-        zoomControl={false} // ✅ Remove zoom buttons
-        attributionControl={false} // ✅ Remove Mapbox attribution
+        zoomControl={false}
+        attributionControl={false}
+        style={{ height: "100%", width: "100%" }}
         whenCreated={(mapInstance) => {
           mapRef.current = mapInstance;
         }}
-        style={{ height: "100%", width: "100%" }}
       >
-        <TileLayer
-          url={MAPBOX_TILE_URL}
-          attribution={null} // ✅ Ensure no attribution shows
-        />
+        <TileLayer url={MAPBOX_TILE_URL} attribution={null} />
 
         {position && (
           <Marker position={position} icon={userIcon}>
