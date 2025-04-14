@@ -31,46 +31,13 @@ const pinIcon = new L.Icon({
 });
 
 // Changes the map view when the user location is updated
-function ChangeViewWithTimeout({ center, resetZoom = 13 }) {
+function ChangeView({ center }) {
   const map = useMap();
-  const [userInteracted, setUserInteracted] = useState(false);
-  const timeoutRef = useRef(null);
-  const hasSetInitial = useRef(false);
-
   useEffect(() => {
-    if (!map || !center) return;
-
-    const resetView = () => {
-      if (map && center) {
-        map.setView(center, resetZoom);
-        setUserInteracted(false);
-      }
-    };
-
-    const onUserInteraction = () => {
-      setUserInteracted(true);
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(resetView, 10000); // reset after 10s
-    };
-
-    // Delay initial zoom set for WebView stability
-    if (!hasSetInitial.current) {
-      hasSetInitial.current = true;
-      setTimeout(() => {
-        map.setView(center, resetZoom);
-      }, 500); // <-- delay for Android WebView
+    if (center) {
+      map.setView(center, 15); // More zoom-in for clarity on Android
     }
-
-    map.on("zoomstart", onUserInteraction);
-    map.on("dragstart", onUserInteraction);
-
-    return () => {
-      clearTimeout(timeoutRef.current);
-      map.off("zoomstart", onUserInteraction);
-      map.off("dragstart", onUserInteraction);
-    };
-  }, [map, center, resetZoom]);
-
+  }, [center, map]);
   return null;
 }
 
@@ -219,7 +186,7 @@ export default function Maps({
 
         {position && (
           <>
-            <ChangeViewWithTimeout center={position} resetZoom={15} />
+            <ChangeView center={position} />
             <Marker position={position} icon={userIcon}>
               <Popup>You Are Here</Popup>
             </Marker>
