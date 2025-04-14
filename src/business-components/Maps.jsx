@@ -27,7 +27,7 @@ function ChangeView({ center }) {
   const map = useMap();
   useEffect(() => {
     if (center) {
-      map.setView(center, 15); // More zoom-in for clarity on Android
+      map.setView(center, 18); // More zoom-in for clarity on Android
     }
   }, [center, map]);
   return null;
