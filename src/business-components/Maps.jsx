@@ -31,13 +31,39 @@ const pinIcon = new L.Icon({
 });
 
 // Changes the map view when the user location is updated
-function ChangeView({ center }) {
+function ChangeViewWithTimeout({ center, resetZoom = 13 }) {
   const map = useMap();
+  const [userInteracted, setUserInteracted] = useState(false);
+  const timeoutRef = useRef(null);
+
   useEffect(() => {
-    if (center) {
-      map.setView(center, 15); // More zoom-in for clarity on Android
-    }
-  }, [center, map]);
+    if (!map) return;
+
+    const resetView = () => {
+      map.setView(center, resetZoom);
+      setUserInteracted(false);
+    };
+
+    // Detect any user interaction
+    const onUserInteraction = () => {
+      setUserInteracted(true);
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(resetView, 10000); // 10s reset
+    };
+
+    map.on("zoomstart", onUserInteraction);
+    map.on("dragstart", onUserInteraction);
+
+    // Initial setView when location updates
+    map.setView(center, resetZoom);
+
+    return () => {
+      clearTimeout(timeoutRef.current);
+      map.off("zoomstart", onUserInteraction);
+      map.off("dragstart", onUserInteraction);
+    };
+  }, [map, center, resetZoom]);
+
   return null;
 }
 
@@ -186,7 +212,7 @@ export default function Maps({
 
         {position && (
           <>
-            <ChangeView center={position} />
+            <ChangeViewWithTimeout center={position} resetZoom={15} />
             <Marker position={position} icon={userIcon}>
               <Popup>You Are Here</Popup>
             </Marker>
@@ -212,6 +238,5 @@ export default function Maps({
         )}
       </MapContainer>
     </div>
-    
   );
 }
