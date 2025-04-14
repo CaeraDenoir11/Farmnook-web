@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../../configs/firebase";
-import { collection, query, onSnapshot, where, doc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  query,
+  onSnapshot,
+  where,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 import AddDriverButton from "../assets/buttons/AddDriverButton.jsx";
 import defaultImg from "../assets/images/default.png";
 
@@ -10,7 +17,7 @@ export default function BusinessDrivers() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
-  const [currentUser, setCurrentUser] = useState(null); // Store logged-in user
+  const [currentUser, setCurrentUser] = useState(null);
   const usersPerPage = 5;
 
   useEffect(() => {
@@ -29,8 +36,6 @@ export default function BusinessDrivers() {
   useEffect(() => {
     if (!currentUser) return;
 
-    console.log("[BusinessDrivers] Current User ID:", currentUser.uid);
-
     const q = query(
       collection(db, "users"),
       where("businessId", "==", currentUser.uid),
@@ -38,12 +43,10 @@ export default function BusinessDrivers() {
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-
       const haulers = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-
 
       const adminDocRef = doc(db, "users", currentUser.uid);
       const adminSnap = await getDoc(adminDocRef);
@@ -51,24 +54,20 @@ export default function BusinessDrivers() {
 
       if (adminSnap.exists()) {
         const adminData = adminSnap.data();
-
         adminAsHauler = {
           id: currentUser.uid,
           ...adminData,
-          isAdmin: true, // for display/debugging
+          isAdmin: true,
         };
-      } else {
-        console.warn("[BusinessDrivers] Admin user record not found in Firestore.");
       }
 
-      const finalHaulers = adminAsHauler ? [adminAsHauler, ...haulers] : haulers;
-
+      const finalHaulers = adminAsHauler
+        ? [adminAsHauler, ...haulers]
+        : haulers;
       setUsers(finalHaulers);
     });
 
-    return () => {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, [currentUser]);
 
   const filteredUsers = users.filter((user) => {
@@ -77,7 +76,7 @@ export default function BusinessDrivers() {
       .includes(searchTerm.toLowerCase());
     const matchesStatus =
       filterStatus === "All" ||
-      (user.status ? "On Ride" : "Active") === filterStatus;
+      (user.status ? "Online" : "Offline") === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
@@ -105,8 +104,8 @@ export default function BusinessDrivers() {
               className="border border-gray-400 px-4 py-2 rounded-lg focus:outline-none focus:border-[#1A4D2E]"
             >
               <option value="All">All</option>
-              <option value="Active">Active</option>
-              <option value="On Ride">On Ride</option>
+              <option value="Online">Online</option>
+              <option value="Offline">Offline</option>
             </select>
             <input
               type="text"
@@ -151,10 +150,11 @@ export default function BusinessDrivers() {
                       </td>
                       <td className="px-5 py-5 border-b border-gray-300">
                         <span
-                          className={`px-3 py-1 font-semibold text-white rounded-full ${user.status ? "bg-yellow-500" : "bg-green-500"
-                            }`}
+                          className={`px-3 py-1 font-semibold text-white rounded-full ${
+                            user.status ? "bg-green-600" : "bg-gray-400"
+                          }`}
                         >
-                          {user.status ? "On Ride" : "Active"}
+                          {user.status ? "Online" : "Offline"}
                         </span>
                       </td>
                     </tr>
