@@ -24,7 +24,13 @@ const pinIcon = new L.Icon({
 });
 
 // Map logic to add route and markers
-function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
+function RouteMap({
+  pickup,
+  drop,
+  routeColor = "blue",
+  showTooltips = false,
+  showDirections = true,
+}) {
   const map = useMap();
 
   useEffect(() => {
@@ -37,8 +43,8 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
 
     const control = L.Routing.control({
       waypoints: [start, end],
-      plan: isAndroidWebView ? null : undefined, // Hide plan UI on Android WebView only
-      show: !isAndroidWebView, // Hide direction step panel only on Android
+      plan: showDirections ? undefined : null, // 🔄 plan UI
+      show: showDirections, // 🔄 route detail panel
       lineOptions: {
         styles: [{ color: routeColor, weight: 6 }],
       },
