@@ -1,47 +1,90 @@
-// Revised Maps.jsx with stability improvements for Android/WebView
-import { useEffect, useState } from "react";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  useMap,
-  useMapEvents,
-} from "react-leaflet";
+// Maps.jsx with centered route and cleaner UI
+import { useEffect, useState, useRef } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "leaflet-routing-machine";
 
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+const isAndroidWebView =
+  /Android/.test(navigator.userAgent) && /wv/.test(navigator.userAgent);
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`;
 
-// Custom icon for user location
+// Custom icons
 const userIcon = new L.Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
   iconSize: [35, 35],
   iconAnchor: [17, 35],
   popupAnchor: [0, -35],
 });
-
-// Custom icon for destination/picked location
 const pinIcon = new L.Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
   iconSize: [35, 35],
   iconAnchor: [17, 35],
 });
 
-// Changes the map view when the user location is updated
-function ChangeView({ center }) {
+// Map logic to add route and markers
+function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
   const map = useMap();
+
   useEffect(() => {
-    if (center) {
-      map.setView(center, 15); // More zoom-in for clarity on Android
-    }
-  }, [center, map]);
+    if (!pickup || !drop) return;
+
+    const [startLat, startLng] = pickup.split(",").map(Number);
+    const [endLat, endLng] = drop.split(",").map(Number);
+    const start = L.latLng(startLat, startLng);
+    const end = L.latLng(endLat, endLng);
+
+    const control = L.Routing.control({
+      waypoints: [start, end],
+      plan: isAndroidWebView ? null : undefined, // Hide plan UI on Android WebView only
+      show: !isAndroidWebView, // Hide direction step panel only on Android
+      lineOptions: {
+        styles: [{ color: routeColor, weight: 6 }],
+      },
+      createMarker: () => null,
+      routeWhileDragging: false,
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: false,
+      router: L.Routing.mapbox(MAPBOX_ACCESS_TOKEN),
+    });
+
+    control.addTo(map);
+
+    control.on("routesfound", async () => {
+      const bounds = L.latLngBounds([start, end]);
+      setTimeout(() => {
+        map.invalidateSize();
+        map.fitBounds(bounds, {
+          padding: [100, 100], // ⬅️ padding for spacing
+          maxZoom: 15, // ⬅️ prevent zooming in too much
+        });
+      }, 300);
+
+      if (showTooltips) {
+        const pickupLabel = await reverseGeocode(startLat, startLng);
+        const dropLabel = await reverseGeocode(endLat, endLng);
+
+        L.marker(start, { icon: userIcon }).addTo(map).bindPopup(pickupLabel);
+
+        L.marker(end, { icon: pinIcon }).addTo(map).bindPopup(dropLabel);
+      }
+    });
+
+    return () => {
+      try {
+        map.removeControl(control);
+      } catch (err) {
+        console.warn("Failed to remove control:", err);
+      }
+    };
+  }, [pickup, drop, routeColor, showTooltips, map]);
+
   return null;
 }
 
-// Reverse geocoding helper to convert coordinates to human-readable names
+// Geocoding for popup labels
 async function reverseGeocode(lat, lng) {
   try {
     const response = await fetch(
@@ -55,89 +98,11 @@ async function reverseGeocode(lat, lng) {
   }
 }
 
-// Adds the route line and optional markers with labels between pickup and drop
-function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!pickup || !drop || !map) return;
-
-    const [startLat, startLng] = pickup.split(",").map(Number);
-    const [endLat, endLng] = drop.split(",").map(Number);
-
-    const start = L.latLng(startLat, startLng);
-    const end = L.latLng(endLat, endLng);
-
-    // Create the routing control
-    const control = L.Routing.control({
-      waypoints: [start, end],
-      lineOptions: {
-        styles: [{ color: routeColor, weight: 6 }],
-      },
-      createMarker: () => null,
-      routeWhileDragging: false,
-      addWaypoints: false,
-      draggableWaypoints: false,
-      fitSelectedRoutes: true, // We'll do this manually
-      show: false,
-      router: L.Routing.mapbox(MAPBOX_ACCESS_TOKEN),
-    });
-
-    control.addTo(map);
-
-    // Fit route bounds once it's computed
-    control.on("routesfound", async () => {
-      const bounds = L.latLngBounds([start, end]);
-
-      // Delay fitBounds to ensure map container is rendered
-      setTimeout(() => {
-        map.invalidateSize(); // crucial!
-        // map.fitBounds(bounds.pad(0.3));
-      }, 200);
-
-      if (showTooltips) {
-        const pickupLabel = await reverseGeocode(startLat, startLng);
-        const dropLabel = await reverseGeocode(endLat, endLng);
-
-        L.marker(start, { icon: userIcon })
-          .addTo(map)
-          .bindPopup(pickupLabel)
-          .openPopup();
-
-        L.marker(end, { icon: pinIcon })
-          .addTo(map)
-          .bindPopup(dropLabel)
-          .openPopup();
-      }
-    });
-
-    return () => {
-      // Safely remove control on unmount
-      if (map && control) {
-        try {
-          map.removeControl(control);
-        } catch (err) {
-          console.warn("Failed to remove control:", err);
-        }
-      }
-    };
-  }, [pickup, drop, routeColor, showTooltips, map]);
-
-  return null;
-}
-
-/**
- * Main Maps component to render Leaflet map
- * @param {string} pickupLocation - Comma-separated lat,lng string for pickup
- * @param {string} destinationLocation - Comma-separated lat,lng string for destination
- * @param {boolean} disablePicker - If true, disables map click selection (always true for Android)
- * @param {string} routeColor - Optional color for route line
- * @param {boolean} showTooltips - Whether to show location names on markers
- */
+// Main map component
 export default function Maps({
   pickupLocation,
   destinationLocation,
-  disablePicker = true, // force disabled for Android WebView context
+  disablePicker = true,
   routeColor = "blue",
   showTooltips = false,
   height = "100vh",
@@ -149,7 +114,7 @@ export default function Maps({
     ? pickupLocation.split(",").map(Number)
     : [10.3157, 123.8854];
 
-  // Expose global method to update user location externally
+  // Expose updateUserLocation globally
   useEffect(() => {
     window.updateUserLocation = (lat, lng) => {
       const parsedLat = parseFloat(lat);
@@ -161,7 +126,7 @@ export default function Maps({
     return () => delete window.updateUserLocation;
   }, []);
 
-  // Expose selected location for external JavaScript to retrieve
+  // Expose getSelectedLocation globally
   useEffect(() => {
     window.getSelectedLocation = () => {
       if (!markerPos) return null;
@@ -175,29 +140,18 @@ export default function Maps({
       <MapContainer
         center={defaultCenter}
         zoom={13}
+        zoomControl={false} // ✅ Remove zoom buttons
+        attributionControl={false} // ✅ Remove Mapbox attribution
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
           url={MAPBOX_TILE_URL}
-          attribution='&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a>'
+          attribution={null} // ✅ Ensure no attribution shows
         />
 
-        {!disablePicker && <MapClickHandler setMarkerPos={setMarkerPos} />}
-
         {position && (
-          <>
-            <ChangeView center={position} />
-            <Marker position={position} icon={userIcon}>
-              <Popup>You Are Here</Popup>
-            </Marker>
-          </>
-        )}
-
-        {markerPos && !disablePicker && (
-          <Marker position={markerPos} icon={pinIcon}>
-            <Popup>
-              Lat: {markerPos[0].toFixed(5)}, Lng: {markerPos[1].toFixed(5)}
-            </Popup>
+          <Marker position={position} icon={userIcon}>
+            <Popup>You Are Here</Popup>
           </Marker>
         )}
 
@@ -207,7 +161,6 @@ export default function Maps({
             drop={destinationLocation}
             routeColor={routeColor}
             showTooltips={showTooltips}
-            fullScreen={true}
           />
         )}
       </MapContainer>
