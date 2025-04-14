@@ -9,6 +9,7 @@ const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const isAndroidWebView =
   /Android/.test(navigator.userAgent) && /wv/.test(navigator.userAgent);
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`;
+const mapRef = useRef();
 
 // Custom icons
 const userIcon = new L.Icon({
@@ -83,6 +84,30 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
 
   return null;
 }
+useEffect(() => {
+  if (!mapRef.current) return;
+
+  window.zoomToLocation = (lat, lng) => {
+    const parsedLat = parseFloat(lat);
+    const parsedLng = parseFloat(lng);
+    if (isNaN(parsedLat) || isNaN(parsedLng)) return;
+
+    const map = mapRef.current;
+    const target = [parsedLat, parsedLng];
+
+    // Center and zoom in
+    map.setView(target, 17, { animate: true });
+
+    // Reset after 10 seconds
+    setTimeout(() => {
+      map.setView(defaultCenter, 13, { animate: true });
+    }, 10000);
+  };
+
+  return () => {
+    delete window.zoomToLocation;
+  };
+}, [defaultCenter]);
 
 // Geocoding for popup labels
 async function reverseGeocode(lat, lng) {
@@ -142,6 +167,9 @@ export default function Maps({
         zoom={13}
         zoomControl={false} // ✅ Remove zoom buttons
         attributionControl={false} // ✅ Remove Mapbox attribution
+        whenCreated={(mapInstance) => {
+          mapRef.current = mapInstance;
+        }}
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
