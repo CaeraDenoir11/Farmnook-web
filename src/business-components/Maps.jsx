@@ -35,27 +35,34 @@ function ChangeViewWithTimeout({ center, resetZoom = 13 }) {
   const map = useMap();
   const [userInteracted, setUserInteracted] = useState(false);
   const timeoutRef = useRef(null);
+  const hasSetInitial = useRef(false);
 
   useEffect(() => {
-    if (!map) return;
+    if (!map || !center) return;
 
     const resetView = () => {
-      map.setView(center, resetZoom);
-      setUserInteracted(false);
+      if (map && center) {
+        map.setView(center, resetZoom);
+        setUserInteracted(false);
+      }
     };
 
-    // Detect any user interaction
     const onUserInteraction = () => {
       setUserInteracted(true);
       clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(resetView, 10000); // 10s reset
+      timeoutRef.current = setTimeout(resetView, 10000); // reset after 10s
     };
+
+    // Delay initial zoom set for WebView stability
+    if (!hasSetInitial.current) {
+      hasSetInitial.current = true;
+      setTimeout(() => {
+        map.setView(center, resetZoom);
+      }, 500); // <-- delay for Android WebView
+    }
 
     map.on("zoomstart", onUserInteraction);
     map.on("dragstart", onUserInteraction);
-
-    // Initial setView when location updates
-    map.setView(center, resetZoom);
 
     return () => {
       clearTimeout(timeoutRef.current);
