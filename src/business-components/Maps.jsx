@@ -22,7 +22,16 @@ const pinIcon = new L.Icon({
   iconSize: [35, 35],
   iconAnchor: [17, 35],
 });
-
+// Changes the map view when the user location is updated
+function ChangeView({ center }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center) {
+      map.setView(center, 18); // More zoom-in for clarity on Android
+    }
+  }, [center, map]);
+  return null;
+}
 // Map logic to add route and markers
 function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
   const map = useMap();
@@ -150,9 +159,12 @@ export default function Maps({
         />
 
         {position && (
-          <Marker position={position} icon={userIcon}>
-            <Popup>You Are Here</Popup>
-          </Marker>
+          <>
+            <ChangeView center={position} />
+            <Marker position={position} icon={userIcon}>
+              <Popup>You Are Here</Popup>
+            </Marker>
+          </>
         )}
 
         {pickupLocation && destinationLocation && (
