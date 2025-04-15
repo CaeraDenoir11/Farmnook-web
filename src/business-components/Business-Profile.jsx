@@ -53,7 +53,7 @@ export default function BusinessProfile() {
           const subscriptionsRef = collection(db, "subscriptions");
           const qSubscriptions = query(
             subscriptionsRef,
-            where("userId", "==", userId)
+            where("businessId", "==", userId)
           );
           const subscriptionSnapshot = await getDocs(qSubscriptions);
           setIsSubscribed(!subscriptionSnapshot.empty);
@@ -131,9 +131,8 @@ export default function BusinessProfile() {
     <div className="flex h-screen bg-white p-6 md:p-10 relative">
       {/* Main Profile Section */}
       <div
-        className={`flex items-center justify-center transition-all duration-500 ease-in-out ${
-          showSubscription ? "flex-[0.75]" : "flex-[1]"
-        }`}
+        className={`flex items-center justify-center transition-all duration-500 ease-in-out ${showSubscription ? "flex-[0.75]" : "flex-[1]"
+          }`}
       >
         <div className="rounded-3xl shadow-2xl overflow-hidden w-full max-w-4xl flex flex-col relative">
           {/* Header Section */}
@@ -208,17 +207,17 @@ export default function BusinessProfile() {
                     <span className="text-lg font-semibold text-[#1A4D2E]">
                       {admin.dateJoined
                         ? (() => {
-                            const [day, month, year] =
-                              admin.dateJoined.split("-");
-                            const formattedDate = new Date(
-                              `${year}-${month}-${day}`
-                            );
-                            return formattedDate.toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            });
-                          })()
+                          const [day, month, year] =
+                            admin.dateJoined.split("-");
+                          const formattedDate = new Date(
+                            `${year}-${month}-${day}`
+                          );
+                          return formattedDate.toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          });
+                        })()
                         : "N/A"}
                     </span>
                   </div>
