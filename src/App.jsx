@@ -12,7 +12,7 @@ import Feedback from "./dev-components/Feedback.jsx";
 import Login from "./auth/Login.jsx";
 import BusinessSidebar from "./business-components/Business-Sidebar.jsx";
 import BusinessDashboard from "./business-components/Business-Dashboard.jsx";
-import BusinessDrivers from "./business-components/Business-Drivers.jsx";
+import BusinessHaulers from "./business-components/Business-Haulers.jsx";
 import BusinessVehicles from "./business-components/Business-Vehicles.jsx";
 import BusinessReviews from "./business-components/Business-Reviews.jsx";
 import Maps from "./business-components/Maps.jsx";
@@ -110,7 +110,7 @@ export default function App() {
                         path="/dashboard"
                         element={<BusinessDashboard />}
                       />
-                      <Route path="/haulers" element={<BusinessDrivers />} />
+                      <Route path="/haulers" element={<BusinessHaulers />} />
                       <Route path="/vehicles" element={<BusinessVehicles />} />
                       <Route path="/maps" element={<Maps />} />
                       <Route path="/reviews" element={<BusinessReviews />} />
