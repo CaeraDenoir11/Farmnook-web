@@ -21,7 +21,7 @@ const secondaryApp = initializeApp(
 );
 const secondaryAuth = getAuth(secondaryApp);
 
-function AddDriverButton({ onAddDriver }) {
+function AddHaulerButton({ onAddHauler }) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -115,8 +115,8 @@ function AddDriverButton({ onAddDriver }) {
       await setDoc(doc(db, "users", haulerUid), newHauler);
       console.log("✅ Hauler account added!");
 
-      if (onAddDriver) {
-        onAddDriver({
+      if (onAddHauler) {
+        onAddHauler({
           userId: haulerUid,
           ...newHauler,
         });
@@ -148,7 +148,7 @@ function AddDriverButton({ onAddDriver }) {
         >
           <Plus className="fill-[#F5EFE6]" size={16} md:size={20} />
           <span className="text-[0px] group-hover:text-xs md:group-hover:text-sm duration-300">
-            Add Driver
+            Add Hauler
           </span>
         </button>
       </div>
@@ -157,7 +157,7 @@ function AddDriverButton({ onAddDriver }) {
         <div className="fixed inset-0 backdrop-blur-sm bg-black/40 flex justify-center items-center p-2 md:p-4">
           <div className="bg-[#F5EFE6] p-3 md:p-6 rounded-xl md:rounded-2xl shadow-2xl w-full max-w-xs sm:max-w-md md:max-w-2xl lg:max-w-3xl transition-all duration-300">
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 md:mb-4 text-[#1A4D2E] text-center">
-              Add Driver
+              Add Hauler
             </h2>
 
             {errors.general && (
@@ -202,7 +202,7 @@ function AddDriverButton({ onAddDriver }) {
               </div>
               <div className="flex-1">
                 <label className="block font-semibold mb-1 md:mb-2 text-sm md:text-base">
-                  Driver Details
+                  Hauler Details
                 </label>
                 {["fname", "lname", "licenseNo"].map((key) => (
                   <div key={key} className="mb-1 md:mb-2">
@@ -238,7 +238,7 @@ function AddDriverButton({ onAddDriver }) {
                 disabled={loading}
                 className="px-2 md:px-4 py-1 md:py-2 bg-[#1A4D2E] text-white rounded-lg text-xs md:text-sm"
               >
-                {loading ? "Uploading..." : "Add Driver"}
+                {loading ? "Uploading..." : "Add Hauler"}
               </button>
             </div>
           </div>
@@ -248,4 +248,4 @@ function AddDriverButton({ onAddDriver }) {
   );
 }
 
-export default AddDriverButton;
+export default AddHaulerButton;

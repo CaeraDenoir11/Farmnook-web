@@ -1,23 +1,16 @@
 import { useState, useEffect } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { db } from "../../configs/firebase";
-import {
-  collection,
-  query,
-  onSnapshot,
-  where,
-  doc,
-  getDoc,
-} from "firebase/firestore";
-import AddDriverButton from "../assets/buttons/AddDriverButton.jsx";
+import { db } from "../../configs/firebase.js";
+import { collection, query, onSnapshot, where, doc, getDoc } from "firebase/firestore";
+import AddHaulerButton from "../assets/buttons/AddHaulerButton.jsx";
 import defaultImg from "../assets/images/default.png";
 
-export default function BusinessDrivers() {
+export default function BusinessHaulers() {
   const [users, setUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null); // Store logged-in user
   const usersPerPage = 5;
 
   useEffect(() => {
@@ -36,6 +29,8 @@ export default function BusinessDrivers() {
   useEffect(() => {
     if (!currentUser) return;
 
+    console.log("[BusinessHaulers] Current User ID:", currentUser.uid);
+
     const q = query(
       collection(db, "users"),
       where("businessId", "==", currentUser.uid),
@@ -43,10 +38,12 @@ export default function BusinessDrivers() {
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
+
       const haulers = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
+
 
       const adminDocRef = doc(db, "users", currentUser.uid);
       const adminSnap = await getDoc(adminDocRef);
@@ -54,20 +51,24 @@ export default function BusinessDrivers() {
 
       if (adminSnap.exists()) {
         const adminData = adminSnap.data();
+
         adminAsHauler = {
           id: currentUser.uid,
           ...adminData,
-          isAdmin: true,
+          isAdmin: true, // for display/debugging
         };
+      } else {
+        console.warn("[BusinessHaulers] Admin user record not found in Firestore.");
       }
 
-      const finalHaulers = adminAsHauler
-        ? [adminAsHauler, ...haulers]
-        : haulers;
+      const finalHaulers = adminAsHauler ? [adminAsHauler, ...haulers] : haulers;
+
       setUsers(finalHaulers);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+    };
   }, [currentUser]);
 
   const filteredUsers = users.filter((user) => {
@@ -76,7 +77,7 @@ export default function BusinessDrivers() {
       .includes(searchTerm.toLowerCase());
     const matchesStatus =
       filterStatus === "All" ||
-      (user.status ? "Online" : "Offline") === filterStatus;
+      (user.status ? "On Ride" : "Active") === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
@@ -86,8 +87,8 @@ export default function BusinessDrivers() {
     currentPage * usersPerPage
   );
 
-  const handleAddDriver = (newDriver) => {
-    setUsers((prevUsers) => [...prevUsers, newDriver]);
+  const handleAddHauler = (newHauler) => {
+    setUsers((prevUsers) => [...prevUsers, newHauler]);
   };
 
   return (
@@ -104,12 +105,12 @@ export default function BusinessDrivers() {
               className="border border-gray-400 px-4 py-2 rounded-lg focus:outline-none focus:border-[#1A4D2E]"
             >
               <option value="All">All</option>
-              <option value="Online">Online</option>
-              <option value="Offline">Offline</option>
+              <option value="Active">Active</option>
+              <option value="On Ride">On Ride</option>
             </select>
             <input
               type="text"
-              placeholder="Search drivers..."
+              placeholder="Search haulers..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2 border border-gray-400 rounded-lg focus:outline-none focus:border-[#1A4D2E]"
@@ -120,7 +121,7 @@ export default function BusinessDrivers() {
               <table className="min-w-full leading-normal">
                 <thead>
                   <tr className="bg-[#F5EFE6] text-[#1A4D2E] uppercase text-xs font-semibold tracking-wider">
-                    <th className="px-10 py-3 border-b-1 text-left">Driver</th>
+                    <th className="px-10 py-3 border-b-1 text-left">Hauler</th>
                     <th className="px-5 py-3 border-b-1 text-left">License</th>
                     <th className="px-5 py-3 border-b-1 text-left">Phone</th>
                     <th className="px-5 py-3 border-b-1 text-left">Status</th>
@@ -135,7 +136,7 @@ export default function BusinessDrivers() {
                       <td className="px-5 py-5 border-b border-gray-200 flex items-center gap-4">
                         <img
                           src={user.profileImageUrl || defaultImg}
-                          alt="Driver"
+                          alt="Hauler"
                           className="rounded-full w-12 h-12 border-2 border-[#1A4D2E]"
                         />
                         <span className="font-light text-[#1A4D2E]">
@@ -150,11 +151,10 @@ export default function BusinessDrivers() {
                       </td>
                       <td className="px-5 py-5 border-b border-gray-300">
                         <span
-                          className={`px-3 py-1 font-semibold text-white rounded-full ${
-                            user.status ? "bg-green-600" : "bg-gray-400"
-                          }`}
+                          className={`px-3 py-1 font-semibold text-white rounded-full ${user.status ? "bg-yellow-500" : "bg-green-500"
+                            }`}
                         >
-                          {user.status ? "Online" : "Offline"}
+                          {user.status ? "On Ride" : "Active"}
                         </span>
                       </td>
                     </tr>
@@ -193,7 +193,7 @@ export default function BusinessDrivers() {
               </div>
             </div>
           </div>
-          <AddDriverButton onAddDriver={handleAddDriver} />
+          <AddHaulerButton onAddHauler={handleAddHauler} />
         </div>
       </div>
     </div>
