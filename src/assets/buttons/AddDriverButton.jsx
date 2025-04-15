@@ -9,12 +9,13 @@ import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 
 const secondaryApp = initializeApp(
   {
-    apiKey: import.meta.env.VITE_FIREBASE_APIKEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTHDOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECTID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGEBUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGINGSENDERID,
-    appId: import.meta.env.VITE_FIREBASE_APPID,
+  apiKey: "AIzaSyDF4Y-Bdtur8lS2Nk6sTTDq4UQYIonh0u0",
+  authDomain: "farmnook-database-4e0e8.firebaseapp.com",
+  projectId: "farmnook-database-4e0e8",
+  storageBucket: "farmnook-database-4e0e8.firebasestorage.app",
+  messagingSenderId: "517240344964",
+  appId: "1:517240344964:web:7fe737c45691710dc80dd1",
+  measurementId: "G-KLPF2Y5LNL",
   },
   "Secondary"
 );
