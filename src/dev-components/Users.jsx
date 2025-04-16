@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import "../index.css";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../configs/firebase";
+import defaultUserImg from "../assets/images/default.png";
+
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -88,11 +90,12 @@ export default function Users() {
               currentUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-200 transition-all">
                   <td className="p-1 sm:p-3">
-                    <img
-                      src={user.profileImageUrl}
+                  <img
+                      src={user.profileImageUrl || defaultUserImg}
                       alt="Profile"
                       className="rounded-full w-8 h-8 sm:w-10 sm:h-10 mx-auto object-cover"
                     />
+
                   </td>
                   <td className="p-1 sm:p-3 font-medium text-[#1A4D2E]">
                     {user.businessName}
