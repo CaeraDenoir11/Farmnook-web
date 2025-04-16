@@ -1,5 +1,9 @@
-import { useState } from "react";
-import "../index.css";
+import { useEffect, useState } from "react";
+import {
+  collection,
+  onSnapshot,
+} from "firebase/firestore";
+import { db } from "../../configs/firebase";
 import {
   AreaChart,
   Area,
@@ -10,29 +14,61 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const monthlyData = {
-  January: [
-    { week: "Week 1", users: 100 },
-    { week: "Week 2", users: 120 },
-    { week: "Week 3", users: 90 },
-    { week: "Week 4", users: 130 },
-  ],
-  February: [
-    { week: "Week 1", users: 80 },
-    { week: "Week 2", users: 110 },
-    { week: "Week 3", users: 95 },
-    { week: "Week 4", users: 140 },
-  ],
-  March: [
-    { week: "Week 1", users: 120 },
-    { week: "Week 2", users: 90 },
-    { week: "Week 3", users: 150 },
-    { week: "Week 4", users: 130 },
-  ],
-};
-
 export default function Dashboard() {
-  const [selectedMonth, setSelectedMonth] = useState("March");
+  const [monthlyData, setMonthlyData] = useState({});
+  const [selectedMonth, setSelectedMonth] = useState("");
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
+      const monthlyCount = {};
+
+      snapshot.forEach((doc) => {
+        const { dateJoined } = doc.data();
+        let date;
+
+        // 1. Firestore Timestamp
+        if (dateJoined?.seconds) {
+          date = new Date(dateJoined.seconds * 1000);
+        }
+
+        // 2. String like "Apr 15, 2025, 12:44 AM"
+        else if (typeof dateJoined === "string" && dateJoined.includes(",")) {
+          date = new Date(dateJoined);
+        }
+
+        // 3. String like "01-04-2025"
+        else if (typeof dateJoined === "string" && dateJoined.includes("-")) {
+          const [day, month, year] = dateJoined.split("-").map(Number);
+          date = new Date(year, month - 1, day);
+        }
+
+        // Ensure valid date
+        if (date instanceof Date && !isNaN(date)) {
+          const monthName = date.toLocaleString("default", { month: "long" });
+          const week = `Week ${Math.ceil(date.getDate() / 7)}`;
+
+          if (!monthlyCount[monthName]) monthlyCount[monthName] = {};
+          if (!monthlyCount[monthName][week]) monthlyCount[monthName][week] = 0;
+
+          monthlyCount[monthName][week]++;
+        }
+      });
+
+      const formattedData = {};
+      Object.keys(monthlyCount).forEach((month) => {
+        formattedData[month] = Object.entries(monthlyCount[month])
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([week, users]) => ({ week, users }));
+      });
+
+      setMonthlyData(formattedData);
+      if (!selectedMonth && Object.keys(formattedData).length > 0) {
+        setSelectedMonth(Object.keys(formattedData)[0]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [selectedMonth]);
 
   return (
     <div className="p-4">
@@ -42,7 +78,7 @@ export default function Dashboard() {
 
       <div className="bg-[#F5EFE6] p-6 rounded-lg shadow-md max-w-4xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-          {/* Month Selector on Top Left */}
+          {/* Month Selector */}
           <select
             className="p-2 border rounded-lg bg-white text-green-800 shadow-md"
             value={selectedMonth}
@@ -55,26 +91,26 @@ export default function Dashboard() {
             ))}
           </select>
 
-          {/* Total Users on Top Right */}
+          {/* Total Users */}
           <div className="bg-white text-green-800 p-4 rounded-lg shadow-md text-center">
-            <h2 className="text-lg font-semibold">Total Logged-in Users</h2>
+            <h2 className="text-lg font-semibold">Total users for {selectedMonth}</h2>
             <p className="text-2xl font-bold mt-2">
-              {monthlyData[selectedMonth].reduce(
+              {monthlyData[selectedMonth]?.reduce(
                 (sum, entry) => sum + entry.users,
                 0
-              )}
+              ) || 0}
             </p>
           </div>
         </div>
 
-        {/* Line Chart */}
+        {/* Area Chart */}
         <h2 className="text-lg font-semibold mb-4 text-green-800 text-center">
-          User Activity Over Time ({selectedMonth})
+          Weekly Users in {selectedMonth}
         </h2>
         <div className="w-full h-80">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
-              data={monthlyData[selectedMonth]}
+              data={monthlyData[selectedMonth] || []}
               margin={{ top: 20, right: 30, left: 0, bottom: 10 }}
             >
               <defs>
@@ -85,7 +121,7 @@ export default function Dashboard() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
               <XAxis dataKey="week" tick={{ fill: "#4A5568" }} />
-              <YAxis tick={{ fill: "#4A5568" }} />
+              <YAxis tick={{ fill: "#4A5568" }} allowDecimals={false} />
               <Tooltip
                 contentStyle={{
                   backgroundColor: "rgba(255, 255, 255, 0.9)",
