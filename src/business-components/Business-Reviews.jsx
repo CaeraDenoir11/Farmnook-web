@@ -1,84 +1,83 @@
 import { useState, useEffect } from "react";
-import {
-  IoSearchOutline,
-  IoStar,
-  IoStarHalf,
-  IoShareOutline,
-} from "react-icons/io5";
+import { IoSearchOutline, IoStar, IoStarHalf, IoShareOutline } from "react-icons/io5";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
 import "../index.css";
+
+// Initialize Firebase
+import { initializeApp } from "firebase/app";
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_APIKEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTHDOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECTID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGEBUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGINGSENDERID,
+  appId: import.meta.env.VITE_FIREBASE_APPID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENTID,
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 export default function BusinessReviews() {
   const [search, setSearch] = useState("");
   const [error, setError] = useState(null);
-  const generalRating = 4.6;
+  const [reviewsData, setReviewsData] = useState([]);
+  const [averageRating, setAverageRating] = useState(0);
 
-  // Sample Review Data
-  const reviewsData = [
-    {
-      name: "Alice Banks",
-      color: "bg-yellow-500",
-      text: "The device has a clean design and the metal housing feels sturdy in my hands. Soft rounded corners make it a pleasure to look at.",
-      rating: 5,
-      date: "2024-03-20",
-    },
-    {
-      name: "Jess Hopkins",
-      color: "bg-red-500",
-      text: "Gorgeous design! Even more responsive than the previous version. A pleasure to use!",
-      rating: 1.5,
-      date: "2024-03-15",
-    },
-    {
-      name: "Mark Carter",
-      color: "bg-blue-500",
-      text: "Very reliable and easy to use. The battery lasts longer than expected!",
-      rating: 4.8,
-      date: "2024-03-10",
-    },
-  ];
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const reviewsRef = collection(db, "feedback"); // Your Firestore collection for reviews
+        const querySnapshot = await getDocs(reviewsRef);
+        const reviews = querySnapshot.docs.map((doc) => doc.data());
+
+        setReviewsData(reviews);
+
+        // Calculate the average rating
+        const totalRating = reviews.reduce((acc, review) => acc + review.rating, 0);
+        const avgRating = totalRating / reviews.length;
+        setAverageRating(avgRating);
+      } catch (err) {
+        console.error("Error fetching reviews:", err);
+        setError("Something went wrong while loading reviews.");
+      }
+    };
+
+    fetchReviews();
+  }, []);
 
   // Sort Reviews by Date (Latest First)
   const sortedReviews = [...reviewsData].sort(
-    (a, b) => new Date(b.date) - new Date(a.date)
+    (a, b) => new Date(b.timestamp.seconds * 1000) - new Date(a.timestamp.seconds * 1000)
   );
 
   // Search Filter (Based on Review Text)
   const filteredReviews = sortedReviews.filter((review) =>
-    review.text.toLowerCase().includes(search.toLowerCase())
+    review.comment.toLowerCase().includes(search.toLowerCase())
   );
-
-  useEffect(() => {
-    try {
-      console.log("BusinessReviews component mounted.");
-    } catch (err) {
-      console.error("Error in BusinessReviews:", err);
-      setError("Something went wrong while loading reviews.");
-    }
-  }, []);
 
   return (
     <div className="antialiased bg-white flex flex-col items-center min-h-screen px-4 sm:px-8 py-8">
       <div className="container mx-auto w-full max-w-7xl">
         {/* HEADER SECTION */}
         <h1 className="text-2xl font-semibold text-[#1A4D2E] mb-4 px-4">
-          Customer Review
+          Customer Reviews
         </h1>
 
         {/* General Rating Section */}
         <div className="flex flex-col items-start sm:flex-row sm:items-center justify-between px-4 mb-6">
           <div>
             <div className="text-5xl font-bold text-[#1A4D2E]">
-              {generalRating.toFixed(1)}
+              {averageRating.toFixed(1)}
             </div>
             <div className="flex text-[#1A4D2E] text-2xl">
-              {Array.from({ length: Math.floor(generalRating) }).map((_, i) => (
+              {Array.from({ length: Math.floor(averageRating) }).map((_, i) => (
                 <IoStar key={i} />
               ))}
-              {generalRating % 1 !== 0 && <IoStarHalf />}
+              {averageRating % 1 !== 0 && <IoStarHalf />}
             </div>
           </div>
 
-          {/* Search Bar (Now at the Start) */}
+          {/* Search Bar */}
           <div className="w-full sm:w-96 mt-4 sm:mt-0">
             <div className="flex items-center bg-white border border-gray-400 rounded-lg px-3 py-2">
               <IoSearchOutline className="text-[#1A4D2E] text-lg mr-2" />
@@ -100,7 +99,7 @@ export default function BusinessReviews() {
           </p>
         )}
 
-        {/* REVIEWS SECTION (Wider & Sorted by Date) */}
+        {/* REVIEWS SECTION */}
         <div className="-mx-4 sm:-mx-8 px-4 sm:px-8 py-4 w-full max-w-7xl">
           {filteredReviews.length > 0 ? (
             filteredReviews.map((review, index) => (
@@ -111,12 +110,13 @@ export default function BusinessReviews() {
                 {/* Profile and Rating */}
                 <div className="flex justify-between">
                   <div className="flex gap-2 items-center">
+                    {/* Default Profile Picture */}
                     <div
-                      className={`w-8 h-8 text-center rounded-full ${review.color} text-white flex items-center justify-center font-bold`}
+                      className="w-8 h-8 text-center rounded-full bg-gray-500 text-white flex items-center justify-center font-bold"
                     >
-                      {review.name.charAt(0)}
+                      {review.farmerName ? review.farmerName.charAt(0) : "A"}
                     </div>
-                    <span className="font-semibold">{review.name}</span>
+                    <span className="font-semibold">{review.farmerName || "Anonymous"}</span>
                   </div>
                   <div className="flex p-1 gap-1 text-[#1A4D2E] text-lg">
                     {Array.from({ length: Math.floor(review.rating) }).map(
@@ -128,11 +128,11 @@ export default function BusinessReviews() {
                   </div>
                 </div>
 
-                <div className="text-lg mt-2">{review.text}</div>
+                <div className="text-lg mt-2">{review.comment}</div>
 
                 <div className="flex justify-between items-center mt-3">
                   <span className="text-sm">
-                    {new Date(review.date).toDateString()}
+                    {new Date(review.timestamp.seconds * 1000).toDateString()}
                   </span>
                   <button className="p-1 px-3 bg-[#F5EFE6] text-[#1A4D2E] hover:bg-opacity-80 border border-[#1A4D2E] rounded-md flex items-center gap-1">
                     <IoShareOutline /> Share
