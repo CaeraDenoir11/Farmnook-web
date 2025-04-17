@@ -65,7 +65,10 @@ export default function AcceptRequestModal({
         };
 
         // Only add if not already in haulerList
-        const combined = [adminAsHauler, ...haulerList.filter(h => h.id !== currentUser.uid)];
+        const combined = [
+          adminAsHauler,
+          ...haulerList.filter((h) => h.id !== currentUser.uid),
+        ];
         setHaulers(combined);
       } else {
         setHaulers(haulerList);
@@ -74,7 +77,6 @@ export default function AcceptRequestModal({
 
     return () => unsub();
   }, [currentUser]);
-
 
   const handleAssign = async (hauler) => {
     try {
@@ -110,7 +112,7 @@ export default function AcceptRequestModal({
       const notifRef = doc(collection(db, "notifications"));
       await setDoc(notifRef, {
         notificationId: notifRef.id,
-        farmerId: req.farmerId,
+        recipientId: req.farmerId,
         title: businessName,
         message,
         timestamp: Timestamp.now(),
@@ -124,7 +126,10 @@ export default function AcceptRequestModal({
         (id) => typeof id === "string" && id.length >= 10
       );
       if (validPlayerIds.length) {
-        await sendPushNotification(validPlayerIds, businessName, message);
+        await sendPushNotification(validPlayerIds, businessName, message, {
+          openTarget: "FarmerDashboardFragment", // ✅ match this string in ApplicationClass
+          farmerId: req.farmerId,
+        });
       } else {
         console.warn("No valid playerIds found for farmer:", req.farmerId);
       }
@@ -140,7 +145,7 @@ export default function AcceptRequestModal({
         const haulerNotifRef = doc(collection(db, "notifications"));
         await setDoc(haulerNotifRef, {
           notificationId: haulerNotifRef.id,
-          haulerId: hauler.id,
+          recipientId: hauler.id,
           title: "New Delivery Assignment",
           message: haulerMessage,
           timestamp: Timestamp.now(),
@@ -152,7 +157,15 @@ export default function AcceptRequestModal({
         );
 
         if (haulerPlayerIds.length) {
-          await sendPushNotification(haulerPlayerIds, "New Delivery Assignment", haulerMessage);
+          await sendPushNotification(
+            haulerPlayerIds,
+            "New Delivery Assignment",
+            haulerMessage,
+            {
+              openTarget: "HaulerDashboardFragment",
+              haulerId: hauler.id,
+            }
+          );
         } else {
           console.warn("No valid playerIds found for hauler:", hauler.id);
         }

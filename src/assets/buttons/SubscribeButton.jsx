@@ -21,10 +21,10 @@ export default function SubscribeButton() {
 		const checkSubscription = async () => {
 			if (!user) return;
 
-			try {
-				const subscriptionsRef = collection(db, "subscriptions");
-				const q = query(subscriptionsRef, where("businessId", "==", user.uid));
-				const querySnapshot = await getDocs(q);
+      try {
+        const subscriptionsRef = collection(db, "subscriptions");
+        const q = query(subscriptionsRef, where("userId", "==", user.uid));
+        const querySnapshot = await getDocs(q);
 
 				if (!querySnapshot.empty) {
 					setIsSubscribed(true); // User is already subscribed
