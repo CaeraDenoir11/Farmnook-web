@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../../configs/firebase.js";
-import { collection, query, onSnapshot, where, doc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  query,
+  onSnapshot,
+  where,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 import AddHaulerButton from "../assets/buttons/AddHaulerButton.jsx";
 import defaultImg from "../assets/images/default.png";
 
@@ -38,12 +45,10 @@ export default function BusinessHaulers() {
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-
       const haulers = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-
 
       const adminDocRef = doc(db, "users", currentUser.uid);
       const adminSnap = await getDoc(adminDocRef);
@@ -58,10 +63,14 @@ export default function BusinessHaulers() {
           isAdmin: true, // for display/debugging
         };
       } else {
-        console.warn("[BusinessHaulers] Admin user record not found in Firestore.");
+        console.warn(
+          "[BusinessHaulers] Admin user record not found in Firestore."
+        );
       }
 
-      const finalHaulers = adminAsHauler ? [adminAsHauler, ...haulers] : haulers;
+      const finalHaulers = adminAsHauler
+        ? [adminAsHauler, ...haulers]
+        : haulers;
 
       setUsers(finalHaulers);
     });
@@ -86,10 +95,6 @@ export default function BusinessHaulers() {
     (currentPage - 1) * usersPerPage,
     currentPage * usersPerPage
   );
-
-  const handleAddHauler = (newHauler) => {
-    setUsers((prevUsers) => [...prevUsers, newHauler]);
-  };
 
   return (
     <div className="antialiased bg-white flex flex-col items-center min-h-screen">
@@ -151,8 +156,9 @@ export default function BusinessHaulers() {
                       </td>
                       <td className="px-5 py-5 border-b border-gray-300">
                         <span
-                          className={`px-3 py-1 font-semibold text-white rounded-full ${user.status ? "bg-yellow-500" : "bg-green-500"
-                            }`}
+                          className={`px-3 py-1 font-semibold text-white rounded-full ${
+                            user.status ? "bg-yellow-500" : "bg-green-500"
+                          }`}
                         >
                           {user.status ? "On Ride" : "Active"}
                         </span>
@@ -193,7 +199,7 @@ export default function BusinessHaulers() {
               </div>
             </div>
           </div>
-          <AddHaulerButton onAddHauler={handleAddHauler} />
+          <AddHaulerButton onAddHauler={() => {}} />
         </div>
       </div>
     </div>

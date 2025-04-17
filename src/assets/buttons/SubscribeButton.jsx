@@ -23,7 +23,7 @@ export default function SubscribeButton() {
 
       try {
         const subscriptionsRef = collection(db, "subscriptions");
-        const q = query(subscriptionsRef, where("userId", "==", user.uid));
+        const q = query(subscriptionsRef, where("businessId", "==", user.uid));
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
