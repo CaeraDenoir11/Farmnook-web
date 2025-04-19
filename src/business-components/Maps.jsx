@@ -45,7 +45,6 @@ function RouteMap({
   drop,
   routeColor = "blue",
   showTooltips = false,
-  hideRoutingUI = false,
 }) {
   const map = useMap();
 
@@ -59,10 +58,10 @@ function RouteMap({
 
     const control = L.Routing.control({
       waypoints: [start, end],
-      plan: hideRoutingUI ? null : undefined,
-      show: !hideRoutingUI,
+      collapsible: true,
+      show: true,
       lineOptions: {
-        styles: [{ color: routeColor, weight: 6 }],
+        styles: [{ color: routeColor, weight: 4 }],
       },
       createMarker: () => null,
       routeWhileDragging: false,
@@ -100,7 +99,7 @@ function RouteMap({
         console.warn("Failed to remove control:", err);
       }
     };
-  }, [pickup, drop, routeColor, showTooltips, hideRoutingUI, map]);
+  }, [pickup, drop, routeColor, showTooltips, map]);
 
   return null;
 }
@@ -125,7 +124,7 @@ export default function Maps({
   routeColor = "blue",
   showTooltips = false,
   height = "100vh",
-  hideRoutingUI = false,
+
 }) {
   const [position, setPosition] = useState(null);
   const [markerPos, setMarkerPos] = useState(null);
@@ -179,7 +178,7 @@ export default function Maps({
             drop={destinationLocation}
             routeColor={routeColor}
             showTooltips={showTooltips}
-            hideRoutingUI={hideRoutingUI}
+          
           />
         )}
       </MapContainer>
