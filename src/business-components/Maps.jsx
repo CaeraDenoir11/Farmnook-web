@@ -27,7 +27,7 @@ function ChangeView({ center }) {
   const map = useMap();
   useEffect(() => {
     if (center) {
-      map.setView(center, 18);
+      map.setView(center, map.getZoom(), { animate: true });
     }
   }, [center, map]);
   return null;
