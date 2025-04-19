@@ -17,10 +17,12 @@ import {
 export default function Dashboard() {
   const [monthlyData, setMonthlyData] = useState({});
   const [selectedMonth, setSelectedMonth] = useState("");
+  const [totalOverallUsers, setTotalOverallUsers] = useState(0);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
       const monthlyCount = {};
+      let overallCount = 0;
 
       snapshot.forEach((doc) => {
         const { dateJoined } = doc.data();
@@ -51,6 +53,7 @@ export default function Dashboard() {
           if (!monthlyCount[monthName][week]) monthlyCount[monthName][week] = 0;
 
           monthlyCount[monthName][week]++;
+          overallCount++;
         }
       });
 
@@ -62,6 +65,8 @@ export default function Dashboard() {
       });
 
       setMonthlyData(formattedData);
+      setTotalOverallUsers(overallCount);
+
       if (!selectedMonth && Object.keys(formattedData).length > 0) {
         setSelectedMonth(Object.keys(formattedData)[0]);
       }
@@ -77,7 +82,7 @@ export default function Dashboard() {
       </h1>
 
       <div className="bg-[#F5EFE6] p-6 rounded-lg shadow-md max-w-4xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
           {/* Month Selector */}
           <select
             className="p-2 border rounded-lg bg-white text-green-800 shadow-md"
@@ -92,14 +97,23 @@ export default function Dashboard() {
           </select>
 
           {/* Total Users */}
-          <div className="bg-white text-green-800 p-4 rounded-lg shadow-md text-center">
-            <h2 className="text-lg font-semibold">Total users for {selectedMonth}</h2>
-            <p className="text-2xl font-bold mt-2">
-              {monthlyData[selectedMonth]?.reduce(
-                (sum, entry) => sum + entry.users,
-                0
-              ) || 0}
-            </p>
+          <div className="flex gap-4">
+            <div className="bg-white text-green-800 p-4 rounded-lg shadow-md text-center">
+              <h2 className="text-lg font-semibold">
+                Total users for {selectedMonth}
+              </h2>
+              <p className="text-2xl font-bold mt-2">
+                {monthlyData[selectedMonth]?.reduce(
+                  (sum, entry) => sum + entry.users,
+                  0
+                ) || 0}
+              </p>
+            </div>
+
+            <div className="bg-white text-green-800 p-4 rounded-lg shadow-md text-center">
+              <h2 className="text-lg font-semibold">Total Overall Users</h2>
+              <p className="text-2xl font-bold mt-2">{totalOverallUsers}</p>
+            </div>
           </div>
         </div>
 
