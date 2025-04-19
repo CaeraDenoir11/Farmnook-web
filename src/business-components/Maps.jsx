@@ -33,7 +33,13 @@ function ChangeView({ center }) {
   return null;
 }
 // Map logic to add route and markers
-function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
+function RouteMap({
+  pickup,
+  drop,
+  routeColor = "blue",
+  showTooltips = false,
+  hideRoutingUI = false,
+}) {
   const map = useMap();
 
   useEffect(() => {
@@ -46,8 +52,8 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
 
     const control = L.Routing.control({
       waypoints: [start, end],
-      plan: isAndroidWebView ? null : undefined, // Hide plan UI on Android WebView only
-      show: !isAndroidWebView, // Hide direction step panel only on Android
+      plan: hideRoutingUI ? null : undefined,
+      show: !hideRoutingUI,
       lineOptions: {
         styles: [{ color: routeColor, weight: 6 }],
       },
@@ -115,6 +121,7 @@ export default function Maps({
   routeColor = "blue",
   showTooltips = false,
   height = "100vh",
+  hideRoutingUI = false, // ✅ Add this
 }) {
   const [position, setPosition] = useState(null);
   const [markerPos, setMarkerPos] = useState(null);
@@ -173,6 +180,7 @@ export default function Maps({
             drop={destinationLocation}
             routeColor={routeColor}
             showTooltips={showTooltips}
+            hideRoutingUI={hideRoutingUI}
           />
         )}
       </MapContainer>

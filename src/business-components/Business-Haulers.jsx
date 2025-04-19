@@ -20,25 +20,6 @@ export default function BusinessHaulers() {
   const [currentUser, setCurrentUser] = useState(null); // Store logged-in user
   const usersPerPage = 5;
 
-  const haulers = snapshot.docs.map((doc) => {
-    const data = doc.data();
-    const lastSeen = data.lastSeen?.toDate?.(); // Firestore Timestamp to JS Date
-
-    let isOnline = false;
-
-    if (data.status && lastSeen) {
-      const now = new Date();
-      const diffInSeconds = (now - lastSeen) / 1000;
-      isOnline = diffInSeconds <= 15; // ✅ Mark offline if lastSeen > 15 seconds ago
-    }
-
-    return {
-      id: doc.id,
-      ...data,
-      status: isOnline, // 🟢 override Firestore status with our decay logic
-    };
-  });
-
   useEffect(() => {
     const auth = getAuth();
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
