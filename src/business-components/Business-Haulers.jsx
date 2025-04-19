@@ -20,6 +20,25 @@ export default function BusinessHaulers() {
   const [currentUser, setCurrentUser] = useState(null); // Store logged-in user
   const usersPerPage = 5;
 
+  const haulers = snapshot.docs.map((doc) => {
+    const data = doc.data();
+    const lastSeen = data.lastSeen?.toDate?.(); // Firestore Timestamp to JS Date
+
+    let isOnline = false;
+
+    if (data.status && lastSeen) {
+      const now = new Date();
+      const diffInSeconds = (now - lastSeen) / 1000;
+      isOnline = diffInSeconds <= 15; // ✅ Mark offline if lastSeen > 15 seconds ago
+    }
+
+    return {
+      id: doc.id,
+      ...data,
+      status: isOnline, // 🟢 override Firestore status with our decay logic
+    };
+  });
+
   useEffect(() => {
     const auth = getAuth();
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -86,7 +105,7 @@ export default function BusinessHaulers() {
       .includes(searchTerm.toLowerCase());
     const matchesStatus =
       filterStatus === "All" ||
-      (user.status ? "On Ride" : "Active") === filterStatus;
+      (user.status ? "Online" : "Offline") === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
@@ -110,8 +129,8 @@ export default function BusinessHaulers() {
               className="border border-gray-400 px-4 py-2 rounded-lg focus:outline-none focus:border-[#1A4D2E]"
             >
               <option value="All">All</option>
-              <option value="Active">Active</option>
-              <option value="On Ride">On Ride</option>
+              <option value="Online">Online</option>
+              <option value="Offline">Offline</option>
             </select>
             <input
               type="text"
@@ -157,10 +176,10 @@ export default function BusinessHaulers() {
                       <td className="px-5 py-5 border-b border-gray-300">
                         <span
                           className={`px-3 py-1 font-semibold text-white rounded-full ${
-                            user.status ? "bg-yellow-500" : "bg-green-500"
+                            user.status ? "bg-green-500" : "bg-gray-500"
                           }`}
                         >
-                          {user.status ? "On Ride" : "Active"}
+                          {user.status ? "Online" : "Offline"}
                         </span>
                       </td>
                     </tr>
