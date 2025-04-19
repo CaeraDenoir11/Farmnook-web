@@ -1,38 +1,38 @@
-// Maps.jsx with centered route and cleaner UI
-import { useEffect, useState, useRef } from "react";
+// Maps.jsx with minimal-label Mapbox style
+import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "leaflet-routing-machine";
 
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
-const isAndroidWebView =
-  /Android/.test(navigator.userAgent) && /wv/.test(navigator.userAgent);
-const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`;
 
-// Custom icons
+// Use cleaner Mapbox style
+const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/navigation-day-v1/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`;
+
 const userIcon = new L.Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
   iconSize: [35, 35],
   iconAnchor: [17, 35],
   popupAnchor: [0, -35],
 });
+
 const pinIcon = new L.Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
   iconSize: [35, 35],
   iconAnchor: [17, 35],
 });
-// Changes the map view when the user location is updated
+
 function ChangeView({ center }) {
   const map = useMap();
   useEffect(() => {
     if (center) {
-      map.setView(center, 18); // More zoom-in for clarity on Android
+      map.setView(center, 18);
     }
   }, [center, map]);
   return null;
 }
-// Map logic to add route and markers
+
 function RouteMap({
   pickup,
   drop,
@@ -72,8 +72,8 @@ function RouteMap({
       setTimeout(() => {
         map.invalidateSize();
         map.fitBounds(bounds, {
-          padding: [100, 100], // ⬅️ padding for spacing
-          maxZoom: 15, // ⬅️ prevent zooming in too much
+          padding: [100, 100],
+          maxZoom: 15,
         });
       }, 300);
 
@@ -82,7 +82,6 @@ function RouteMap({
         const dropLabel = await reverseGeocode(endLat, endLng);
 
         L.marker(start, { icon: userIcon }).addTo(map).bindPopup(pickupLabel);
-
         L.marker(end, { icon: pinIcon }).addTo(map).bindPopup(dropLabel);
       }
     });
@@ -94,12 +93,11 @@ function RouteMap({
         console.warn("Failed to remove control:", err);
       }
     };
-  }, [pickup, drop, routeColor, showTooltips, map]);
+  }, [pickup, drop, routeColor, showTooltips, hideRoutingUI, map]);
 
   return null;
 }
 
-// Geocoding for popup labels
 async function reverseGeocode(lat, lng) {
   try {
     const response = await fetch(
@@ -113,7 +111,6 @@ async function reverseGeocode(lat, lng) {
   }
 }
 
-// Main map component
 export default function Maps({
   pickupLocation,
   destinationLocation,
@@ -121,7 +118,7 @@ export default function Maps({
   routeColor = "blue",
   showTooltips = false,
   height = "100vh",
-  hideRoutingUI = false, // ✅ Add this
+  hideRoutingUI = false,
 }) {
   const [position, setPosition] = useState(null);
   const [markerPos, setMarkerPos] = useState(null);
@@ -130,7 +127,6 @@ export default function Maps({
     ? pickupLocation.split(",").map(Number)
     : [10.3157, 123.8854];
 
-  // Expose updateUserLocation globally
   useEffect(() => {
     window.updateUserLocation = (lat, lng) => {
       const parsedLat = parseFloat(lat);
@@ -142,7 +138,6 @@ export default function Maps({
     return () => delete window.updateUserLocation;
   }, []);
 
-  // Expose getSelectedLocation globally
   useEffect(() => {
     window.getSelectedLocation = () => {
       if (!markerPos) return null;
@@ -156,14 +151,11 @@ export default function Maps({
       <MapContainer
         center={defaultCenter}
         zoom={13}
-        zoomControl={false} // ✅ Remove zoom buttons
-        attributionControl={false} // ✅ Remove Mapbox attribution
+        zoomControl={false}
+        attributionControl={false}
         style={{ height: "100%", width: "100%" }}
       >
-        <TileLayer
-          url={MAPBOX_TILE_URL}
-          attribution={null} // ✅ Ensure no attribution shows
-        />
+        <TileLayer url={MAPBOX_TILE_URL} attribution={null} />
 
         {position && (
           <>
