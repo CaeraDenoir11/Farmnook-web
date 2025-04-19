@@ -17,15 +17,25 @@ import {
 export default function Dashboard() {
   const [monthlyData, setMonthlyData] = useState({});
   const [selectedMonth, setSelectedMonth] = useState("");
-  const [totalOverallUsers, setTotalOverallUsers] = useState(0);
+  const [overallTotal, setOverallTotal] = useState(0);
+  const [userTypeCounts, setUserTypeCounts] = useState({
+    hauler: 0,
+    farmer: 0,
+    haulerBusinessAdmin: 0,
+  });
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
       const monthlyCount = {};
-      let overallCount = 0;
+      let total = 0;
+      const userTypes = {
+        hauler: 0,
+        farmer: 0,
+        haulerBusinessAdmin: 0,
+      };
 
       snapshot.forEach((doc) => {
-        const { dateJoined } = doc.data();
+        const { dateJoined, userType } = doc.data();
         let date;
 
         // 1. Firestore Timestamp
@@ -53,8 +63,13 @@ export default function Dashboard() {
           if (!monthlyCount[monthName][week]) monthlyCount[monthName][week] = 0;
 
           monthlyCount[monthName][week]++;
-          overallCount++;
+          total++;
         }
+
+        // Count user types
+        if (userType === "Hauler") userTypes.hauler++;
+        else if (userType === "Farmer") userTypes.farmer++;
+        else if (userType === "Hauler Business Admin") userTypes.haulerBusinessAdmin++;
       });
 
       const formattedData = {};
@@ -65,7 +80,8 @@ export default function Dashboard() {
       });
 
       setMonthlyData(formattedData);
-      setTotalOverallUsers(overallCount);
+      setOverallTotal(total);
+      setUserTypeCounts(userTypes);
 
       if (!selectedMonth && Object.keys(formattedData).length > 0) {
         setSelectedMonth(Object.keys(formattedData)[0]);
@@ -81,8 +97,8 @@ export default function Dashboard() {
         Dashboard
       </h1>
 
-      <div className="bg-[#F5EFE6] p-6 rounded-lg shadow-md max-w-4xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+      <div className="bg-[#F5EFE6] p-6 rounded-lg shadow-md max-w-5xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
           {/* Month Selector */}
           <select
             className="p-2 border rounded-lg bg-white text-green-800 shadow-md"
@@ -96,9 +112,10 @@ export default function Dashboard() {
             ))}
           </select>
 
-          {/* Total Users */}
-          <div className="flex gap-4">
-            <div className="bg-white text-green-800 p-4 rounded-lg shadow-md text-center">
+          {/* Summary Cards */}
+          <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto justify-center">
+            {/* Monthly Total */}
+            <div className="bg-white text-green-800 p-4 rounded-lg shadow-md text-center w-full md:w-64">
               <h2 className="text-lg font-semibold">
                 Total users for {selectedMonth}
               </h2>
@@ -108,11 +125,28 @@ export default function Dashboard() {
                   0
                 ) || 0}
               </p>
+              <p className="text-sm text-gray-500 mt-1">
+                Overall: {overallTotal}
+              </p>
             </div>
 
-            <div className="bg-white text-green-800 p-4 rounded-lg shadow-md text-center">
-              <h2 className="text-lg font-semibold">Total Overall Users</h2>
-              <p className="text-2xl font-bold mt-2">{totalOverallUsers}</p>
+            {/* User Type Summary */}
+            <div className="bg-white text-green-800 p-4 rounded-lg shadow-md w-full md:w-64">
+              <h2 className="text-lg font-semibold text-center mb-2">
+                User Type Summary
+              </h2>
+              <ul className="list-disc list-inside text-sm space-y-1">
+                <li>
+                  Haulers: <span className="font-bold">{userTypeCounts.hauler}</span>
+                </li>
+                <li>
+                  Farmers: <span className="font-bold">{userTypeCounts.farmer}</span>
+                </li>
+                <li>
+                  Hauler Business Admins:{" "}
+                  <span className="font-bold">{userTypeCounts.haulerBusinessAdmin}</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
