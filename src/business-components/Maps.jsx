@@ -30,7 +30,7 @@ function ChangeView({ center }) {
   useEffect(() => {
     if (center) {
       // Animate to zoom level 20 but let user zoom more if needed
-      map.flyTo(center, 20, {
+      map.flyTo(center, 18, {
         animate: true,
         duration: 1.2, // smoother transition
       });
