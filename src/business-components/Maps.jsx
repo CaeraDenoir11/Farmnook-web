@@ -23,13 +23,20 @@ const pinIcon = new L.Icon({
   iconAnchor: [17, 35],
 });
 
+// Smooth zooming when user location is updated, without locking zoom level
 function ChangeView({ center }) {
   const map = useMap();
+
   useEffect(() => {
     if (center) {
-      map.setView(center, map.getZoom(), { animate: true });
+      // Animate to zoom level 20 but let user zoom more if needed
+      map.flyTo(center, 20, {
+        animate: true,
+        duration: 1.2, // smoother transition
+      });
     }
   }, [center, map]);
+
   return null;
 }
 
