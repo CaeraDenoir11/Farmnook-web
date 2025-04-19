@@ -125,7 +125,7 @@ export default function Dashboard() {
                   0
                 ) || 0}
               </p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-lg text-gray-500 mt-1">
                 Overall: {overallTotal}
               </p>
             </div>
