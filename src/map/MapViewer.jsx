@@ -35,6 +35,7 @@ export default function MapViewer() {
             duration: 0.8,
           }}
           hideAttribution={true} // ✅ Custom prop to hide Mapbox branding (handled in Maps.jsx)
+          hideRoutingUI={true}
         />
       )}
     </div>
