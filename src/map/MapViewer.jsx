@@ -8,6 +8,7 @@ export default function MapViewer() {
   const queryParams = new URLSearchParams(window.location.search);
   const pickup = queryParams.get("pickup");
   const drop = queryParams.get("drop");
+  const hideUIFlag = queryParams.get("hideUI") === "true";
 
   const pickupCoords = pickup?.split(",").map(Number);
   const dropCoords = drop?.split(",").map(Number);
@@ -34,8 +35,7 @@ export default function MapViewer() {
             animate: true,
             duration: 0.8,
           }}
-          hideAttribution={true} // ✅ Custom prop to hide Mapbox branding (handled in Maps.jsx)
-          hideRoutingUI={true}
+          hideRoutingUI={hideUIFlag}
         />
       )}
     </div>
