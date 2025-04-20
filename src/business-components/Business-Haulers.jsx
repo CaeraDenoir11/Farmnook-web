@@ -10,14 +10,15 @@ import {
   getDoc,
 } from "firebase/firestore";
 import AddHaulerButton from "../assets/buttons/AddHaulerButton.jsx";
+import DeleteHaulerButton from "../assets/buttons/DeleteHaulerButton.jsx";
 import defaultImg from "../assets/images/default.png";
+import { updateDoc } from "firebase/firestore";
+import useHaulers from "../assets/hooks/useHaulers.js";
 
 export default function BusinessHaulers() {
-  const [users, setUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
-  const [currentUser, setCurrentUser] = useState(null); // Store logged-in user
   const usersPerPage = 5;
 
   useEffect(() => {
@@ -33,52 +34,7 @@ export default function BusinessHaulers() {
     return () => unsubscribeAuth();
   }, []);
 
-  useEffect(() => {
-    if (!currentUser) return;
-
-    console.log("[BusinessHaulers] Current User ID:", currentUser.uid);
-
-    const q = query(
-      collection(db, "users"),
-      where("businessId", "==", currentUser.uid),
-      where("userType", "==", "Hauler")
-    );
-
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const haulers = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      const adminDocRef = doc(db, "users", currentUser.uid);
-      const adminSnap = await getDoc(adminDocRef);
-      let adminAsHauler = null;
-
-      if (adminSnap.exists()) {
-        const adminData = adminSnap.data();
-
-        adminAsHauler = {
-          id: currentUser.uid,
-          ...adminData,
-          isAdmin: true, // for display/debugging
-        };
-      } else {
-        console.warn(
-          "[BusinessHaulers] Admin user record not found in Firestore."
-        );
-      }
-
-      const finalHaulers = adminAsHauler
-        ? [adminAsHauler, ...haulers]
-        : haulers;
-
-      setUsers(finalHaulers);
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [currentUser]);
+  const { haulers: users, setHaulers: setUsers, currentUser, loading } = useHaulers(); // fetching haulers
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch = `${user.firstName} ${user.lastName} ${user.licenseNo}`
@@ -148,20 +104,57 @@ export default function BusinessHaulers() {
                           {user.firstName} {user.lastName}
                         </span>
                       </td>
-                      <td className="px-5 py-5 border-b border-gray-300 text-[#1A4D2E]">
-                        {user.licenseNo}
+                      <td className="px-5 py-5 border-b border-gray-200 text-[#1A4D2E]">
+                        {user.isAdmin ? (
+                          <input
+                            type="text"
+                            value={user.licenseNo || ""}
+                            onChange={(e) => {
+                              const updatedLicense = e.target.value;
+                              setUsers((prevUsers) =>
+                                prevUsers.map((u) =>
+                                  u.id === user.id ? { ...u, licenseNo: updatedLicense } : u
+                                )
+                              );
+                            }}
+                            onBlur={async () => {
+                              try {
+                                const adminRef = doc(db, "users", user.id);
+                                await getDoc(adminRef); // optional: check if doc exists
+                                await updateDoc(adminRef, { licenseNo: user.licenseNo });
+                                console.log("License number updated successfully.");
+                              } catch (error) {
+                                console.error("Error updating license number:", error);
+                              }
+                            }}
+                            placeholder="Enter License Number"
+                            className="border border-gray-300 rounded px-2 focus:outline-none focus:border-[#1A4D2E]"
+                          />
+                        ) : (
+                          user.licenseNo
+                        )}
                       </td>
                       <td className="px-5 py-5 border-b border-gray-300 text-[#1A4D2E]">
                         {user.phoneNum}
                       </td>
-                      <td className="px-5 py-5 border-b border-gray-300">
-                        <span
-                          className={`px-3 py-1 font-semibold text-white rounded-full ${
-                            user.status ? "bg-green-500" : "bg-gray-500"
-                          }`}
-                        >
-                          {user.status ? "Online" : "Offline"}
-                        </span>
+                      <td className="px-5 py-3 border-b border-gray-300">
+                        <div className="flex  gap-4">
+                          <span
+                            className={`px-3 py-1 font-semibold text-white rounded-full ${user.status ? "bg-green-500" : "bg-gray-500"}`}
+                          >
+                            {user.status ? "Online" : "Offline"}
+                          </span>
+                          {!user.isAdmin && (
+                            <DeleteHaulerButton
+                              haulerId={user.id}
+                              onDelete={(deletedHaulerId) => {
+                                setUsers((prevUsers) =>
+                                  prevUsers.filter((user) => user.id !== deletedHaulerId)
+                                );
+                              }}
+                            />
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -199,7 +192,7 @@ export default function BusinessHaulers() {
               </div>
             </div>
           </div>
-          <AddHaulerButton onAddHauler={() => {}} />
+          <AddHaulerButton onAddHauler={() => { }} />
         </div>
       </div>
     </div>
