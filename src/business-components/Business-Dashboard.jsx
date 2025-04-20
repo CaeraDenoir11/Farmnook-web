@@ -65,6 +65,7 @@ export default function BusinessDashboard() {
 	// ✅ Ad modal state
 	const [showAd, setShowAd] = useState(false);
 	const [adClosable, setAdClosable] = useState(false);
+	const [secondsLeft, setSecondsLeft] = useState(5); // Track remaining time for ad
 
 	// ✅ Check subscription status and show ad
 	useEffect(() => {
@@ -90,6 +91,19 @@ export default function BusinessDashboard() {
 
 		return () => unsubscribeAuth();
 	}, []);
+
+// ✅ Countdown timer for ad
+useEffect(() => {
+	if (showAd && secondsLeft > 0) {
+		const timer = setInterval(() => {
+			setSecondsLeft((prev) => prev - 1);
+		}, 1000);
+
+		return () => clearInterval(timer); // Clean up timer on unmount or when secondsLeft changes
+	} else if (secondsLeft === 0) {
+		setAdClosable(true); // Make ad closable after 5 seconds
+	}
+}, [showAd, secondsLeft]);
 
 	// === Real-time Fetch Pending Delivery Requests ===
 	useEffect(() => {
@@ -455,7 +469,7 @@ export default function BusinessDashboard() {
 						</button>
 					) : (
 						<p className="text-sm text-gray-400">
-							You can close this ad in 5 seconds...
+							You can close this ad in {secondsLeft} seconds...
 						</p>
 					)}
 				</div>
