@@ -7,6 +7,7 @@ import dashboardIcon from "../assets/images/dashboard.svg";
 import driversIcon from "../assets/icons/drivers.svg";
 import vehiclesIcon from "../assets/icons/vehicles.svg";
 import profileIcon from "../assets/icons/profile.svg";
+import clockIcon from "../assets/icons/Clock.svg";
 // import inboxIcon from "../assets/icons/message.svg";
 import reviewIcon from "../assets/icons/review.svg";
 import mapIcon from "../assets/icons/maps.svg";
@@ -58,9 +59,10 @@ export default function Sidebar({
     { id: 1, name: "Dashboard", icon: dashboardIcon, route: "/dashboard" },
     { id: 2, name: "Haulers", icon: driversIcon, route: "/haulers" },
     { id: 3, name: "Vehicles", icon: vehiclesIcon, route: "/vehicles" },
-    { id: 4, name: "Reviews", icon: reviewIcon, route: "/reviews" },
-    { id: 5, name: "Map", icon: mapIcon, route: "/maps" },
-    { id: 6, name: "Profile", icon: profileIcon, route: "/profile" },
+    { id: 4, name: "History", icon: clockIcon, route: "/history" },
+    { id: 5, name: "Reviews", icon: reviewIcon, route: "/reviews" },
+    { id: 6, name: "Map", icon: mapIcon, route: "/maps" },
+    { id: 7, name: "Profile", icon: profileIcon, route: "/profile" },
   ];
 
   return (

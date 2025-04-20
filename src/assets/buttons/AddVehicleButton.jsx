@@ -17,6 +17,7 @@ function AddVehicleButton({ onAddVehicle }) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showLimitAlert, setShowLimitAlert] = useState(false);
   const [formData, setFormData] = useState({
     vehicleType: "",
     model: "",
@@ -26,14 +27,39 @@ function AddVehicleButton({ onAddVehicle }) {
   const plateRegex =
     /^(?:[A-Z]{3} \d{4}|\d{3}[A-Z]{3}|[A-Z]\d{3}[A-Z]{2}|[A-Z]{2}\d{3}[A-Z])$/;
 
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const checkVehicleLimit = async () => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) return;
+
+    // 🔍 Count current user's vehicles
+    const vehicleQuery = query(
+      collection(db, "vehicles"),
+      where("businessId", "==", userId)
+    );
+    const vehicleSnapshot = await getDocs(vehicleQuery);
+    const totalVehicles = vehicleSnapshot.size;
+
+    // 🔍 Check subscription collection for matching businessId
+    const subQuery = query(
+      collection(db, "subscriptions"),
+      where("businessId", "==", userId)
+    );
+    const subSnapshot = await getDocs(subQuery);
+    const isSubscribed = !subSnapshot.empty;
+
+    if (!isSubscribed && totalVehicles >= 2) {
+      setShowLimitAlert(true);
+    } else {
+      setIsOpen(true);
+    }
+  };
+
   const handleSubmit = async () => {
     setError("");
-
     const { vehicleType, model, plateNumber } = formData;
 
     if (!vehicleType || !model || !plateNumber) {
@@ -54,10 +80,9 @@ function AddVehicleButton({ onAddVehicle }) {
         return;
       }
 
-      // ✅ Check for existing plate number (case-insensitive)
       const plateQuery = query(
         collection(db, "vehicles"),
-        where("plateNumber", "==", formData.plateNumber.toUpperCase())
+        where("plateNumber", "==", plateNumber.toUpperCase())
       );
       const existingSnapshot = await getDocs(plateQuery);
 
@@ -68,9 +93,9 @@ function AddVehicleButton({ onAddVehicle }) {
       }
 
       const newVehicle = {
-        vehicleType: formData.vehicleType.split(" (")[0], // Only store the type
-        model: formData.model,
-        plateNumber: formData.plateNumber.toUpperCase(), // Standardize case
+        vehicleType: vehicleType.split(" (")[0],
+        model,
+        plateNumber: plateNumber.toUpperCase(),
         businessId: userId,
         createdAt: serverTimestamp(),
       };
@@ -79,7 +104,6 @@ function AddVehicleButton({ onAddVehicle }) {
       const savedVehicle = { id: docRef.id, ...newVehicle };
       onAddVehicle(savedVehicle);
 
-      // ✅ Count all vehicles belonging to this user
       const vehicleQuery = query(
         collection(db, "vehicles"),
         where("businessId", "==", userId)
@@ -87,7 +111,6 @@ function AddVehicleButton({ onAddVehicle }) {
       const vehicleSnapshot = await getDocs(vehicleQuery);
       const totalVehicles = vehicleSnapshot.size;
 
-      // ✅ Update the current user's totalVehicle field
       const userDocRef = doc(db, "users", userId);
       await updateDoc(userDocRef, { totalVehicle: totalVehicles });
 
@@ -102,10 +125,10 @@ function AddVehicleButton({ onAddVehicle }) {
 
   return (
     <>
-      {/* Floating "Add Vehicle" button */}
+      {/* Floating Add Button */}
       <div className="group fixed bottom-6 right-6 flex justify-center items-center text-white text-sm font-bold">
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={checkVehicleLimit}
           className="shadow-md flex items-center group-hover:gap-2 bg-[#1A4D2E] text-[#F5EFE6] p-4 rounded-full cursor-pointer duration-300 hover:scale-110 hover:shadow-2xl"
         >
           <Plus className="fill-[#F5EFE6]" size={20} />
@@ -115,6 +138,7 @@ function AddVehicleButton({ onAddVehicle }) {
         </button>
       </div>
 
+      {/* Add Vehicle Modal */}
       {isOpen && (
         <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40">
           <div className="bg-[#F5EFE6] p-8 rounded-2xl shadow-2xl w-full max-w-md">
@@ -176,6 +200,31 @@ function AddVehicleButton({ onAddVehicle }) {
                 className="px-4 py-2 bg-[#1A4D2E] text-white rounded-lg hover:bg-[#145C38] transition-all"
               >
                 {loading ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Vehicle Limit Alert Modal */}
+      {showLimitAlert && (
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40">
+          <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-sm">
+            <h3 className="text-lg font-bold text-red-600 mb-2 text-center">
+              Limit Reached
+            </h3>
+            <p className="text-center text-gray-700 mb-4">
+              You can only add up to 2 vehicles without a subscription.
+            </p>
+            <p className="text-center text-gray-700 mb-4">
+              Please subscribe to add more vehicles.
+            </p>
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowLimitAlert(false)}
+                className="bg-[#1A4D2E] text-white px-4 py-2 rounded-lg hover:bg-[#145C38]"
+              >
+                Close
               </button>
             </div>
           </div>
