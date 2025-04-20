@@ -3,15 +3,15 @@ import "../index.css";
 import { db } from "../../configs/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import AddVehicleButton from "../assets/buttons/AddVehicleButton.jsx";
+import DeleteVehicleButton from "../assets/buttons/DeleteVehicleButton.jsx";
 import vehicleTypeList from "../data/Vehicle-Types-List.js";
 import VehicleDetailsIcon from "../assets/icons/vehicle-details.svg";
+import useVehicles from "../assets/hooks/useVehicles.js";
 
 export default function BusinessVehicles() {
-  const [vehicles, setVehicles] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [vehiclesPerPage, setVehiclesPerPage] = useState(5);
-  const [isLoading, setIsLoading] = useState(true);
   const [showVehicleDetails, setShowVehicleDetails] = useState(false);
 
   useEffect(() => {
@@ -23,34 +23,13 @@ export default function BusinessVehicles() {
     return () => window.removeEventListener("resize", updateVehiclesPerPage);
   }, []);
 
+  const { vehicles, setVehicles, loading: isLoading } = useVehicles(); // Fetching vehicles
 
-  useEffect(() => {
-    const fetchVehicles = async () => {
-      try {
-        setIsLoading(true);
-        const userId = localStorage.getItem("userId");
-        if (!userId) {
-          console.error("No user ID found.");
-          return;
-        }
-        const vehicleQuery = query(
-          collection(db, "vehicles"),
-          where("businessId", "==", userId)
-        );
-        const querySnapshot = await getDocs(vehicleQuery);
-        const vehicleList = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setVehicles(vehicleList);
-      } catch (error) {
-        console.error("Error fetching vehicles: ", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchVehicles();
-  }, []);
+  const handleDeleteVehicle = (vehicleId) => {
+    setVehicles((prevVehicles) =>
+      prevVehicles.filter((vehicle) => vehicle.id !== vehicleId)
+    );
+  };
 
   const filteredVehicles = vehicles.filter((vehicle) =>
     `${vehicle.vehicleType} ${vehicle.model} ${vehicle.plateNumber}`
@@ -118,7 +97,13 @@ export default function BusinessVehicles() {
                         {vehicle.model}
                       </td>
                       <td className="px-5 py-5 border-b border-gray-300 text-[#1A4D2E]">
-                        {vehicle.plateNumber}
+                        <div className="flex items-center gap-10">
+                          <span>{vehicle.plateNumber}</span>
+                          <DeleteVehicleButton
+                            vehicleId={vehicle.id}
+                            onDelete={handleDeleteVehicle}
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))}

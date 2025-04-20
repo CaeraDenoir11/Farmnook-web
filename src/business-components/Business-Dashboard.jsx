@@ -1,5 +1,5 @@
-import {useState, useEffect, useMemo} from "react";
-import {motion} from "framer-motion";
+import { useState, useEffect, useMemo } from "react";
+import { motion } from "framer-motion";
 import {
 	AreaChart,
 	Area,
@@ -17,46 +17,45 @@ import {
 	getDoc,
 	onSnapshot,
 } from "firebase/firestore";
-import {auth, db} from "../../configs/firebase";
-import {onAuthStateChanged, GoogleAuthProvider} from "firebase/auth"; // ✅ Fixed here
+import { auth, db } from "../../configs/firebase";
+import { onAuthStateChanged, GoogleAuthProvider } from "firebase/auth"; // ✅ Fixed here
 import MapModal from "../map/MapModal.jsx";
 import Maps from "./Maps";
 import Modal from "react-modal";
 import NotificationButton from "../assets/buttons/NotificationButton.jsx";
 import AcceptRequestModal from "../assets/buttons/AcceptRequestModal.jsx";
+import MonthlyTransactionsCard from "../business-components/components/MonthlyTransactionsCard.jsx";
+import useDeliveryRequests from "../assets/hooks/useDeliveryRequests.js";
+import useNotifications from "../assets/hooks/useNotifications";
 
 const monthlyData = {
 	January: [
-		{week: "Week 1", transactions: 10},
-		{week: "Week 2", transactions: 15},
-		{week: "Week 3", transactions: 20},
-		{week: "Week 4", transactions: 25},
+		{ week: "Week 1", transactions: 10 },
+		{ week: "Week 2", transactions: 15 },
+		{ week: "Week 3", transactions: 20 },
+		{ week: "Week 4", transactions: 25 },
 	],
 	February: [
-		{week: "Week 1", transactions: 12},
-		{week: "Week 2", transactions: 18},
-		{week: "Week 3", transactions: 24},
-		{week: "Week 4", transactions: 30},
+		{ week: "Week 1", transactions: 12 },
+		{ week: "Week 2", transactions: 18 },
+		{ week: "Week 3", transactions: 24 },
+		{ week: "Week 4", transactions: 30 },
 	],
 	March: [
-		{week: "Week 1", transactions: 20},
-		{week: "Week 2", transactions: 25},
-		{week: "Week 3", transactions: 30},
-		{week: "Week 4", transactions: 35},
+		{ week: "Week 1", transactions: 20 },
+		{ week: "Week 2", transactions: 25 },
+		{ week: "Week 3", transactions: 30 },
+		{ week: "Week 4", transactions: 35 },
 	],
 };
 
 export default function BusinessDashboard() {
 	const [selectedMonth, setSelectedMonth] = useState("March");
-	const [requests, setRequests] = useState([]);
 	const [selectedRequest, setSelectedRequest] = useState(null);
-	const [loadingRequests, setLoadingRequests] = useState(true);
+
 	const [modalOpen, setModalOpen] = useState(false);
-	const [mapPoints, setMapPoints] = useState({pickup: "", drop: ""});
+	const [mapPoints, setMapPoints] = useState({ pickup: "", drop: "" });
 	const [assignModalOpen, setAssignModalOpen] = useState(false);
-	const [notifications, setNotifications] = useState([]);
-	const [loadingNotifications, setLoadingNotifications] = useState(true);
-	const [error, setError] = useState(null);
 	const [readRequests, setReadRequests] = useState(() => {
 		const saved = localStorage.getItem("readRequests");
 		return saved ? JSON.parse(saved) : [];
@@ -92,148 +91,22 @@ export default function BusinessDashboard() {
 		return () => unsubscribeAuth();
 	}, []);
 
-// ✅ Countdown timer for ad
-useEffect(() => {
-	if (showAd && secondsLeft > 0) {
-		const timer = setInterval(() => {
-			setSecondsLeft((prev) => prev - 1);
-		}, 1000);
-
-		return () => clearInterval(timer); // Clean up timer on unmount or when secondsLeft changes
-	} else if (secondsLeft === 0) {
-		setAdClosable(true); // Make ad closable after 5 seconds
-	}
-}, [showAd, secondsLeft]);
-
-	// === Real-time Fetch Pending Delivery Requests ===
+	// ✅ Countdown timer for ad
 	useEffect(() => {
-		const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-			if (!user) {
-				setRequests([]);
-				setLoadingRequests(false);
-				return;
-			}
+		if (showAd && secondsLeft > 0) {
+			const timer = setInterval(() => {
+				setSecondsLeft((prev) => prev - 1);
+			}, 1000);
 
-			const q = query(
-				collection(db, "deliveryRequests"),
-				where("businessId", "==", user.uid),
-				where("isAccepted", "==", false)
-			);
+			return () => clearInterval(timer); // Clean up timer on unmount or when secondsLeft changes
+		} else if (secondsLeft === 0) {
+			setAdClosable(true); // Make ad closable after 5 seconds
+		}
+	}, [showAd, secondsLeft]);
 
-			const unsubscribeSnapshot = onSnapshot(q, async (snapshot) => {
-				const enrichedRequests = await Promise.all(
-					snapshot.docs.map(async (docSnap) => {
-						const data = docSnap.data();
-
-						// vehicleName
-						let vehicleName = "Unknown";
-						try {
-							const vehicleRef = doc(db, "vehicles", data.vehicleId);
-							const vehicleDoc = await getDoc(vehicleRef);
-							if (vehicleDoc.exists()) {
-								vehicleName = vehicleDoc.data().model || "Unknown";
-							}
-						} catch (err) {
-							console.error("Error fetching vehicle:", err);
-						}
-
-						// farmerName
-						let farmerName = "Unknown Farmer";
-						try {
-							const farmerRef = doc(db, "users", data.farmerId);
-							const farmerDoc = await getDoc(farmerRef);
-							if (farmerDoc.exists()) {
-								const farmerData = farmerDoc.data();
-								farmerName = `${farmerData.firstName} ${farmerData.lastName}`;
-							}
-						} catch (err) {
-							console.error("Error fetching farmer:", err);
-						}
-
-						return {
-							...data,
-							id: docSnap.id,
-							vehicleName,
-							farmerName,
-						};
-					})
-				);
-
-				// ✅ SORT BY TIMESTAMP DESCENDING
-				enrichedRequests.sort((a, b) => {
-					const aTime = a.timestamp?.toDate?.() || 0;
-					const bTime = b.timestamp?.toDate?.() || 0;
-					return bTime - aTime;
-				});
-
-				setRequests(enrichedRequests);
-				setLoadingRequests(false);
-			});
-
-			return () => unsubscribeSnapshot();
-		});
-
-		return () => unsubscribeAuth();
-	}, []);
-
+	const { requests, loading: loadingRequests, setRequests } = useDeliveryRequests(); //Fetching delivery requests
 	// Realtime Notifications (NEW WAY)
-	useEffect(() => {
-		const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-			if (!user) {
-				setNotifications([]);
-				setLoadingNotifications(false);
-				return;
-			}
-
-			const q = query(
-				collection(db, "notifications"),
-				where("businessId", "==", user.uid)
-			);
-
-			const unsubscribeSnapshot = onSnapshot(
-				q,
-				(snapshot) => {
-					const loadedNotifications = snapshot.docs.map((doc) => {
-						const data = doc.data();
-						const dateObj = data.timestamp?.toDate();
-
-						const formattedDate = dateObj
-							? dateObj.toLocaleDateString("en-US", {
-									month: "2-digit",
-									day: "2-digit",
-									year: "2-digit",
-							  })
-							: "N/A";
-
-						const formattedTime = dateObj
-							? dateObj.toLocaleTimeString("en-US", {
-									hour: "2-digit",
-									minute: "2-digit",
-									hour12: true,
-							  })
-							: "N/A";
-						return {
-							id: doc.id,
-							...data,
-							date: formattedDate,
-							time: formattedTime,
-						};
-					});
-					setNotifications(loadedNotifications);
-					setLoadingNotifications(false);
-				},
-				(err) => {
-					console.error("Error fetching notifications:", err);
-					setError("Failed to load notifications");
-					setLoadingNotifications(false);
-				}
-			);
-
-			return () => unsubscribeSnapshot();
-		});
-
-		return () => unsubscribeAuth();
-	}, []);
+	const { notifications, loading: loadingNotifications, error } = useNotifications();
 
 	const totalTransactions = useMemo(() => {
 		return monthlyData[selectedMonth].reduce(
@@ -280,8 +153,8 @@ useEffect(() => {
 					error={error}
 				/>
 			</div>
-			<div className="relative w-full max-w-8xl mt-[-50px] flex flex-col md:flex-row gap-6 px-6 pt-6">
-				<div className="bg-white p-6 rounded-2xl shadow-lg w-full md:w-3/4">
+			<div className="relative w-full max-w-8xl mt-[-50px] flex flex-col md:flex-row gap-6 px-6 pt-6 h-[calc(100vh-150px)]">
+				<div className="bg-white p-6 rounded-2xl shadow-lg w-full md:w-3/4  h-full overflow-y-auto ">
 					<h2 className="text-xl font-bold text-[#1A4D2E] mb-4">
 						Delivery Requests
 					</h2>
@@ -294,23 +167,22 @@ useEffect(() => {
 							requests.map((req) => {
 								const formattedTime = req.timestamp?.toDate
 									? req.timestamp.toDate().toLocaleString("en-US", {
-											month: "short",
-											day: "numeric",
-											year: "numeric",
-											hour: "2-digit",
-											minute: "2-digit",
-											hour12: true,
-									  })
+										month: "short",
+										day: "numeric",
+										year: "numeric",
+										hour: "2-digit",
+										minute: "2-digit",
+										hour12: true,
+									})
 									: "N/A";
 
 								return (
 									<div
 										key={req.id}
-										className={`p-4 rounded-lg shadow flex justify-between items-start ${
-											readRequests.includes(req.id)
-												? "bg-[#F5EFE6]"
-												: "bg-[#DAC5C5]"
-										}`}
+										className={`p-4 rounded-lg shadow flex justify-between items-start ${readRequests.includes(req.id)
+											? "bg-[#F5EFE6]"
+											: "bg-[#DAC5C5]"
+											}`}
 									>
 										<div>
 											<p className="text-lg text-[#1A4D2E]">
@@ -357,70 +229,13 @@ useEffect(() => {
 						)}
 					</div>
 				</div>
-				<div className="bg-white p-6 rounded-2xl shadow-lg w-full md:w-3/8">
-					<div className="flex justify-between items-center mb-4">
-						<h2 className="text-xl font-bold text-[#1A4D2E]">
-							Monthly Transactions
-						</h2>
-						<select
-							className="p-2 border rounded-lg bg-[#FCFFE0] text-[#1A4D2E]"
-							value={selectedMonth}
-							onChange={(e) => setSelectedMonth(e.target.value)}
-						>
-							{Object.keys(monthlyData).map((month) => (
-								<option key={month} value={month}>
-									{month}
-								</option>
-							))}
-						</select>
-					</div>
-					<motion.p
-						className="text-lg font-semibold text-[#1A4D2E] mb-2 text-center"
-						initial={{opacity: 0}}
-						animate={{opacity: 1}}
-						transition={{duration: 1}}
-					>
-						Total Transactions: {totalTransactions}
-					</motion.p>
-					<div className="w-full h-72 bg-gray-100 p-4 rounded-lg">
-						<ResponsiveContainer width="100%" height="100%">
-							<AreaChart
-								data={monthlyData[selectedMonth]}
-								margin={{top: 20, right: 30, left: 0, bottom: 10}}
-							>
-								<defs>
-									<linearGradient
-										id="colorTransactions"
-										x1="0"
-										y1="0"
-										x2="0"
-										y2="1"
-									>
-										<stop offset="5%" stopColor="#1A4D2E" stopOpacity={0.9} />
-										<stop offset="95%" stopColor="#F5EFE6" stopOpacity={0} />
-									</linearGradient>
-								</defs>
-								<CartesianGrid
-									strokeDasharray="3 3"
-									strokeOpacity={0.2}
-									stroke="#1A4D2E"
-								/>
-								<XAxis dataKey="week" tick={{fill: "#1A4D2E"}} />
-								<YAxis tick={{fill: "#1A4D2E"}} />
-								<Tooltip cursor={{fill: "rgba(26, 77, 46, 0.1)"}} />
-								<Area
-									type="monotone"
-									dataKey="transactions"
-									stroke="#1A4D2E"
-									strokeWidth={3}
-									fillOpacity={1}
-									fill="url(#colorTransactions)"
-									activeDot={{r: 6, fill: "#1A4D2E"}}
-								/>
-							</AreaChart>
-						</ResponsiveContainer>
-					</div>
-				</div>
+
+				{/* Transactions */}
+				<MonthlyTransactionsCard
+					selectedMonth={selectedMonth}
+					setSelectedMonth={setSelectedMonth}
+					monthlyData={monthlyData}
+				/>
 			</div>
 
 			{/* Accept Request Modal */}
