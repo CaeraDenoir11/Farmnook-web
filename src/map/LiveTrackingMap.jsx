@@ -5,8 +5,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-routing-machine";
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue } from "firebase/database";
-import firebaseConfig from "../configs/firebase"; 
-
+import firebaseConfig from "../../configs/firebase.js";
 
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`;
@@ -71,7 +70,11 @@ export default function LiveTrackingMap() {
 
   return (
     <div style={{ height: "100vh", width: "100vw" }}>
-      <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }}>
+      <MapContainer
+        center={center}
+        zoom={13}
+        style={{ height: "100%", width: "100%" }}
+      >
         <TileLayer url={MAPBOX_TILE_URL} />
 
         {pickupCoords && (
