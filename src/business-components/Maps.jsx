@@ -54,7 +54,7 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
     const control = L.Routing.control({
       waypoints: [start, end],
       collapsible: true,
-      show: true, // Panel will be shown, but we collapse it after
+      show: true,
       lineOptions: {
         styles: [{ color: routeColor, weight: 4 }],
       },
@@ -68,13 +68,7 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
 
     control.addTo(map);
 
-    // Collapse the routing panel once route is found
     control.on("routesfound", async () => {
-      const container = control.getContainer();
-      if (container) {
-        container.classList.add("leaflet-routing-collapsed"); // collapse panel
-      }
-
       const bounds = L.latLngBounds([start, end]);
       setTimeout(() => {
         map.invalidateSize();
