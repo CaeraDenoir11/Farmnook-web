@@ -31,11 +31,10 @@ export default function MapViewer() {
           height="100%"
           fitBoundsOptions={{
             padding: [100, 100], // Adds spacing around the edges (in pixels)
-            maxZoom: 15,         // Prevents zooming in too much
+            maxZoom: 15, // Prevents zooming in too much
             animate: true,
             duration: 0.8,
           }}
-          hideRoutingUI={hideUIFlag}
         />
       )}
     </div>
