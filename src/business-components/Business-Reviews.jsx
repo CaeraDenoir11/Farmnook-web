@@ -18,7 +18,7 @@ import {
 } from "firebase/firestore";
 import "../index.css";
 
-// ——— Initialize Firebase ———
+// ——— Firebase Init ———
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_APIKEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTHDOMAIN,
@@ -33,25 +33,19 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 export default function BusinessReviews() {
-  // UI state
   const [search, setSearch] = useState("");
   const [error, setError] = useState(null);
   const [reviewsData, setReviewsData] = useState([]);
   const [averageRating, setAverageRating] = useState(0);
-  const [status, setStatus] = useState("loading"); 
-  // status: "loading" | "forbidden" | "ready"
+  const [status, setStatus] = useState("loading"); // loading | forbidden | ready
+  const [farmerNames, setFarmerNames] = useState({}); // { farmerId: full name }
 
   useEffect(() => {
     const fetchReviewsForAdmin = async () => {
       try {
-        // 1️⃣ Ensure user is signed in
         const user = auth.currentUser;
-        if (!user) {
-          setStatus("forbidden");
-          return;
-        }
+        if (!user) return setStatus("forbidden");
 
-        // 2️⃣ Load their profile from Firestore
         const userSnap = await getDoc(doc(db, "users", user.uid));
         const userData = userSnap.data();
         if (
@@ -59,25 +53,40 @@ export default function BusinessReviews() {
           userData.userType !== "Hauler Business Admin" ||
           typeof userData.userId !== "string"
         ) {
-          setStatus("forbidden");
-          return;
+          return setStatus("forbidden");
         }
 
-        // 3️⃣ Query feedback only for *this* admin’s business
         const myBusinessId = userData.userId;
         const q = query(
           collection(db, "feedback"),
-          where("haulerId", "==", myBusinessId)
+          where("businessId", "==", myBusinessId)
         );
         const snap = await getDocs(q);
         const reviews = snap.docs.map((d) => d.data());
 
-        // 4️⃣ Compute average rating
+        // Calculate average rating
         const total = reviews.reduce((sum, r) => sum + r.rating, 0);
         setAverageRating(reviews.length ? total / reviews.length : 0);
-
-        // 5️⃣ Save fetched reviews & flip to “ready”
         setReviewsData(reviews);
+
+        // Fetch names of farmers
+        const ids = [...new Set(reviews.map((r) => r.farmerId))];
+        const namesMap = {};
+        await Promise.all(
+          ids.map(async (id) => {
+            if (id) {
+              const farmerSnap = await getDoc(doc(db, "users", id));
+              const farmerData = farmerSnap.data();
+              if (farmerData) {
+                namesMap[id] = `${farmerData.firstName} ${farmerData.lastName}`;
+              } else {
+                namesMap[id] = "Unknown Farmer";
+              }
+            }
+          })
+        );
+        setFarmerNames(namesMap);
+
         setStatus("ready");
       } catch (err) {
         console.error("Error loading reviews:", err);
@@ -89,20 +98,14 @@ export default function BusinessReviews() {
     fetchReviewsForAdmin();
   }, []);
 
-  // While we’re loading the user/profile feedback…
-  if (status === "loading") {
-    return <p className="text-center mt-8">Loading…</p>;
-  }
-  // If they’re not a Hauler Business Admin …
-  if (status === "forbidden") {
+  if (status === "loading") return <p className="text-center mt-8">Loading…</p>;
+  if (status === "forbidden")
     return (
       <p className="text-center mt-8 text-red-600">
         🚫 You don’t have permission to view this page.
       </p>
     );
-  }
 
-  // Sort newest first, then filter by search
   const sorted = [...reviewsData].sort(
     (a, b) => b.timestamp.seconds - a.timestamp.seconds
   );
@@ -152,41 +155,46 @@ export default function BusinessReviews() {
           </p>
         )}
 
-        {/* REVIEWS LIST */}
+        {/* REVIEWS */}
         <div className="-mx-4 sm:-mx-8 px-4 sm:px-8 py-4 w-full max-w-7xl">
           {filtered.length > 0 ? (
-            filtered.map((r, idx) => (
-              <div
-                key={idx}
-                className="w-full bg-white p-6 rounded-md text-[#1A4D2E] border border-[#1A4D2E] shadow-md mb-4"
-              >
-                <div className="flex justify-between">
-                  <div className="flex gap-2 items-center">
-                    <div className="w-8 h-8 text-center rounded-full bg-gray-500 text-white flex items-center justify-center font-bold">
-                      {(r.farmerName || "A").charAt(0)}
+            filtered.map((r, idx) => {
+              const fullName = farmerNames[r.farmerId] || "Unknown Farmer";
+              return (
+                <div
+                  key={idx}
+                  className="w-full bg-white p-6 rounded-md text-[#1A4D2E] border border-[#1A4D2E] shadow-md mb-4"
+                >
+                  <div className="flex justify-between">
+                    <div className="flex gap-2 items-center">
+                      <div className="w-8 h-8 text-center rounded-full bg-gray-500 text-white flex items-center justify-center font-bold">
+                        {fullName.charAt(0)}
+                      </div>
+                      <span className="font-semibold">{fullName}</span>
                     </div>
-                    <span className="font-semibold">{r.farmerName || "Anonymous"}</span>
+                    <div className="flex p-1 gap-1 text-[#1A4D2E] text-lg">
+                      {Array.from({ length: Math.floor(r.rating) }).map(
+                        (_, i) => (
+                          <IoStar key={i} />
+                        )
+                      )}
+                      {r.rating % 1 !== 0 && <IoStarHalf />}
+                    </div>
                   </div>
-                  <div className="flex p-1 gap-1 text-[#1A4D2E] text-lg">
-                    {Array.from({ length: Math.floor(r.rating) }).map((_, i) => (
-                      <IoStar key={i} />
-                    ))}
-                    {r.rating % 1 !== 0 && <IoStarHalf />}
+
+                  <div className="text-lg mt-2">{r.comment}</div>
+
+                  <div className="flex justify-between items-center mt-3">
+                    <span className="text-sm">
+                      {new Date(r.timestamp.seconds * 1000).toDateString()}
+                    </span>
+                    <button className="p-1 px-3 bg-[#F5EFE6] text-[#1A4D2E] hover:bg-opacity-80 border border-[#1A4D2E] rounded-md flex items-center gap-1">
+                      <IoShareOutline /> Share
+                    </button>
                   </div>
                 </div>
-
-                <div className="text-lg mt-2">{r.comment}</div>
-
-                <div className="flex justify-between items-center mt-3">
-                  <span className="text-sm">
-                    {new Date(r.timestamp.seconds * 1000).toDateString()}
-                  </span>
-                  <button className="p-1 px-3 bg-[#F5EFE6] text-[#1A4D2E] hover:bg-opacity-80 border border-[#1A4D2E] rounded-md flex items-center gap-1">
-                    <IoShareOutline /> Share
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <p className="text-[#1A4D2E] text-center font-semibold mt-4">
               No reviews found for your business.
