@@ -20,7 +20,8 @@ import Maps from "./business-components/Maps.jsx";
 import BusinessProfile from "./business-components/Business-Profile.jsx";
 import logo from "./assets/images/document-logo.png";
 import OneSignal from "react-onesignal";
-import MapViewer from "./map/MapViewer.jsx"
+import MapViewer from "./map/MapViewer.jsx";
+import LiveTrackingMap from "./map/LiveTrackingMap.jsx";
 // import BusinessSubscriptionPayment from "./business-components/Business-Subscription-Payment";
 
 export default function App() {
@@ -84,6 +85,7 @@ export default function App() {
         {/* ✅ Public Route for Maps - Always accessible */}
         <Route path="/maps" element={<Maps />} />
         <Route path="/map-viewer" element={<MapViewer />} />
+        <Route path="/live-tracking" element={<LiveTrackingMap />} />
 
         {/* ✅ Login Route */}
         <Route
