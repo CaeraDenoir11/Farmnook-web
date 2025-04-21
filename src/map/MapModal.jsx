@@ -28,7 +28,7 @@ export default function MapModal({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 z-50">
-      <div className="bg-white px-4 py-4 rounded-2xl shadow-2xl w-full max-w-4xl h-[70vh] relative flex flex-col">
+      <div className="bg-white px-4 py-4 rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] relative flex flex-col">
         <h2 className="text-md font-bold text-[#1A4D2E] text-center mb-2">
           Delivery Route & Request Details
         </h2>
@@ -40,12 +40,12 @@ export default function MapModal({
         </button>
 
         {/* Display Details Here */}
-        <div className="text-sm text-[#1A4D2E] mb-2 px-2 space-y-1">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-[#1A4D2E] mb-4 px-2">
           <p><strong>Farmer:</strong> {farmerName}</p>
           <p><strong>Purpose:</strong> {purpose}</p>
           <p><strong>Product Type:</strong> {productType}</p>
           <p><strong>Weight:</strong> {weight} kg</p>
-          <p><strong>Date and Time:</strong> {formattedTime}</p>
+          <p><strong>Date & Time:</strong> {formattedTime}</p>
         </div>
 
         <div className="flex-1 overflow-hidden rounded-lg">
