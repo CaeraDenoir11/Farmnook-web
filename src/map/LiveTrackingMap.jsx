@@ -51,6 +51,17 @@ function RoutingControl({ pickupCoords, dropCoords }) {
       addWaypoints: false,
       draggableWaypoints: false,
       fitSelectedRoutes: true,
+      createMarker: () => null, // ✅ Prevent routing markers
+      routeWhileDragging: false,
+      plan: L.Routing.plan(
+        [
+          L.latLng(pickupCoords[0], pickupCoords[1]),
+          L.latLng(dropCoords[0], dropCoords[1]),
+        ],
+        {
+          createMarker: () => null, // ✅ Safe disable again here
+        }
+      ),
     }).addTo(map);
 
     return () => map.removeControl(routingControl);
