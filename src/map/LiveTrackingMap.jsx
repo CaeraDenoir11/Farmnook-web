@@ -1,17 +1,10 @@
 import { useEffect, useState } from "react";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  Polyline,
-  useMap,
-} from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue } from "firebase/database";
-import firebaseConfig from "../configs/firebase";
+import firebaseConfig from "../configs/firebase"; 
 
 // ✅ Setup Mapbox Tiles
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -30,22 +23,7 @@ const pulsingIcon = L.divIcon({
   iconSize: [30, 30],
 });
 
-const style = document.createElement("style");
-style.innerHTML = `
-  .pulsing-marker {
-    width: 30px;
-    height: 30px;
-    background-color: #4CAF50;
-    border-radius: 50%;
-    position: relative;
-    animation: pulse 1.5s infinite;
-  }
-  @keyframes pulse {
-    0% { transform: scale(0.9); opacity: 0.7; }
-    70% { transform: scale(1); opacity: 0; }
-    100% { transform: scale(0.9); opacity: 0; }
-  }
-`;
+
 document.head.appendChild(style);
 
 // ✅ Smooth camera pan when hauler moves
@@ -91,11 +69,7 @@ export default function LiveTrackingMap() {
         // ✅ Update traveled path without duplicates
         setTraveledPath((prevPath) => {
           const last = prevPath[prevPath.length - 1];
-          if (
-            !last ||
-            last[0] !== currentCoords[0] ||
-            last[1] !== currentCoords[1]
-          ) {
+          if (!last || last[0] !== currentCoords[0] || last[1] !== currentCoords[1]) {
             return [...prevPath, currentCoords];
           }
           return prevPath;
@@ -108,11 +82,7 @@ export default function LiveTrackingMap() {
 
   return (
     <div style={{ height: "100vh", width: "100vw" }}>
-      <MapContainer
-        center={center}
-        zoom={13}
-        style={{ height: "100%", width: "100%" }}
-      >
+      <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }}>
         <TileLayer url={MAPBOX_TILE_URL} />
 
         {/* ✅ Pickup Marker */}
