@@ -16,12 +16,13 @@ const pinIcon = new L.Icon({
   iconAnchor: [17, 35],
 });
 
-const haulerIcon = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/2329/2329134.png",
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
+// ✅ Correct pulsing marker using divIcon
+const haulerIcon = L.divIcon({
+  className: "pulsing-marker",
+  iconSize: [30, 30],
 });
 
+// ✅ Camera pan control
 function ChangeView({ center }) {
   const map = useMap();
   useEffect(() => {
@@ -29,6 +30,32 @@ function ChangeView({ center }) {
       map.flyTo(center, 14, { animate: true });
     }
   }, [center, map]);
+  return null;
+}
+
+// ✅ Routing control component for the blue route
+function RoutingControl({ pickupCoords, dropCoords }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!pickupCoords || !dropCoords) return;
+
+    const routingControl = L.Routing.control({
+      waypoints: [
+        L.latLng(pickupCoords[0], pickupCoords[1]),
+        L.latLng(dropCoords[0], dropCoords[1]),
+      ],
+      lineOptions: {
+        styles: [{ color: "blue", weight: 4 }],
+      },
+      show: false,
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: true,
+    }).addTo(map);
+
+    return () => map.removeControl(routingControl);
+  }, [pickupCoords, dropCoords, map]);
+
   return null;
 }
 
@@ -96,6 +123,11 @@ export default function LiveTrackingMap() {
               <Popup>Hauler (Live)</Popup>
             </Marker>
           </>
+        )}
+
+        {/* ✅ Add the routing line between pickup and drop */}
+        {pickupCoords && dropCoords && (
+          <RoutingControl pickupCoords={pickupCoords} dropCoords={dropCoords} />
         )}
       </MapContainer>
     </div>
