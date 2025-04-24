@@ -150,11 +150,11 @@ export default function LiveTrackingMap() {
   const center = haulerCoords || pickupCoords || [10.3157, 123.8854];
 
   return (
-    <div style={{ height: "100vh", width: "100vw" }}>
+    <div className="map-container">
       <MapContainer
         center={center}
         zoom={13}
-        style={{ height: "100%", width: "100%" }}
+        className="h-full w-full"
         tap={true}
         doubleClickZoom={true}
         scrollWheelZoom={true}

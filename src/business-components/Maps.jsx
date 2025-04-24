@@ -10,17 +10,85 @@ const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 // Use cleaner Mapbox style
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`;
 
-const userIcon = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
-  iconSize: [35, 35],
-  iconAnchor: [17, 35],
-  popupAnchor: [0, -35],
+const userIcon = L.divIcon({
+  className: "pulsing-marker",
+  html: `
+    <div style="
+      background: #1A4D2E;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        background: white;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      "></div>
+    </div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -12],
 });
 
-const pinIcon = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
-  iconSize: [35, 35],
-  iconAnchor: [17, 35],
+const pickupIcon = L.divIcon({
+  className: "custom-marker",
+  html: `
+    <div style="
+      background: #FF0000;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        background: white;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      "></div>
+    </div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -12],
+});
+
+const destinationIcon = L.divIcon({
+  className: "custom-marker",
+  html: `
+    <div style="
+      background: #0000FF;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        background: white;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      "></div>
+    </div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -12],
 });
 
 // Smooth zooming when user location is updated, without locking zoom level
@@ -40,7 +108,12 @@ function ChangeView({ center }) {
   return null;
 }
 
-function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
+function RouteMap({
+  pickup,
+  drop,
+  routeColor = "#32CD32",
+  showTooltips = false,
+}) {
   const map = useMap();
 
   useEffect(() => {
@@ -113,8 +186,12 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
           const pickupLabel = await reverseGeocode(startLat, startLng);
           const dropLabel = await reverseGeocode(endLat, endLng);
 
-          L.marker(start, { icon: userIcon }).addTo(map).bindPopup(pickupLabel);
-          L.marker(end, { icon: pinIcon }).addTo(map).bindPopup(dropLabel);
+          L.marker(start, { icon: pickupIcon })
+            .addTo(map)
+            .bindPopup(pickupLabel);
+          L.marker(end, { icon: destinationIcon })
+            .addTo(map)
+            .bindPopup(dropLabel);
         }
       }
     });
@@ -148,7 +225,7 @@ export default function Maps({
   pickupLocation,
   destinationLocation,
   disablePicker = true,
-  routeColor = "blue",
+  routeColor = "#32CD32",
   showTooltips = false,
   height = "100vh",
 }) {
