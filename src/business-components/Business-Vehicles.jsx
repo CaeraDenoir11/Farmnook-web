@@ -101,19 +101,21 @@ export default function BusinessVehicles() {
     <div className="antialiased bg-white flex flex-col items-center min-h-screen">
       <div className="container mx-auto px-4 sm:px-8">
         <div className="py-8">
-          <div className="flex items-center gap-2 px-8 mb-4">
+          <div className="flex items-center justify-between px-8 mb-4">
             <h1 className="text-2xl font-semibold text-[#1A4D2E]">
               Vehicles List
             </h1>
             <button
               onClick={() => setShowVehicleDetails(true)}
-              className="flex items-center gap-1 text-[#1A4D2E] hover:text-green-700 transition-colors duration-200"
+              className="flex items-center gap-2 px-4 py-2 text-[#1A4D2E] hover:bg-[#F5EFE6] rounded-lg transition-all duration-200 group"
+              title="View Vehicle Types"
             >
               <img
                 src={VehicleDetailsIcon}
                 alt="Vehicle Details"
-                className="w-5 h-5"
+                className="w-5 h-5 group-hover:scale-110 transition-transform duration-200"
               />
+              <span className="text-sm font-medium">Vehicle Types</span>
             </button>
           </div>
 

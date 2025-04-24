@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Menu, LogOut } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../index.css";
 import logo from "../assets/images/logo.png";
 import dashboardIcon from "../assets/images/dashboard.svg";
@@ -8,7 +8,6 @@ import driversIcon from "../assets/icons/drivers.svg";
 import vehiclesIcon from "../assets/icons/vehicles.svg";
 import profileIcon from "../assets/icons/profile.svg";
 import clockIcon from "../assets/icons/Clock.svg";
-// import inboxIcon from "../assets/icons/message.svg";
 import reviewIcon from "../assets/icons/review.svg";
 import mapIcon from "../assets/icons/maps.svg";
 
@@ -21,6 +20,7 @@ export default function Sidebar({
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     setIsAuthenticated(false);
@@ -55,6 +55,15 @@ export default function Sidebar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMobile, isOpen]);
 
+  // Update active page based on current location
+  useEffect(() => {
+    const path = location.pathname;
+    const menuItem = menuItems.find((item) => item.route === path);
+    if (menuItem) {
+      setActivePage(menuItem.name);
+    }
+  }, [location.pathname, setActivePage]);
+
   const menuItems = [
     { id: 1, name: "Dashboard", icon: dashboardIcon, route: "/dashboard" },
     { id: 2, name: "Haulers", icon: driversIcon, route: "/haulers" },
@@ -82,12 +91,14 @@ export default function Sidebar({
         style={{ zIndex: 30 }}
       >
         <div>
-          <button
-            className="mb-4 !bg-white outline-none p-2 rounded-md"
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            <Menu size={18} className="text-green-800" />
-          </button>
+          <div className="flex items-center justify-between mb-4">
+            <button
+              className="!bg-white outline-none p-2 rounded-md"
+              onClick={() => setIsOpen(!isOpen)}
+            >
+              <Menu size={18} className="text-green-800" />
+            </button>
+          </div>
 
           {isOpen && (
             <img src={logo} alt="Logo" className="mx-auto mb-4 w-48" />
@@ -100,12 +111,12 @@ export default function Sidebar({
                 className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all ease-in-out duration-300
                   ${
                     activePage === item.name
-                      ? "bg-green-800 text-white"
-                      : "text-green-800"
+                      ? "bg-[#1A4D2E] text-white"
+                      : "text-[#1A4D2E] hover:bg-[#1A4D2E]/10"
                   }`}
                 onClick={() => {
                   setActivePage(item.name);
-                  navigate(item.route); // ✅ Fix: Navigates to the correct route
+                  navigate(item.route);
                   if (isMobile) setIsOpen(false);
                 }}
               >
@@ -125,7 +136,7 @@ export default function Sidebar({
         <div className="mt-auto">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 p-2 rounded-md cursor-pointer text-green-800 hover:bg-red-700 ease-in-out duration-300 hover:text-white w-full"
+            className="flex items-center gap-2 p-2 rounded-md cursor-pointer text-[#1A4D2E] hover:bg-red-700 ease-in-out duration-300 hover:text-white w-full"
           >
             <LogOut size={18} />
             {isOpen && <span className="font-medium">Logout</span>}
