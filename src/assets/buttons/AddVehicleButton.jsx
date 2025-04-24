@@ -93,7 +93,7 @@ function AddVehicleButton({ onAddVehicle }) {
       }
 
       const newVehicle = {
-        vehicleType: vehicleType.split(" (")[0],
+        vehicleType: formData.vehicleType,
         model,
         plateNumber: plateNumber.toUpperCase(),
         businessId: userId,
@@ -123,6 +123,14 @@ function AddVehicleButton({ onAddVehicle }) {
     }
   };
 
+  // Sort vehicle types by max weight, then by min weight
+  const sortedVehicleTypes = [...vehicleTypeList].sort((a, b) => {
+    if (a.max !== b.max) {
+      return a.max - b.max;
+    }
+    return a.min - b.min;
+  });
+
   return (
     <>
       {/* Floating Add Button */}
@@ -140,56 +148,95 @@ function AddVehicleButton({ onAddVehicle }) {
 
       {/* Add Vehicle Modal */}
       {isOpen && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40">
-          <div className="bg-[#F5EFE6] p-8 rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 z-50">
+          <div className="bg-[#F5EFE6] p-8 rounded-2xl shadow-2xl w-full max-w-md relative">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-red-500 transition-colors duration-200"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
             <h2 className="text-2xl font-bold text-[#1A4D2E] text-center mb-6">
               Add Vehicle
             </h2>
 
             {error && (
-              <p className="text-red-600 text-center mb-4 font-semibold">
+              <p className="text-red-600 text-center mb-4 font-semibold bg-red-50 p-3 rounded-lg">
                 ⚠️ {error}
               </p>
             )}
 
             <div className="space-y-4">
-              <select
-                name="vehicleType"
-                value={formData.vehicleType}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#1A4D2E] outline-none"
-              >
-                <option value="">Select Vehicle Type</option>
-                {vehicleTypeList.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <label className="block text-sm font-medium text-[#1A4D2E] mb-1">
+                  Vehicle Type
+                </label>
+                <select
+                  name="vehicleType"
+                  value={formData.vehicleType}
+                  onChange={handleChange}
+                  className="w-full p-3 border border-[#1A4D2E]/20 rounded-lg focus:ring-2 focus:ring-[#1A4D2E] focus:border-[#1A4D2E] outline-none bg-white"
+                >
+                  <option value="">Select Vehicle Type</option>
+                  {sortedVehicleTypes.map((type) => (
+                    <option key={type.name} value={type.name}>
+                      {type.name} ({type.min.toLocaleString()} -{" "}
+                      {type.max.toLocaleString()} kg)
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-              <input
-                type="text"
-                name="model"
-                placeholder="Vehicle Model"
-                value={formData.model}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#1A4D2E] outline-none"
-              />
+              <div>
+                <label className="block text-sm font-medium text-[#1A4D2E] mb-1">
+                  Vehicle Model
+                </label>
+                <input
+                  type="text"
+                  name="model"
+                  placeholder="Enter vehicle model"
+                  value={formData.model}
+                  onChange={handleChange}
+                  className="w-full p-3 border border-[#1A4D2E]/20 rounded-lg focus:ring-2 focus:ring-[#1A4D2E] focus:border-[#1A4D2E] outline-none bg-white"
+                />
+              </div>
 
-              <input
-                type="text"
-                name="plateNumber"
-                placeholder="Plate Number (e.g., NBC 1234)"
-                value={formData.plateNumber}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#1A4D2E] outline-none"
-              />
+              <div>
+                <label className="block text-sm font-medium text-[#1A4D2E] mb-1">
+                  Plate Number
+                </label>
+                <input
+                  type="text"
+                  name="plateNumber"
+                  placeholder="e.g., NBC 1234"
+                  value={formData.plateNumber}
+                  onChange={handleChange}
+                  className="w-full p-3 border border-[#1A4D2E]/20 rounded-lg focus:ring-2 focus:ring-[#1A4D2E] focus:border-[#1A4D2E] outline-none bg-white"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Valid formats: ABC 1234, 123 ABC, A123 BC, AB123 C
+                </p>
+              </div>
             </div>
 
             <div className="flex justify-end mt-6 space-x-4">
               <button
                 onClick={() => setIsOpen(false)}
-                className="px-4 py-2 bg-[#1A4D2E] text-white rounded-lg hover:bg-[#145C38] transition-all"
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all"
                 disabled={loading}
               >
                 Cancel
@@ -197,9 +244,31 @@ function AddVehicleButton({ onAddVehicle }) {
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="px-4 py-2 bg-[#1A4D2E] text-white rounded-lg hover:bg-[#145C38] transition-all"
+                className="px-4 py-2 bg-[#1A4D2E] text-white rounded-lg hover:bg-[#145C38] transition-all flex items-center gap-2"
               >
-                {loading ? "Saving..." : "Save"}
+                {loading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Saving...
+                  </>
+                ) : (
+                  "Save"
+                )}
               </button>
             </div>
           </div>
@@ -208,21 +277,36 @@ function AddVehicleButton({ onAddVehicle }) {
 
       {/* Vehicle Limit Alert Modal */}
       {showLimitAlert && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40">
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 z-50">
           <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-sm">
-            <h3 className="text-lg font-bold text-red-600 mb-2 text-center">
-              Limit Reached
-            </h3>
-            <p className="text-center text-gray-700 mb-4">
-              You can only add up to 2 vehicles without a subscription.
-            </p>
-            <p className="text-center text-gray-700 mb-4">
-              Please subscribe to add more vehicles.
-            </p>
-            <div className="flex justify-center">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg
+                  className="h-6 w-6 text-red-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-red-600 mb-2">
+                Limit Reached
+              </h3>
+              <p className="text-gray-700 mb-4">
+                You can only add up to 2 vehicles without a subscription.
+              </p>
+              <p className="text-gray-700 mb-6">
+                Please subscribe to add more vehicles.
+              </p>
               <button
                 onClick={() => setShowLimitAlert(false)}
-                className="bg-[#1A4D2E] text-white px-4 py-2 rounded-lg hover:bg-[#145C38]"
+                className="bg-[#1A4D2E] text-white px-6 py-2 rounded-lg hover:bg-[#145C38] transition-all"
               >
                 Close
               </button>
