@@ -53,8 +53,8 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
 
     const control = L.Routing.control({
       waypoints: [start, end],
-      collapsible: true,
-      show: true,
+      collapsible: false,
+      show: false,
       lineOptions: {
         styles: [{ color: routeColor, weight: 4 }],
       },
@@ -63,6 +63,8 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
       addWaypoints: false,
       draggableWaypoints: false,
       fitSelectedRoutes: false,
+      showAlternatives: false,
+      containerClassName: "hidden",
       router: L.Routing.mapbox(MAPBOX_ACCESS_TOKEN),
     });
 
