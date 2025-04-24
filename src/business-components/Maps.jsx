@@ -111,7 +111,7 @@ function ChangeView({ center }) {
 function RouteMap({
   pickup,
   drop,
-  routeColor = "#32CD32",
+  routeColor = "#179400",
   showTooltips = false,
 }) {
   const map = useMap();
