@@ -140,126 +140,139 @@ export default function History() {
   });
 
   return (
-    <div className="antialiased bg-white flex flex-col items-center min-h-screen py-10">
+    <div className="antialiased bg-white flex flex-col items-center min-h-screen">
       <div className="container mx-auto px-4 sm:px-8">
-        <h1 className="text-2xl font-bold text-[#1A4D2E] mb-6">
-          Delivery History
-        </h1>
+        <div className="py-8">
+          <h1 className="text-2xl font-semibold text-[#1A4D2E] mb-4 px-8">
+            Delivery History
+          </h1>
 
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-6">
-          <input
-            type="text"
-            placeholder="Search by Farmer, Hauler, or Vehicle Used"
-            className="border px-3 py-2 rounded w-full md:w-1/3"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <div className="flex gap-2">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-6">
             <input
-              type="date"
-              className="border px-3 py-2 rounded"
-              value={dateRange.from}
-              onChange={(e) =>
-                setDateRange((prev) => ({ ...prev, from: e.target.value }))
-              }
+              type="text"
+              placeholder="Search by Farmer, Hauler, or Vehicle Used"
+              className="border px-3 py-2 rounded w-full md:w-1/3"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <input
-              type="date"
-              className="border px-3 py-2 rounded"
-              value={dateRange.to}
-              onChange={(e) =>
-                setDateRange((prev) => ({ ...prev, to: e.target.value }))
-              }
-            />
+            <div className="flex gap-2">
+              <input
+                type="date"
+                className="border px-3 py-2 rounded"
+                value={dateRange.from}
+                onChange={(e) =>
+                  setDateRange((prev) => ({ ...prev, from: e.target.value }))
+                }
+              />
+              <input
+                type="date"
+                className="border px-3 py-2 rounded"
+                value={dateRange.to}
+                onChange={(e) =>
+                  setDateRange((prev) => ({ ...prev, to: e.target.value }))
+                }
+              />
+            </div>
           </div>
-        </div>
 
-        <div className="mb-2 text-gray-600">
-          Total Deliveries: {filteredHistory.length}
-        </div>
+          <div className="mb-2 text-gray-600">
+            Total Deliveries: {filteredHistory.length}
+          </div>
 
-        {isLoading ? (
-          <p className="text-center text-gray-600">Loading history...</p>
-        ) : filteredHistory.length === 0 ? (
-          <p className="text-center text-gray-600">No delivery history found.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border border-gray-200 shadow-md rounded">
-              <thead className="bg-[#F5EFE6] text-[#1A4D2E] uppercase text-xs font-semibold">
-                <tr>
-                  <th className="py-3 px-4 border-b text-left">Farmer Name</th>
-                  <th className="py-3 px-4 border-b text-left">Hauler Assigned</th>
-                  <th className="py-3 px-4 border-b text-left">Vehicle Used</th>
-                  <th className="py-3 px-4 border-b text-left">Date Completed</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredHistory.map((entry) => (
-                  <tr
-                    key={entry.id}
-                    className="text-gray-800 border-b hover:bg-gray-100 cursor-pointer"
-                    onClick={() => setSelectedEntry(entry)}
-                  >
-                    <td className="py-3 px-4">{entry.farmerName}</td>
-                    <td className="py-3 px-4">{entry.haulerName}</td>
-                    <td className="py-3 px-4">{entry.vehicleType}</td>
-                    <td className="py-3 px-4">{entry.timestamp}</td>
+          {isLoading ? (
+            <p className="text-center text-gray-600">Loading history...</p>
+          ) : filteredHistory.length === 0 ? (
+            <p className="text-center text-gray-600">
+              No delivery history found.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white border border-gray-200 shadow-md rounded">
+                <thead className="bg-[#F5EFE6] text-[#1A4D2E] uppercase text-xs font-semibold">
+                  <tr>
+                    <th className="py-3 px-4 border-b text-left">
+                      Farmer Name
+                    </th>
+                    <th className="py-3 px-4 border-b text-left">
+                      Hauler Assigned
+                    </th>
+                    <th className="py-3 px-4 border-b text-left">
+                      Vehicle Used
+                    </th>
+                    <th className="py-3 px-4 border-b text-left">
+                      Date Completed
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredHistory.map((entry) => (
+                    <tr
+                      key={entry.id}
+                      className="text-gray-800 border-b hover:bg-gray-100 cursor-pointer"
+                      onClick={() => setSelectedEntry(entry)}
+                    >
+                      <td className="py-3 px-4">{entry.farmerName}</td>
+                      <td className="py-3 px-4">{entry.haulerName}</td>
+                      <td className="py-3 px-4">{entry.vehicleType}</td>
+                      <td className="py-3 px-4">{entry.timestamp}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {selectedEntry && (
+          <div className="fixed inset-0 bg-white bg-opacity-40 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg relative">
+              <h2 className="text-xl font-semibold text-[#1A4D2E] mb-4">
+                Delivery Details
+              </h2>
+              <ul className="space-y-2 text-gray-700 text-sm">
+                <li>
+                  <strong>Delivery ID:</strong> {selectedEntry.id}
+                </li>
+                <li>
+                  <strong>Hauler Assigned:</strong> {selectedEntry.haulerName}
+                </li>
+                <li>
+                  <strong>Farmer Name:</strong> {selectedEntry.farmerName}
+                </li>
+                <li>
+                  <strong>Vehicle Type:</strong> {selectedEntry.vehicleType}
+                </li>
+                <li>
+                  <strong>Product Type:</strong> {selectedEntry.productType}
+                </li>
+                <li>
+                  <strong>Purpose:</strong> {selectedEntry.purpose}
+                </li>
+                <li>
+                  <strong>Weight:</strong> {selectedEntry.weight} KG
+                </li>
+                <li>
+                  <strong>Date Completed:</strong> {selectedEntry.timestamp}
+                </li>
+                <li>
+                  <strong>Pickup Location:</strong>{" "}
+                  {selectedEntry.pickupLocation}
+                </li>
+                <li>
+                  <strong>Destination Location:</strong>{" "}
+                  {selectedEntry.destinationLocation}
+                </li>
+              </ul>
+              <button
+                onClick={() => setSelectedEntry(null)}
+                className="mt-6 bg-[#1A4D2E] text-white px-4 py-2 rounded hover:bg-green-800"
+              >
+                Close
+              </button>
+            </div>
           </div>
         )}
       </div>
-
-      {selectedEntry && (
-        <div className="fixed inset-0 bg-white bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg relative">
-            <h2 className="text-xl font-semibold text-[#1A4D2E] mb-4">
-              Delivery Details
-            </h2>
-            <ul className="space-y-2 text-gray-700 text-sm">
-              <li>
-                <strong>Delivery ID:</strong> {selectedEntry.id}
-              </li>
-              <li>
-                <strong>Hauler Assigned:</strong> {selectedEntry.haulerName}
-              </li>
-              <li>
-                <strong>Farmer Name:</strong> {selectedEntry.farmerName}
-              </li>
-              <li>
-                <strong>Vehicle Type:</strong> {selectedEntry.vehicleType}
-              </li>
-              <li>
-                <strong>Product Type:</strong> {selectedEntry.productType}
-              </li>
-              <li>
-                <strong>Purpose:</strong> {selectedEntry.purpose}
-              </li>
-              <li>
-                <strong>Weight:</strong> {selectedEntry.weight} KG
-              </li>
-              <li>
-                <strong>Date Completed:</strong> {selectedEntry.timestamp}
-              </li>
-              <li>
-                <strong>Pickup Location:</strong> {selectedEntry.pickupLocation}
-              </li>
-              <li>
-                <strong>Destination Location:</strong>{" "}
-                {selectedEntry.destinationLocation}
-              </li>
-            </ul>
-            <button
-              onClick={() => setSelectedEntry(null)}
-              className="mt-6 bg-[#1A4D2E] text-white px-4 py-2 rounded hover:bg-green-800"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

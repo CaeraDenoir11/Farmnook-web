@@ -102,7 +102,7 @@ export default function BusinessReviews() {
   if (status === "forbidden")
     return (
       <p className="text-center mt-8 text-red-600">
-        🚫 You don’t have permission to view this page.
+        🚫 You don't have permission to view this page.
       </p>
     );
 
@@ -114,92 +114,95 @@ export default function BusinessReviews() {
   );
 
   return (
-    <div className="antialiased bg-white flex flex-col items-center min-h-screen px-4 sm:px-8 py-8">
-      <div className="container mx-auto w-full max-w-7xl">
-        {/* HEADER */}
-        <h1 className="text-2xl font-semibold text-[#1A4D2E] mb-4 px-4">
-          Customer Reviews
-        </h1>
+    <div className="antialiased bg-white flex flex-col items-center min-h-screen">
+      <div className="container mx-auto px-4 sm:px-8">
+        <div className="py-8">
+          <h1 className="text-2xl font-semibold text-[#1A4D2E] mb-4 px-8">
+            Customer Reviews
+          </h1>
 
-        {/* AVERAGE RATING + SEARCH */}
-        <div className="flex flex-col items-start sm:flex-row sm:items-center justify-between px-4 mb-6">
-          <div>
-            <div className="text-5xl font-bold text-[#1A4D2E]">
-              {averageRating.toFixed(1)}
+          {/* AVERAGE RATING + SEARCH */}
+          <div className="flex flex-col items-start sm:flex-row sm:items-center justify-between px-4 mb-6">
+            <div>
+              <div className="text-5xl font-bold text-[#1A4D2E]">
+                {averageRating.toFixed(1)}
+              </div>
+              <div className="flex text-[#1A4D2E] text-2xl">
+                {Array.from({ length: Math.floor(averageRating) }).map(
+                  (_, i) => (
+                    <IoStar key={i} />
+                  )
+                )}
+                {averageRating % 1 !== 0 && <IoStarHalf />}
+              </div>
             </div>
-            <div className="flex text-[#1A4D2E] text-2xl">
-              {Array.from({ length: Math.floor(averageRating) }).map((_, i) => (
-                <IoStar key={i} />
-              ))}
-              {averageRating % 1 !== 0 && <IoStarHalf />}
+            <div className="w-full sm:w-96 mt-4 sm:mt-0">
+              <div className="flex items-center bg-white border border-gray-400 rounded-lg px-3 py-2">
+                <IoSearchOutline className="text-[#1A4D2E] text-lg mr-2" />
+                <input
+                  type="text"
+                  placeholder="Search Feedback..."
+                  className="w-full bg-transparent focus:outline-none text-[#1A4D2E] placeholder-[#1A4D2E]"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
             </div>
           </div>
-          <div className="w-full sm:w-96 mt-4 sm:mt-0">
-            <div className="flex items-center bg-white border border-gray-400 rounded-lg px-3 py-2">
-              <IoSearchOutline className="text-[#1A4D2E] text-lg mr-2" />
-              <input
-                type="text"
-                placeholder="Search Feedback..."
-                className="w-full bg-transparent focus:outline-none text-[#1A4D2E] placeholder-[#1A4D2E]"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
 
-        {/* ERROR MESSAGE */}
-        {error && (
-          <p className="text-red-600 text-center mb-4 font-semibold">
-            ⚠️ {error}
-          </p>
-        )}
-
-        {/* REVIEWS */}
-        <div className="-mx-4 sm:-mx-8 px-4 sm:px-8 py-4 w-full max-w-7xl">
-          {filtered.length > 0 ? (
-            filtered.map((r, idx) => {
-              const fullName = farmerNames[r.farmerId] || "Unknown Farmer";
-              return (
-                <div
-                  key={idx}
-                  className="w-full bg-white p-6 rounded-md text-[#1A4D2E] border border-[#1A4D2E] shadow-md mb-4"
-                >
-                  <div className="flex justify-between">
-                    <div className="flex gap-2 items-center">
-                      <div className="w-8 h-8 text-center rounded-full bg-gray-500 text-white flex items-center justify-center font-bold">
-                        {fullName.charAt(0)}
-                      </div>
-                      <span className="font-semibold">{fullName}</span>
-                    </div>
-                    <div className="flex p-1 gap-1 text-[#1A4D2E] text-lg">
-                      {Array.from({ length: Math.floor(r.rating) }).map(
-                        (_, i) => (
-                          <IoStar key={i} />
-                        )
-                      )}
-                      {r.rating % 1 !== 0 && <IoStarHalf />}
-                    </div>
-                  </div>
-
-                  <div className="text-lg mt-2">{r.comment}</div>
-
-                  <div className="flex justify-between items-center mt-3">
-                    <span className="text-sm">
-                      {new Date(r.timestamp.seconds * 1000).toDateString()}
-                    </span>
-                    <button className="p-1 px-3 bg-[#F5EFE6] text-[#1A4D2E] hover:bg-opacity-80 border border-[#1A4D2E] rounded-md flex items-center gap-1">
-                      <IoShareOutline /> Share
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <p className="text-[#1A4D2E] text-center font-semibold mt-4">
-              No reviews found for your business.
+          {/* ERROR MESSAGE */}
+          {error && (
+            <p className="text-red-600 text-center mb-4 font-semibold">
+              ⚠️ {error}
             </p>
           )}
+
+          {/* REVIEWS */}
+          <div className="-mx-4 sm:-mx-8 px-4 sm:px-8 py-4 w-full max-w-7xl">
+            {filtered.length > 0 ? (
+              filtered.map((r, idx) => {
+                const fullName = farmerNames[r.farmerId] || "Unknown Farmer";
+                return (
+                  <div
+                    key={idx}
+                    className="w-full bg-white p-6 rounded-md text-[#1A4D2E] border border-[#1A4D2E] shadow-md mb-4"
+                  >
+                    <div className="flex justify-between">
+                      <div className="flex gap-2 items-center">
+                        <div className="w-8 h-8 text-center rounded-full bg-gray-500 text-white flex items-center justify-center font-bold">
+                          {fullName.charAt(0)}
+                        </div>
+                        <span className="font-semibold">{fullName}</span>
+                      </div>
+                      <div className="flex p-1 gap-1 text-[#1A4D2E] text-lg">
+                        {Array.from({ length: Math.floor(r.rating) }).map(
+                          (_, i) => (
+                            <IoStar key={i} />
+                          )
+                        )}
+                        {r.rating % 1 !== 0 && <IoStarHalf />}
+                      </div>
+                    </div>
+
+                    <div className="text-lg mt-2">{r.comment}</div>
+
+                    <div className="flex justify-between items-center mt-3">
+                      <span className="text-sm">
+                        {new Date(r.timestamp.seconds * 1000).toDateString()}
+                      </span>
+                      <button className="p-1 px-3 bg-[#F5EFE6] text-[#1A4D2E] hover:bg-opacity-80 border border-[#1A4D2E] rounded-md flex items-center gap-1">
+                        <IoShareOutline /> Share
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-[#1A4D2E] text-center font-semibold mt-4">
+                No reviews found for your business.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>

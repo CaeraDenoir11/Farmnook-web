@@ -153,22 +153,16 @@ export default function BusinessDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-[#1A4D2E] w-full py-6 px-8 shadow-lg">
-        <div className="max-w-8xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-white">Business Dashboard</h1>
-          <div className="flex items-center space-x-4">
-            <NotificationButton
-              notifications={notifications}
-              loading={loadingNotifications}
-              error={error}
-            />
-          </div>
+      <div className="container mx-auto px-4 sm:px-8">
+        <div className="py-8">
+          <h1 className="text-2xl font-semibold text-[#1A4D2E] mb-4 px-8">
+            Business Dashboard
+          </h1>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-8xl mx-auto px-6 py-8">
+      <div className="max-w-8xl mx-auto px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Delivery Requests Section */}
           <div className="lg:col-span-2">

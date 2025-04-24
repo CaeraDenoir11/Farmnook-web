@@ -22,6 +22,7 @@ import logo from "./assets/images/document-logo.png";
 import OneSignal from "react-onesignal";
 import MapViewer from "./map/MapViewer.jsx";
 import LiveTrackingMap from "./map/LiveTrackingMap.jsx";
+import GlobalNotification from "./business-components/components/GlobalNotification.jsx";
 // import BusinessSubscriptionPayment from "./business-components/Business-Subscription-Payment";
 
 export default function App() {
@@ -108,6 +109,9 @@ export default function App() {
                     setIsAuthenticated={setIsAuthenticated}
                   />
                   <div className="flex-1 bg-white overflow-auto h-screen">
+                    <div className="fixed top-4 right-8 z-50">
+                      <GlobalNotification />
+                    </div>
                     <Routes>
                       <Route
                         path="/dashboard"
@@ -142,6 +146,9 @@ export default function App() {
                     setIsAuthenticated={setIsAuthenticated}
                   />
                   <div className="flex-1 bg-white overflow-auto h-screen">
+                    <div className="fixed top-4 right-8 z-50">
+                      <GlobalNotification />
+                    </div>
                     <Routes>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/users" element={<Users />} />
