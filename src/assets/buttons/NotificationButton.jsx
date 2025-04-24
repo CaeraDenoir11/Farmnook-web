@@ -14,6 +14,7 @@ export default function NotificationButton({
     const bDate = new Date(`${b.date} ${b.time}`);
     return bDate - aDate;
   });
+
   return (
     <div className="relative ml-auto">
       <button
@@ -30,38 +31,56 @@ export default function NotificationButton({
 
       {showNotifications && (
         <div className="absolute right-0 w-[500px] bg-white text-black rounded-md shadow-lg max-h-[400px] overflow-y-auto z-50">
-          <h3 className="font-semibold px-4 py-2 border-b mb-2">
-            Notifications
-          </h3>
+          <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex justify-between items-center">
+            <h3 className="font-semibold text-lg">Notifications</h3>
+            {notifications.length > 0 && (
+              <span className="text-sm bg-[#1a4d2e] text-white px-2 py-1 rounded-full">
+                {notifications.length} new
+              </span>
+            )}
+          </div>
 
-          {loading ? (
-            <p className="px-4 py-2">Loading...</p>
-          ) : error ? (
-            <p className="px-4 py-2 text-red-500">
-              Error loading notifications
-            </p>
-          ) : notifications.length === 0 ? (
-            <p className="px-4 py-2">No new notifications</p>
-          ) : (
-            sortedNotifications.map((notif) => (
-              <div
-                key={notif.id}
-                className="flex justify-between items-center bg-gray-200 rounded-md px-1 py-2 mb-2 mx-2"
-              >
-                <div className="flex-1">
-                  <p className="font-bold text-sm mb-1">{notif.title}</p>
-                  <p className="text-sm text-gray-700 truncate">
-                    {notif.message}
-                  </p>
-                </div>
-                <div className="text-right text-sm text-gray-600 whitespace-nowrap px-4 flex flex-col items-end">
-                  <p>
-                    {notif.time}, {notif.date}
-                  </p>
-                </div>
+          <div className="p-2">
+            {loading ? (
+              <div className="flex items-center justify-center p-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1a4d2e]"></div>
               </div>
-            ))
-          )}
+            ) : error ? (
+              <div className="p-4 text-red-500 text-center">
+                Error loading notifications
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="p-4 text-gray-500 text-center">
+                No new notifications
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {sortedNotifications.map((notif) => (
+                  <div
+                    key={notif.id}
+                    className="flex justify-between items-center bg-gray-50 hover:bg-gray-100 rounded-lg px-4 py-3 transition-colors duration-200"
+                  >
+                    <div className="flex-1">
+                      <p className="font-semibold text-[#1a4d2e] mb-1">
+                        {notif.title}
+                      </p>
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {notif.message}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="text-xs text-[#1a4d2e]/70 bg-[#1a4d2e]/10 px-2 py-1 rounded-full">
+                          {notif.time}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {notif.date}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

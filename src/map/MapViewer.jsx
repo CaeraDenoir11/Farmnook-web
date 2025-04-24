@@ -26,7 +26,7 @@ export default function MapViewer() {
           pickupLocation={pickup}
           destinationLocation={drop}
           disablePicker={true}
-          routeColor="blue"
+          routeColor="#32CD32"
           showTooltips={true}
           height="100%"
           fitBoundsOptions={{

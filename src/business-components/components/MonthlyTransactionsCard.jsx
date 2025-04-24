@@ -23,7 +23,7 @@ export default function MonthlyTransactionsCard({
   }, [selectedMonth, monthlyData]);
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-lg w-full md:w-3/8 self-start">
+    <div className="bg-white p-6 rounded-2xl shadow-lg h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-[#1A4D2E]">
           Monthly Transactions
@@ -41,21 +41,27 @@ export default function MonthlyTransactionsCard({
         </select>
       </div>
       <motion.p
-        className="text-lg font-semibold text-[#1A4D2E] mb-2 text-center"
+        className="text-lg font-semibold text-[#1A4D2E] mb-4 text-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
       >
         Total Transactions: {totalTransactions}
       </motion.p>
-      <div className="w-full h-72 bg-gray-100 p-4 rounded-lg">
+      <div className="flex-1 min-h-[300px] w-full bg-[#FCFFE0] p-4 rounded-lg">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={monthlyData[selectedMonth]}
-            margin={{ top: 20, right: 30, left: 0, bottom: 10 }}
+            margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
           >
             <defs>
-              <linearGradient id="colorTransactions" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient
+                id="colorTransactions"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
                 <stop offset="5%" stopColor="#1A4D2E" stopOpacity={0.9} />
                 <stop offset="95%" stopColor="#F5EFE6" stopOpacity={0} />
               </linearGradient>
@@ -65,9 +71,26 @@ export default function MonthlyTransactionsCard({
               strokeOpacity={0.2}
               stroke="#1A4D2E"
             />
-            <XAxis dataKey="week" tick={{ fill: "#1A4D2E" }} />
-            <YAxis tick={{ fill: "#1A4D2E" }} />
-            <Tooltip cursor={{ fill: "rgba(26, 77, 46, 0.1)" }} />
+            <XAxis
+              dataKey="week"
+              tick={{ fill: "#1A4D2E" }}
+              tickLine={{ stroke: "#1A4D2E" }}
+              axisLine={{ stroke: "#1A4D2E" }}
+            />
+            <YAxis
+              tick={{ fill: "#1A4D2E" }}
+              tickLine={{ stroke: "#1A4D2E" }}
+              axisLine={{ stroke: "#1A4D2E" }}
+            />
+            <Tooltip
+              cursor={{ fill: "rgba(26, 77, 46, 0.1)" }}
+              contentStyle={{
+                backgroundColor: "white",
+                border: "1px solid #1A4D2E",
+                borderRadius: "8px",
+                color: "#1A4D2E",
+              }}
+            />
             <Area
               type="monotone"
               dataKey="transactions"
@@ -75,7 +98,12 @@ export default function MonthlyTransactionsCard({
               strokeWidth={3}
               fillOpacity={1}
               fill="url(#colorTransactions)"
-              activeDot={{ r: 6, fill: "#1A4D2E" }}
+              activeDot={{
+                r: 6,
+                fill: "#1A4D2E",
+                stroke: "white",
+                strokeWidth: 2,
+              }}
             />
           </AreaChart>
         </ResponsiveContainer>
