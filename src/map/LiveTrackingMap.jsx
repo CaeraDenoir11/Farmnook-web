@@ -5,8 +5,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-routing-machine";
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue } from "firebase/database";
-import firebaseConfig from "../configs/firebase"; 
-
+import firebaseConfig from "../../configs/firebase.js";
 
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`;
@@ -17,12 +16,13 @@ const pinIcon = new L.Icon({
   iconAnchor: [17, 35],
 });
 
-const haulerIcon = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/2329/2329134.png",
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
+// ✅ Correct pulsing marker using divIcon
+const haulerIcon = L.divIcon({
+  className: "pulsing-marker",
+  iconSize: [30, 30],
 });
 
+// ✅ Camera pan control
 function ChangeView({ center }) {
   const map = useMap();
   useEffect(() => {
@@ -30,6 +30,86 @@ function ChangeView({ center }) {
       map.flyTo(center, 14, { animate: true });
     }
   }, [center, map]);
+  return null;
+}
+
+// ✅ Routing control component for the blue route
+function RoutingControl({ pickupCoords, dropCoords }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!pickupCoords || !dropCoords) return;
+
+    const routingControl = L.Routing.control({
+      waypoints: [
+        L.latLng(pickupCoords[0], pickupCoords[1]),
+        L.latLng(dropCoords[0], dropCoords[1]),
+      ],
+      lineOptions: {
+        styles: [{ color: "blue", weight: 4 }],
+      },
+      plan: L.Routing.plan(
+        [
+          L.latLng(pickupCoords[0], pickupCoords[1]),
+          L.latLng(dropCoords[0], dropCoords[1]),
+        ],
+        { createMarker: () => null }
+      ),
+      show: false,
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: true,
+      collapsible: false,
+      routeWhileDragging: false,
+      showAlternatives: false,
+      containerClassName: "hidden",
+    }).addTo(map);
+
+    routingControl.on("routesfound", (e) => {
+      const routes = e.routes;
+      if (routes && routes.length > 0) {
+        const route = routes[0];
+        const bounds = L.latLngBounds(route.coordinates);
+
+        // Calculate distance between points
+        const start = L.latLng(pickupCoords[0], pickupCoords[1]);
+        const end = L.latLng(dropCoords[0], dropCoords[1]);
+        const distance = start.distanceTo(end);
+
+        // Dynamic zoom level based on distance
+        let zoomLevel = 15;
+        if (distance > 50000) {
+          // > 50km
+          zoomLevel = 10;
+        } else if (distance > 20000) {
+          // > 20km
+          zoomLevel = 11;
+        } else if (distance > 10000) {
+          // > 10km
+          zoomLevel = 12;
+        } else if (distance > 5000) {
+          // > 5km
+          zoomLevel = 13;
+        } else if (distance > 2000) {
+          // > 2km
+          zoomLevel = 14;
+        }
+
+        setTimeout(() => {
+          map.invalidateSize();
+          map.fitBounds(bounds, {
+            padding: [50, 50],
+            maxZoom: zoomLevel,
+            animate: true,
+            duration: 1.5,
+            easeLinearity: 0.25,
+          });
+        }, 300);
+      }
+    });
+
+    return () => map.removeControl(routingControl);
+  }, [pickupCoords, dropCoords, map]);
+
   return null;
 }
 
@@ -71,8 +151,28 @@ export default function LiveTrackingMap() {
 
   return (
     <div style={{ height: "100vh", width: "100vw" }}>
-      <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }}>
-        <TileLayer url={MAPBOX_TILE_URL} />
+      <MapContainer
+        center={center}
+        zoom={13}
+        style={{ height: "100%", width: "100%" }}
+        tap={true}
+        doubleClickZoom={true}
+        scrollWheelZoom={true}
+        dragging={true}
+        touchZoom={true}
+        zoomSnap={0.5}
+        zoomDelta={0.5}
+        inertia={true}
+        inertiaDeceleration={3000}
+        inertiaMaxSpeed={1500}
+        easeLinearity={0.25}
+      >
+        <TileLayer
+          url={MAPBOX_TILE_URL}
+          maxZoom={19}
+          minZoom={3}
+          keepBuffer={4}
+        />
 
         {pickupCoords && (
           <Marker position={pickupCoords} icon={pinIcon}>
@@ -93,6 +193,10 @@ export default function LiveTrackingMap() {
               <Popup>Hauler (Live)</Popup>
             </Marker>
           </>
+        )}
+
+        {pickupCoords && dropCoords && (
+          <RoutingControl pickupCoords={pickupCoords} dropCoords={dropCoords} />
         )}
       </MapContainer>
     </div>

@@ -53,8 +53,8 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
 
     const control = L.Routing.control({
       waypoints: [start, end],
-      collapsible: true,
-      show: true,
+      collapsible: false,
+      show: false,
       lineOptions: {
         styles: [{ color: routeColor, weight: 4 }],
       },
@@ -62,28 +62,60 @@ function RouteMap({ pickup, drop, routeColor = "blue", showTooltips = false }) {
       routeWhileDragging: false,
       addWaypoints: false,
       draggableWaypoints: false,
-      fitSelectedRoutes: false,
+      fitSelectedRoutes: true,
+      showAlternatives: false,
+      containerClassName: "hidden",
       router: L.Routing.mapbox(MAPBOX_ACCESS_TOKEN),
     });
 
     control.addTo(map);
 
-    control.on("routesfound", async () => {
-      const bounds = L.latLngBounds([start, end]);
-      setTimeout(() => {
-        map.invalidateSize();
-        map.fitBounds(bounds, {
-          padding: [100, 100],
-          maxZoom: 15,
-        });
-      }, 300);
+    control.on("routesfound", async (e) => {
+      const routes = e.routes;
+      if (routes && routes.length > 0) {
+        const route = routes[0];
+        const bounds = L.latLngBounds(route.coordinates);
 
-      if (showTooltips) {
-        const pickupLabel = await reverseGeocode(startLat, startLng);
-        const dropLabel = await reverseGeocode(endLat, endLng);
+        // Calculate distance between points
+        const distance = start.distanceTo(end);
 
-        L.marker(start, { icon: userIcon }).addTo(map).bindPopup(pickupLabel);
-        L.marker(end, { icon: pinIcon }).addTo(map).bindPopup(dropLabel);
+        // Dynamic zoom level based on distance
+        let zoomLevel = 15;
+        if (distance > 50000) {
+          // > 50km
+          zoomLevel = 10;
+        } else if (distance > 20000) {
+          // > 20km
+          zoomLevel = 11;
+        } else if (distance > 10000) {
+          // > 10km
+          zoomLevel = 12;
+        } else if (distance > 5000) {
+          // > 5km
+          zoomLevel = 13;
+        } else if (distance > 2000) {
+          // > 2km
+          zoomLevel = 14;
+        }
+
+        setTimeout(() => {
+          map.invalidateSize();
+          map.fitBounds(bounds, {
+            padding: [50, 50],
+            maxZoom: zoomLevel,
+            animate: true,
+            duration: 1.5,
+            easeLinearity: 0.25,
+          });
+        }, 300);
+
+        if (showTooltips) {
+          const pickupLabel = await reverseGeocode(startLat, startLng);
+          const dropLabel = await reverseGeocode(endLat, endLng);
+
+          L.marker(start, { icon: userIcon }).addTo(map).bindPopup(pickupLabel);
+          L.marker(end, { icon: pinIcon }).addTo(map).bindPopup(dropLabel);
+        }
       }
     });
 
@@ -151,11 +183,28 @@ export default function Maps({
       <MapContainer
         center={defaultCenter}
         zoom={13}
-        zoomControl={false}
+        zoomControl={true}
         attributionControl={false}
         style={{ height: "100%", width: "100%" }}
+        tap={true}
+        doubleClickZoom={true}
+        scrollWheelZoom={true}
+        dragging={true}
+        touchZoom={true}
+        zoomSnap={0.5}
+        zoomDelta={0.5}
+        inertia={true}
+        inertiaDeceleration={3000}
+        inertiaMaxSpeed={1500}
+        easeLinearity={0.25}
       >
-        <TileLayer url={MAPBOX_TILE_URL} attribution={null} />
+        <TileLayer
+          url={MAPBOX_TILE_URL}
+          attribution={null}
+          maxZoom={19}
+          minZoom={3}
+          keepBuffer={4}
+        />
 
         {position && (
           <>
