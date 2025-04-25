@@ -12,14 +12,15 @@ const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/til
 
 const pinIcon = new L.Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
-  iconSize: [35, 35],
-  iconAnchor: [17, 35],
+  iconSize: [25, 25],
+  iconAnchor: [12, 25],
 });
 
 // ✅ Correct pulsing marker using divIcon
 const haulerIcon = L.divIcon({
   className: "pulsing-marker",
-  iconSize: [30, 30],
+  iconSize: [25, 25],
+  iconAnchor: [12, 25],
 });
 
 // ✅ Camera pan control
@@ -45,7 +46,7 @@ function RoutingControl({ pickupCoords, dropCoords }) {
         L.latLng(dropCoords[0], dropCoords[1]),
       ],
       lineOptions: {
-        styles: [{ color: "blue", weight: 4 }],
+        styles: [{ color: "#32CD32", weight: 4 }],
       },
       plan: L.Routing.plan(
         [
@@ -97,10 +98,10 @@ function RoutingControl({ pickupCoords, dropCoords }) {
         setTimeout(() => {
           map.invalidateSize();
           map.fitBounds(bounds, {
-            padding: [50, 50],
+            padding: [100, 100],
             maxZoom: zoomLevel,
             animate: true,
-            duration: 1.5,
+            duration: 0.8,
             easeLinearity: 0.25,
           });
         }, 300);
@@ -150,7 +151,16 @@ export default function LiveTrackingMap() {
   const center = haulerCoords || pickupCoords || [10.3157, 123.8854];
 
   return (
-    <div className="map-container">
+    <div
+      className="map-container"
+      style={{
+        height: "100vh",
+        width: "100vw",
+        position: "fixed",
+        top: 0,
+        left: 0,
+      }}
+    >
       <MapContainer
         center={center}
         zoom={13}
