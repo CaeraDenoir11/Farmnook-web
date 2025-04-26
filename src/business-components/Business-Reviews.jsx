@@ -190,9 +190,9 @@ export default function BusinessReviews() {
                       <span className="text-sm">
                         {new Date(r.timestamp.seconds * 1000).toDateString()}
                       </span>
-                      <button className="p-1 px-3 bg-[#F5EFE6] text-[#1A4D2E] hover:bg-opacity-80 border border-[#1A4D2E] rounded-md flex items-center gap-1">
-                        <IoShareOutline /> Share
-                      </button>
+                      <div className="text-sm text-[#1A4D2E] bg-[#F5EFE6] border border-[#1A4D2E] px-3 py-1 rounded-md">
+                        Delivery ID: {r.deliveryId || "N/A"}
+                      </div>
                     </div>
                   </div>
                 );
