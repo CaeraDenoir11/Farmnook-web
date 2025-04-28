@@ -83,8 +83,7 @@ export default function AcceptRequestModal({
       setLoadingHaulerId(hauler.id);
 
       // 1. Mark request as accepted
-      await setDoc(doc(db, "deliveryRequests", req.id), {
-        ...req,
+      await updateDoc(doc(db, "deliveryRequests", req.id), {
         isAccepted: true,
       });
 
