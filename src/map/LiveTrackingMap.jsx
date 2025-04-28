@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  Polyline,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-routing-machine";
@@ -45,6 +52,13 @@ const haulerIcon = L.divIcon({
   popupAnchor: [0, -15],
 });
 
+// Add new constants for route states
+const ROUTE_STATES = {
+  PICKUP_PENDING: "PICKUP_PENDING",
+  IN_TRANSIT: "IN_TRANSIT",
+  DELIVERED: "DELIVERED",
+};
+
 // ✅ Camera pan control
 function ChangeView({ center }) {
   const map = useMap();
@@ -56,8 +70,45 @@ function ChangeView({ center }) {
   return null;
 }
 
-// ✅ Routing control component for the blue route
-function RoutingControl({ pickupCoords, dropCoords }) {
+// Add new component for route progress
+function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
+  const map = useMap();
+  const [progressLine, setProgressLine] = useState(null);
+
+  useEffect(() => {
+    if (!haulerCoords || !pickupCoords || !dropCoords) return;
+
+    // Calculate distance between hauler and pickup
+    const haulerPos = L.latLng(haulerCoords[0], haulerCoords[1]);
+    const pickupPos = L.latLng(pickupCoords[0], pickupCoords[1]);
+    const distance = haulerPos.distanceTo(pickupPos);
+
+    // Check if hauler is within 20 meters of pickup
+    const isAtPickup = distance <= 20;
+
+    // Create dashed line from hauler to pickup if not at pickup
+    if (!isAtPickup && routeState === ROUTE_STATES.PICKUP_PENDING) {
+      const dashedLine = L.polyline([haulerCoords, pickupCoords], {
+        color: "#FF6B00",
+        weight: 3,
+        dashArray: "10, 10",
+        opacity: 0.7,
+      }).addTo(map);
+      setProgressLine(dashedLine);
+    }
+
+    return () => {
+      if (progressLine) {
+        map.removeLayer(progressLine);
+      }
+    };
+  }, [haulerCoords, pickupCoords, dropCoords, routeState, map]);
+
+  return null;
+}
+
+// Update RoutingControl component
+function RoutingControl({ pickupCoords, dropCoords, routeState }) {
   const map = useMap();
   useEffect(() => {
     if (!pickupCoords || !dropCoords) return;
@@ -68,7 +119,15 @@ function RoutingControl({ pickupCoords, dropCoords }) {
         L.latLng(dropCoords[0], dropCoords[1]),
       ],
       lineOptions: {
-        styles: [{ color: "#32CD32", weight: 4 }],
+        styles: [
+          {
+            color:
+              routeState === ROUTE_STATES.PICKUP_PENDING
+                ? "#32CD32"
+                : "#FF6B00",
+            weight: 4,
+          },
+        ],
       },
       plan: L.Routing.plan(
         [
@@ -131,7 +190,7 @@ function RoutingControl({ pickupCoords, dropCoords }) {
     });
 
     return () => map.removeControl(routingControl);
-  }, [pickupCoords, dropCoords, map]);
+  }, [pickupCoords, dropCoords, routeState, map]);
 
   return null;
 }
@@ -145,6 +204,7 @@ export default function LiveTrackingMap() {
   const [pickupCoords, setPickupCoords] = useState(null);
   const [dropCoords, setDropCoords] = useState(null);
   const [haulerCoords, setHaulerCoords] = useState(null);
+  const [routeState, setRouteState] = useState(ROUTE_STATES.PICKUP_PENDING);
 
   useEffect(() => {
     if (pickup) {
@@ -165,10 +225,22 @@ export default function LiveTrackingMap() {
     onValue(locationRef, (snapshot) => {
       const data = snapshot.val();
       if (data?.latitude && data?.longitude) {
-        setHaulerCoords([data.latitude, data.longitude]);
+        const newHaulerCoords = [data.latitude, data.longitude];
+        setHaulerCoords(newHaulerCoords);
+
+        // Check if hauler is at pickup
+        if (pickupCoords) {
+          const haulerPos = L.latLng(newHaulerCoords[0], newHaulerCoords[1]);
+          const pickupPos = L.latLng(pickupCoords[0], pickupCoords[1]);
+          const distance = haulerPos.distanceTo(pickupPos);
+
+          if (distance <= 20 && routeState === ROUTE_STATES.PICKUP_PENDING) {
+            setRouteState(ROUTE_STATES.IN_TRANSIT);
+          }
+        }
       }
     });
-  }, [haulerId]);
+  }, [haulerId, pickupCoords, routeState]);
 
   const center = haulerCoords || pickupCoords || [10.3157, 123.8854];
 
@@ -224,11 +296,21 @@ export default function LiveTrackingMap() {
             <Marker position={haulerCoords} icon={haulerIcon}>
               <Popup>Hauler (Live)</Popup>
             </Marker>
+            <RouteProgress
+              haulerCoords={haulerCoords}
+              pickupCoords={pickupCoords}
+              dropCoords={dropCoords}
+              routeState={routeState}
+            />
           </>
         )}
 
         {pickupCoords && dropCoords && (
-          <RoutingControl pickupCoords={pickupCoords} dropCoords={dropCoords} />
+          <RoutingControl
+            pickupCoords={pickupCoords}
+            dropCoords={dropCoords}
+            routeState={routeState}
+          />
         )}
       </MapContainer>
     </div>
