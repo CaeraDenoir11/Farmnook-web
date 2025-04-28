@@ -16,54 +16,34 @@ const pinIcon = new L.Icon({
   iconAnchor: [12, 25],
 });
 
-// ✅ Updated hauler icon to match Maps.jsx style
+// ✅ Hauler icon with bold design
 const haulerIcon = L.divIcon({
-  className: "pulsing-marker",
+  className: "hauler-marker",
   html: `
     <div style="
-      background: #1A4D2E;
-      width: 24px;
-      height: 24px;
+      background: #FF6B00;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      border: 4px solid #FFD700;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
-      animation: pulse 2s infinite;
     ">
       <div style="
-        background: white;
-        width: 8px;
-        height: 8px;
+        background: #FFD700;
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
       "></div>
     </div>
   `,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-  popupAnchor: [0, -12],
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+  popupAnchor: [0, -15],
 });
-
-// Add pulsing animation
-const style = document.createElement("style");
-style.textContent = `
-  @keyframes pulse {
-    0% {
-      transform: scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: scale(1.2);
-      opacity: 0.8;
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-`;
-document.head.appendChild(style);
 
 // ✅ Camera pan control
 function ChangeView({ center }) {
