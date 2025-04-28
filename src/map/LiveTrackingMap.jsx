@@ -16,12 +16,54 @@ const pinIcon = new L.Icon({
   iconAnchor: [12, 25],
 });
 
-// ✅ Correct pulsing marker using divIcon
+// ✅ Updated hauler icon to match Maps.jsx style
 const haulerIcon = L.divIcon({
   className: "pulsing-marker",
-  iconSize: [25, 25],
-  iconAnchor: [12, 25],
+  html: `
+    <div style="
+      background: #1A4D2E;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: pulse 2s infinite;
+    ">
+      <div style="
+        background: white;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      "></div>
+    </div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -12],
 });
+
+// Add pulsing animation
+const style = document.createElement("style");
+style.textContent = `
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.2);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+`;
+document.head.appendChild(style);
 
 // ✅ Camera pan control
 function ChangeView({ center }) {
