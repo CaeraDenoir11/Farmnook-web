@@ -20,7 +20,15 @@ export default function MapViewer() {
   }, []);
 
   return (
-    <div style={{ height: "100vh", width: "100vw" }}>
+    <div
+      style={{
+        height: "100vh",
+        width: "100vw",
+        position: "fixed",
+        top: 0,
+        left: 0,
+      }}
+    >
       {pickupCoords && dropCoords && (
         <Maps
           pickupLocation={pickup}
