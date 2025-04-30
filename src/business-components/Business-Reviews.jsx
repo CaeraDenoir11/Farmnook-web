@@ -15,6 +15,7 @@ import {
   getDocs,
   doc,
   getDoc,
+  updateDoc,
 } from "firebase/firestore";
 import "../index.css";
 
@@ -64,11 +65,25 @@ export default function BusinessReviews() {
         const snap = await getDocs(q);
         const reviews = snap.docs.map((d) => d.data());
 
-        // Calculate average rating
+        // ✅ Calculate average rating
         const total = reviews.reduce((sum, r) => sum + r.rating, 0);
-        setAverageRating(reviews.length ? total / reviews.length : 0);
-        setReviewsData(reviews);
+        const avgRating = reviews.length ? total / reviews.length : 0;
 
+        setAverageRating(avgRating); // ✅ For UI display
+        setReviewsData(reviews); // ✅ For listing the reviews
+
+        // ✅ Store ONLY the averageRating into Firestore under the current business user's document
+        if (user && userData && userData.userId) {
+          const businessRef = doc(db, "users", userData.userId);
+          try {
+            await updateDoc(businessRef, {
+              averageRating: avgRating.toFixed(1), // ⭐ Store as string with 1 decimal
+            });
+            console.log("✅ Average rating saved successfully to Firestore!");
+          } catch (error) {
+            console.error("❌ Error updating average rating:", error);
+          }
+        }
         // Fetch names of farmers
         const ids = [...new Set(reviews.map((r) => r.farmerId))];
         const namesMap = {};

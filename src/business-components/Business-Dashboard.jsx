@@ -260,15 +260,24 @@ export default function BusinessDashboard() {
                               >
                                 View Details
                               </button>
-                              <button
-                                className="px-4 py-2 bg-[#1A4D2E] text-white text-sm rounded-lg hover:bg-[#1A4D2E]/90 transition-colors"
-                                onClick={() => {
-                                  setSelectedRequest(req);
-                                  setAssignModalOpen(true);
-                                }}
-                              >
-                                Accept Request
-                              </button>
+                              {req.status === "Cancelled" ? (
+                                <button
+                                  className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg cursor-not-allowed"
+                                  disabled
+                                >
+                                  Cancelled
+                                </button>
+                              ) : (
+                                <button
+                                  className="px-4 py-2 bg-[#1A4D2E] text-white text-sm rounded-lg hover:bg-[#1A4D2E]/90 transition-colors"
+                                  onClick={() => {
+                                    setSelectedRequest(req);
+                                    setAssignModalOpen(true);
+                                  }}
+                                >
+                                  Accept Request
+                                </button>
+                              )}
                             </div>
                           </div>
                         </motion.div>
