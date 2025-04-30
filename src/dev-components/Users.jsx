@@ -6,9 +6,12 @@ import {
   where,
   onSnapshot,
   getDocs,
+  deleteDoc,
+  doc,
 } from "firebase/firestore";
 import { db } from "../../configs/firebase";
 import defaultUserImg from "../assets/images/default.png";
+import { FaTrashAlt } from "react-icons/fa"; // Import delete icon
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -16,9 +19,10 @@ export default function Users() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
   const usersPerPage = 5;
 
-  // Fetch subscriptions once
   useEffect(() => {
     const fetchSubscriptions = async () => {
       try {
@@ -33,7 +37,6 @@ export default function Users() {
     fetchSubscriptions();
   }, []);
 
-  // Real-time listener for users
   useEffect(() => {
     const q = query(
       collection(db, "users"),
@@ -59,10 +62,48 @@ export default function Users() {
     return () => unsubscribe();
   }, []);
 
+  const confirmDelete = (userId) => {
+    setUserToDelete(userId);
+    setShowConfirmModal(true);
+  };
+
+  const handleDeleteConfirmed = async () => {
+    const userId = userToDelete;
+    setShowConfirmModal(false);
+
+    try {
+      await deleteDoc(doc(db, "users", userId));
+
+      const usersRef = collection(db, "users");
+      const haulerQuery = query(usersRef, where("businessId", "==", userId));
+      const haulerSnapshot = await getDocs(haulerQuery);
+      const haulerDeletes = haulerSnapshot.docs.map((docSnap) =>
+        deleteDoc(doc(db, "users", docSnap.id))
+      );
+      await Promise.all(haulerDeletes);
+
+      const vehiclesRef = collection(db, "vehicles");
+      const vehicleQuery = query(vehiclesRef, where("businessId", "==", userId));
+      const vehicleSnapshot = await getDocs(vehicleQuery);
+      const vehicleDeletes = vehicleSnapshot.docs.map((docSnap) =>
+        deleteDoc(doc(db, "vehicles", docSnap.id))
+      );
+      await Promise.all(vehicleDeletes);
+
+      alert("Deleted business admin and all related haulers and vehicles.");
+    } catch (error) {
+      console.error("Error deleting related data:", error);
+      alert("Failed to delete business admin and related data.");
+    }
+  };
+
   const filteredUsers = users
     .map((user) => {
       const isSubscribed = subscriptions.includes(user.id);
-      return { ...user, subscriptionStatus: isSubscribed ? "Subscribed" : "Not Subscribed" };
+      return {
+        ...user,
+        subscriptionStatus: isSubscribed ? "Subscribed" : "Not Subscribed",
+      };
     })
     .filter((user) => {
       const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
@@ -142,6 +183,7 @@ export default function Users() {
               <th className="p-1 sm:p-3 min-w-[150px]">Full Name</th>
               <th className="p-1 sm:p-3 min-w-[200px]">Email</th>
               <th className="p-1 sm:p-3 min-w-[150px]">Subscription</th>
+              <th className="p-1 sm:p-3 min-w-[100px]">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -173,11 +215,20 @@ export default function Users() {
                       {user.subscriptionStatus}
                     </span>
                   </td>
+                  <td className="p-1 sm:p-3">
+                    <button
+                      onClick={() => confirmDelete(user.id)}
+                      className="text-red-500 hover:text-red-700 text-lg"
+                      title="Delete"
+                    >
+                      <FaTrashAlt />
+                    </button>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="5" className="p-4 text-center text-gray-500">
+                <td colSpan="6" className="p-4 text-center text-gray-500">
                   No users found.
                 </td>
               </tr>
@@ -208,6 +259,34 @@ export default function Users() {
           &gt;
         </button>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-white bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl text-center w-72">
+            <h2 className="text-lg font-semibold mb-4 text-[#1A4D2E]">
+              Confirm Deletion
+            </h2>
+            <p className="mb-4 text-sm text-gray-700">
+              Are you sure you want to delete this business admin and all its related data?
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirmed}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
