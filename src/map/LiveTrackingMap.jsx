@@ -91,6 +91,7 @@ function ChangeView({ center }) {
 function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
   const map = useMap();
   const [progressLine, setProgressLine] = useState(null);
+  const [mainRoute, setMainRoute] = useState(null);
 
   useEffect(() => {
     if (!haulerCoords || !pickupCoords || !dropCoords) return;
@@ -103,27 +104,86 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
     // Check if hauler is within 20 meters of pickup
     const isAtPickup = distance <= 20;
 
-    // Create appropriate line based on route state
-    if (routeState === ROUTE_STATES.GOING_TO_PICKUP && !isAtPickup) {
-      // Blue dashed line from hauler to pickup when going to pickup
-      const dashedLine = L.polyline([haulerCoords, pickupCoords], {
-        color: "#0066CC", // Blue color
-        weight: 3,
-        dashArray: "10, 10",
-        opacity: 0.7,
-      }).addTo(map);
-      setProgressLine(dashedLine);
-    } else if (routeState === ROUTE_STATES.ON_THE_WAY) {
-      // Blue solid line from hauler to destination when on the way
-      const solidLine = L.polyline([haulerCoords, dropCoords], {
-        color: "#0066CC", // Blue color
-        weight: 3,
-        opacity: 0.7,
-      }).addTo(map);
-      setProgressLine(solidLine);
-    }
+    // Create the main route first
+    const routingControl = L.Routing.control({
+      waypoints: [
+        L.latLng(pickupCoords[0], pickupCoords[1]),
+        L.latLng(dropCoords[0], dropCoords[1]),
+      ],
+      lineOptions: {
+        styles: [
+          {
+            color: "#1A4D2E", // Dark green color for the main route
+            weight: 4,
+          },
+        ],
+      },
+      plan: L.Routing.plan(
+        [
+          L.latLng(pickupCoords[0], pickupCoords[1]),
+          L.latLng(dropCoords[0], dropCoords[1]),
+        ],
+        { createMarker: () => null }
+      ),
+      show: false,
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: false,
+      collapsible: false,
+      routeWhileDragging: false,
+      showAlternatives: false,
+      containerClassName: "hidden",
+    }).addTo(map);
+
+    setMainRoute(routingControl);
+
+    // Listen for route found event to create progress line
+    routingControl.on("routesfound", (e) => {
+      const routes = e.routes;
+      if (routes && routes.length > 0) {
+        const route = routes[0];
+        const coordinates = route.coordinates;
+
+        // Find the closest point on the route to the hauler
+        let closestPoint = coordinates[0];
+        let minDistance = Infinity;
+        coordinates.forEach((coord) => {
+          const dist = L.latLng(coord).distanceTo(haulerPos);
+          if (dist < minDistance) {
+            minDistance = dist;
+            closestPoint = coord;
+          }
+        });
+
+        // Get the index of the closest point
+        const closestIndex = coordinates.findIndex(
+          (coord) =>
+            coord[0] === closestPoint[0] && coord[1] === closestPoint[1]
+        );
+
+        // Create progress line from start to current position
+        const progressCoordinates = coordinates.slice(0, closestIndex + 1);
+
+        if (progressLine) {
+          map.removeLayer(progressLine);
+        }
+
+        const newProgressLine = L.polyline(progressCoordinates, {
+          color: "#0066CC", // Blue color
+          weight: 4,
+          opacity: 0.7,
+          lineJoin: "round",
+          lineCap: "round",
+        }).addTo(map);
+
+        setProgressLine(newProgressLine);
+      }
+    });
 
     return () => {
+      if (mainRoute) {
+        map.removeControl(mainRoute);
+      }
       if (progressLine) {
         map.removeLayer(progressLine);
       }
@@ -133,7 +193,7 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
   return null;
 }
 
-// Update RoutingControl component
+// Update RoutingControl component to only show the main route
 function RoutingControl({ pickupCoords, dropCoords, routeState }) {
   const map = useMap();
   useEffect(() => {
