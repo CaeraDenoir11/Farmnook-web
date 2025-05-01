@@ -52,12 +52,29 @@ const haulerIcon = L.divIcon({
   popupAnchor: [0, -15],
 });
 
-// Add new constants for route states
+// Update ROUTE_STATES to match Android status
 const ROUTE_STATES = {
-  PICKUP_PENDING: "PICKUP_PENDING",
-  IN_TRANSIT: "IN_TRANSIT",
-  DELIVERED: "DELIVERED",
+  GOING_TO_PICKUP: "GOING_TO_PICKUP",
+  ON_THE_WAY: "ON_THE_WAY",
+  ARRIVED_AT_DESTINATION: "ARRIVED_AT_DESTINATION",
+  COMPLETED: "COMPLETED",
 };
+
+// Add new function to handle status updates
+function updateRouteState(newState) {
+  switch (newState) {
+    case "Going to Pickup":
+      return ROUTE_STATES.GOING_TO_PICKUP;
+    case "On the Way":
+      return ROUTE_STATES.ON_THE_WAY;
+    case "Arrived at Destination":
+      return ROUTE_STATES.ARRIVED_AT_DESTINATION;
+    case "Completed":
+      return ROUTE_STATES.COMPLETED;
+    default:
+      return ROUTE_STATES.GOING_TO_PICKUP;
+  }
+}
 
 // ✅ Camera pan control
 function ChangeView({ center }) {
@@ -70,7 +87,7 @@ function ChangeView({ center }) {
   return null;
 }
 
-// Add new component for route progress
+// Update RouteProgress component to handle new states
 function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
   const map = useMap();
   const [progressLine, setProgressLine] = useState(null);
@@ -86,8 +103,8 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
     // Check if hauler is within 20 meters of pickup
     const isAtPickup = distance <= 20;
 
-    // Create dashed line from hauler to pickup if not at pickup
-    if (!isAtPickup && routeState === ROUTE_STATES.PICKUP_PENDING) {
+    // Create appropriate line based on route state
+    if (routeState === ROUTE_STATES.GOING_TO_PICKUP && !isAtPickup) {
       const dashedLine = L.polyline([haulerCoords, pickupCoords], {
         color: "#FF6B00",
         weight: 3,
@@ -95,6 +112,13 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
         opacity: 0.7,
       }).addTo(map);
       setProgressLine(dashedLine);
+    } else if (routeState === ROUTE_STATES.ON_THE_WAY) {
+      const solidLine = L.polyline([haulerCoords, dropCoords], {
+        color: "#32CD32",
+        weight: 3,
+        opacity: 0.7,
+      }).addTo(map);
+      setProgressLine(solidLine);
     }
 
     return () => {
@@ -122,9 +146,9 @@ function RoutingControl({ pickupCoords, dropCoords, routeState }) {
         styles: [
           {
             color:
-              routeState === ROUTE_STATES.PICKUP_PENDING
-                ? "#32CD32"
-                : "#FF6B00",
+              routeState === ROUTE_STATES.GOING_TO_PICKUP
+                ? "#FF6B00"
+                : "#32CD32",
             weight: 4,
           },
         ],
@@ -204,7 +228,7 @@ export default function LiveTrackingMap() {
   const [pickupCoords, setPickupCoords] = useState(null);
   const [dropCoords, setDropCoords] = useState(null);
   const [haulerCoords, setHaulerCoords] = useState(null);
-  const [routeState, setRouteState] = useState(ROUTE_STATES.PICKUP_PENDING);
+  const [routeState, setRouteState] = useState(ROUTE_STATES.GOING_TO_PICKUP);
 
   useEffect(() => {
     if (pickup) {
@@ -234,8 +258,8 @@ export default function LiveTrackingMap() {
           const pickupPos = L.latLng(pickupCoords[0], pickupCoords[1]);
           const distance = haulerPos.distanceTo(pickupPos);
 
-          if (distance <= 20 && routeState === ROUTE_STATES.PICKUP_PENDING) {
-            setRouteState(ROUTE_STATES.IN_TRANSIT);
+          if (distance <= 20 && routeState === ROUTE_STATES.GOING_TO_PICKUP) {
+            setRouteState(ROUTE_STATES.ON_THE_WAY);
           }
         }
       }
@@ -243,6 +267,19 @@ export default function LiveTrackingMap() {
   }, [haulerId, pickupCoords, routeState]);
 
   const center = haulerCoords || pickupCoords || [10.3157, 123.8854];
+
+  // Add function to handle status updates from Android
+  const handleStatusUpdate = (newStatus) => {
+    setRouteState(updateRouteState(newStatus));
+  };
+
+  // Expose the function to the window object for Android to call
+  useEffect(() => {
+    window.updateRouteStatus = handleStatusUpdate;
+    return () => {
+      delete window.updateRouteStatus;
+    };
+  }, []);
 
   return (
     <div
@@ -294,7 +331,24 @@ export default function LiveTrackingMap() {
           <>
             <ChangeView center={haulerCoords} />
             <Marker position={haulerCoords} icon={haulerIcon}>
-              <Popup>Hauler (Live)</Popup>
+              <Popup>
+                <div className="text-center font-semibold">
+                  {routeState === ROUTE_STATES.GOING_TO_PICKUP && (
+                    <span className="text-[#FF6B00]">Going to Pickup</span>
+                  )}
+                  {routeState === ROUTE_STATES.ON_THE_WAY && (
+                    <span className="text-[#32CD32]">On the Way</span>
+                  )}
+                  {routeState === ROUTE_STATES.ARRIVED_AT_DESTINATION && (
+                    <span className="text-[#1A4D2E]">
+                      Arrived at Destination
+                    </span>
+                  )}
+                  {routeState === ROUTE_STATES.COMPLETED && (
+                    <span className="text-[#4B0082]">Completed</span>
+                  )}
+                </div>
+              </Popup>
             </Marker>
             <RouteProgress
               haulerCoords={haulerCoords}
