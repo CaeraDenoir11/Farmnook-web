@@ -105,16 +105,18 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
 
     // Create appropriate line based on route state
     if (routeState === ROUTE_STATES.GOING_TO_PICKUP && !isAtPickup) {
+      // Blue dashed line from hauler to pickup when going to pickup
       const dashedLine = L.polyline([haulerCoords, pickupCoords], {
-        color: "#FF6B00",
+        color: "#0066CC", // Blue color
         weight: 3,
         dashArray: "10, 10",
         opacity: 0.7,
       }).addTo(map);
       setProgressLine(dashedLine);
     } else if (routeState === ROUTE_STATES.ON_THE_WAY) {
+      // Blue solid line from hauler to destination when on the way
       const solidLine = L.polyline([haulerCoords, dropCoords], {
-        color: "#32CD32",
+        color: "#0066CC", // Blue color
         weight: 3,
         opacity: 0.7,
       }).addTo(map);
@@ -145,10 +147,7 @@ function RoutingControl({ pickupCoords, dropCoords, routeState }) {
       lineOptions: {
         styles: [
           {
-            color:
-              routeState === ROUTE_STATES.GOING_TO_PICKUP
-                ? "#FF6B00"
-                : "#32CD32",
+            color: "#1A4D2E", // Dark green color for the main route
             weight: 4,
           },
         ],
