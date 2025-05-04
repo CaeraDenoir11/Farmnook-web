@@ -92,6 +92,7 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
   const map = useMap();
   const [progressLine, setProgressLine] = useState(null);
   const [mainRoute, setMainRoute] = useState(null);
+  const [dashedRoute, setDashedRoute] = useState(null);
 
   useEffect(() => {
     if (!haulerCoords || !pickupCoords || !dropCoords) return;
@@ -103,6 +104,48 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
 
     // Check if hauler is within 20 meters of pickup
     const isAtPickup = distance <= 20;
+
+    // Handle dashed route - only show during GOING_TO_PICKUP state
+    if (routeState === ROUTE_STATES.GOING_TO_PICKUP) {
+      if (dashedRoute) {
+        map.removeControl(dashedRoute);
+      }
+
+      const newDashedRoute = L.Routing.control({
+        waypoints: [haulerPos, pickupPos],
+        lineOptions: {
+          styles: [
+            {
+              color: "#FF6B00", // Orange color to match hauler icon
+              weight: 3,
+              opacity: 0.7,
+              dashArray: "10, 10", // Creates dashed line effect
+              lineJoin: "round",
+              lineCap: "round",
+            },
+          ],
+        },
+        plan: L.Routing.plan([haulerPos, pickupPos], {
+          createMarker: () => null,
+        }),
+        show: false,
+        addWaypoints: false,
+        draggableWaypoints: false,
+        fitSelectedRoutes: false,
+        collapsible: false,
+        routeWhileDragging: false,
+        showAlternatives: false,
+        containerClassName: "hidden",
+      }).addTo(map);
+
+      setDashedRoute(newDashedRoute);
+    } else {
+      // Remove dashed route if not in GOING_TO_PICKUP state
+      if (dashedRoute) {
+        map.removeControl(dashedRoute);
+        setDashedRoute(null);
+      }
+    }
 
     // Create the main route first
     const routingControl = L.Routing.control({
@@ -144,39 +187,48 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
         const route = routes[0];
         const coordinates = route.coordinates;
 
-        // Find the closest point on the route to the hauler
-        let closestPoint = coordinates[0];
-        let minDistance = Infinity;
-        coordinates.forEach((coord) => {
-          const dist = L.latLng(coord).distanceTo(haulerPos);
-          if (dist < minDistance) {
-            minDistance = dist;
-            closestPoint = coord;
+        // Only show progress line if not in GOING_TO_PICKUP state
+        if (routeState !== ROUTE_STATES.GOING_TO_PICKUP) {
+          // Find the closest point on the route to the hauler
+          let closestPoint = coordinates[0];
+          let minDistance = Infinity;
+          coordinates.forEach((coord) => {
+            const dist = L.latLng(coord).distanceTo(haulerPos);
+            if (dist < minDistance) {
+              minDistance = dist;
+              closestPoint = coord;
+            }
+          });
+
+          // Get the index of the closest point
+          const closestIndex = coordinates.findIndex(
+            (coord) =>
+              coord[0] === closestPoint[0] && coord[1] === closestPoint[1]
+          );
+
+          // Create progress line from start to current position
+          const progressCoordinates = coordinates.slice(0, closestIndex + 1);
+
+          if (progressLine) {
+            map.removeLayer(progressLine);
           }
-        });
 
-        // Get the index of the closest point
-        const closestIndex = coordinates.findIndex(
-          (coord) =>
-            coord[0] === closestPoint[0] && coord[1] === closestPoint[1]
-        );
+          const newProgressLine = L.polyline(progressCoordinates, {
+            color: "#0066CC", // Blue color
+            weight: 4,
+            opacity: 0.7,
+            lineJoin: "round",
+            lineCap: "round",
+          }).addTo(map);
 
-        // Create progress line from start to current position
-        const progressCoordinates = coordinates.slice(0, closestIndex + 1);
-
-        if (progressLine) {
-          map.removeLayer(progressLine);
+          setProgressLine(newProgressLine);
+        } else {
+          // Remove progress line if in GOING_TO_PICKUP state
+          if (progressLine) {
+            map.removeLayer(progressLine);
+            setProgressLine(null);
+          }
         }
-
-        const newProgressLine = L.polyline(progressCoordinates, {
-          color: "#0066CC", // Blue color
-          weight: 4,
-          opacity: 0.7,
-          lineJoin: "round",
-          lineCap: "round",
-        }).addTo(map);
-
-        setProgressLine(newProgressLine);
       }
     });
 
@@ -186,6 +238,9 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
       }
       if (progressLine) {
         map.removeLayer(progressLine);
+      }
+      if (dashedRoute) {
+        map.removeControl(dashedRoute);
       }
     };
   }, [haulerCoords, pickupCoords, dropCoords, routeState, map]);
