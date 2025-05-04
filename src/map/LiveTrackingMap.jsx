@@ -81,7 +81,7 @@ function ChangeView({ center }) {
   const map = useMap();
   useEffect(() => {
     if (center) {
-      map.flyTo(center, 14, { animate: true });
+      map.panTo(center, { animate: true });
     }
   }, [center, map]);
   return null;
