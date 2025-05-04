@@ -79,11 +79,59 @@ function updateRouteState(newState) {
 // ✅ Camera pan control
 function ChangeView({ center }) {
   const map = useMap();
+  const [lastInteraction, setLastInteraction] = useState(Date.now());
+  const [autoCenterTimeout, setAutoCenterTimeout] = useState(null);
+
+  useEffect(() => {
+    // Function to handle user interaction
+    const handleInteraction = () => {
+      setLastInteraction(Date.now());
+    };
+
+    // Add event listeners for map interaction
+    map.on("mousedown", handleInteraction);
+    map.on("touchstart", handleInteraction);
+    map.on("dragstart", handleInteraction);
+    map.on("zoomstart", handleInteraction);
+
+    // Cleanup function
+    return () => {
+      map.off("mousedown", handleInteraction);
+      map.off("touchstart", handleInteraction);
+      map.off("dragstart", handleInteraction);
+      map.off("zoomstart", handleInteraction);
+      if (autoCenterTimeout) {
+        clearTimeout(autoCenterTimeout);
+      }
+    };
+  }, [map]);
+
   useEffect(() => {
     if (center) {
-      map.panTo(center, { animate: true });
+      // Clear any existing timeout
+      if (autoCenterTimeout) {
+        clearTimeout(autoCenterTimeout);
+      }
+
+      // Set new timeout for auto-centering
+      const timeout = setTimeout(() => {
+        const now = Date.now();
+        // Only auto-center if there's been no interaction for 10 seconds
+        if (now - lastInteraction >= 10000) {
+          map.panTo(center, { animate: true });
+        }
+      }, 10000);
+
+      setAutoCenterTimeout(timeout);
     }
-  }, [center, map]);
+
+    return () => {
+      if (autoCenterTimeout) {
+        clearTimeout(autoCenterTimeout);
+      }
+    };
+  }, [center, map, lastInteraction]);
+
   return null;
 }
 
