@@ -112,11 +112,17 @@ export default function Dashboard() {
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
           >
-            {Object.keys(monthlyData).map((month) => (
-              <option key={month} value={month}>
-                {month}
-              </option>
-            ))}
+           {[
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+]
+  .filter((month) => monthlyData[month])
+  .map((month) => (
+    <option key={month} value={month}>
+      {month}
+    </option>
+))}
+
           </select>
 
           {/* Data Cards */}

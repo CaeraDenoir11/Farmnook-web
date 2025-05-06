@@ -125,8 +125,9 @@ export default function History() {
                 request.purpose?.slice(1),
               timestamp: formattedArrivalTime,
               timestampRaw: dateObject,
-              pickupLocation: request.pickupLocation,
-              destinationLocation: request.destinationLocation,
+              estimatedCost: request.estimatedCost,
+              pickupName: request.pickupName,
+              destinationName: request.destinationName,
             };
           })
           .filter(Boolean);
@@ -278,14 +279,17 @@ export default function History() {
                 <strong>Weight:</strong> {selectedEntry.weight} KG
               </li>
               <li>
+                <strong>Cost:</strong> {selectedEntry.estimatedCost}
+              </li>
+              <li>
                 <strong>Date Completed:</strong> {selectedEntry.timestamp}
               </li>
               <li>
-                <strong>Pickup Location:</strong> {selectedEntry.pickupLocation}
+                <strong>Pickup Location:</strong> {selectedEntry.pickupName}
               </li>
               <li>
                 <strong>Destination Location:</strong>{" "}
-                {selectedEntry.destinationLocation}
+                {selectedEntry.destinationName}
               </li>
             </ul>
             <button
