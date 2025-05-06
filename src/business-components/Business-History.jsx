@@ -33,84 +33,110 @@ export default function History() {
 
   useEffect(() => {
     const currentUserId = localStorage.getItem("userId");
-
+  
     const unsubscribe = onSnapshot(
       collection(db, "deliveryHistory"),
       async (snapshot) => {
         setIsLoading(true);
-
+  
+        if (snapshot.empty) {
+          setHistoryData([]);
+          setIsLoading(false);
+          return;
+        }
+  
         const deliveryHistories = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
+  
         const deliveryIds = deliveryHistories
           .map((item) => item.deliveryId)
           .filter(Boolean);
-
+  
         const deliverySnapshots = await Promise.all(
           deliveryIds.map((id) => getDoc(doc(db, "deliveries", id)))
         );
+  
         const deliveries = deliverySnapshots
           .filter((snap) => snap.exists())
           .map((snap) => ({ id: snap.id, ...snap.data() }));
-
+  
         const haulerIds = [
-          ...new Set(deliveries.map((d) => d.haulerAssignedId)),
+          ...new Set(deliveries.map((d) => d.haulerAssignedId).filter(Boolean)),
         ];
-        const requestIds = deliveries.map((d) => d.requestId);
-
-        const haulerSnapshot = await getDocs(
-          query(collection(db, "users"), where("userId", "in", haulerIds))
-        );
-        const haulerMap = Object.fromEntries(
-          haulerSnapshot.docs.map((d) => [d.data().userId, d.data()])
-        );
-
+        const requestIds = deliveries
+          .map((d) => d.requestId)
+          .filter(Boolean);
+  
+        const haulerMap = haulerIds.length
+          ? Object.fromEntries(
+              (
+                await getDocs(
+                  query(collection(db, "users"), where("userId", "in", haulerIds))
+                )
+              ).docs.map((d) => [d.data().userId, d.data()])
+            )
+          : {};
+  
         const requestSnapshots = await Promise.all(
           requestIds.map((id) => getDoc(doc(db, "deliveryRequests", id)))
         );
+  
         const requests = requestSnapshots
           .filter((snap) => snap.exists())
           .map((snap) => ({ id: snap.id, ...snap.data() }));
-
-        const farmerIds = [...new Set(requests.map((r) => r.farmerId))];
-        const farmerSnapshot = await getDocs(
-          query(collection(db, "users"), where("userId", "in", farmerIds))
-        );
-        const farmerMap = Object.fromEntries(
-          farmerSnapshot.docs.map((d) => [d.data().userId, d.data()])
-        );
-
-        const vehicleIds = requests.map((r) => r.vehicleId);
-        const vehicleSnapshot = await getDocs(
-          query(collection(db, "vehicles"), where("__name__", "in", vehicleIds))
-        );
-        const vehicleMap = Object.fromEntries(
-          vehicleSnapshot.docs.map((d) => [d.id, d.data()])
-        );
-
+  
+        const farmerIds = [
+          ...new Set(requests.map((r) => r.farmerId).filter(Boolean)),
+        ];
+  
+        const farmerMap = farmerIds.length
+          ? Object.fromEntries(
+              (
+                await getDocs(
+                  query(collection(db, "users"), where("userId", "in", farmerIds))
+                )
+              ).docs.map((d) => [d.data().userId, d.data()])
+            )
+          : {};
+  
+        const vehicleIds = [
+          ...new Set(requests.map((r) => r.vehicleId).filter(Boolean)),
+        ];
+  
+        const vehicleMap = vehicleIds.length
+          ? Object.fromEntries(
+              (
+                await getDocs(
+                  query(collection(db, "vehicles"), where("__name__", "in", vehicleIds))
+                )
+              ).docs.map((d) => [d.id, d.data()])
+            )
+          : {};
+  
         const mergedHistory = deliveryHistories
           .map((history) => {
             const delivery = deliveries.find(
               (d) => d.id === history.deliveryId
             );
             if (!delivery) return null;
-
+  
             const hauler = haulerMap[delivery.haulerAssignedId];
             if (!hauler || hauler.businessId !== currentUserId) return null;
-
+  
             const request = requests.find((r) => r.id === delivery.requestId);
             if (!request) return null;
-
+  
             const farmer = farmerMap[request.farmerId] || {};
             const vehicle = vehicleMap[request.vehicleId] || {};
-
+  
             const deliveryArrivalTime = history.deliveryArrivalTime;
             const formattedArrivalTime =
               deliveryArrivalTime?.toDate?.().toLocaleString() ||
               "No arrival time";
             const dateObject = deliveryArrivalTime?.toDate?.() || new Date(0);
-
+  
             return {
               id: history.id,
               vehicleType: vehicle.vehicleType || "Unknown",
@@ -128,18 +154,20 @@ export default function History() {
               estimatedCost: request.estimatedCost,
               pickupName: request.pickupName,
               destinationName: request.destinationName,
+              pickupLocation: request.pickupLocation,
+              destinationLocation: request.destinationLocation,
             };
           })
           .filter(Boolean);
-
+  
         mergedHistory.sort((a, b) => b.timestampRaw - a.timestampRaw);
         setHistoryData(mergedHistory);
         setIsLoading(false);
       }
     );
-
+  
     return () => unsubscribe();
-  }, []);
+  }, []);  
 
   const filteredHistory = historyData.filter((entry) => {
     const query = searchQuery.toLowerCase();
