@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  Polyline,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-routing-machine";
@@ -16,54 +23,58 @@ const pinIcon = new L.Icon({
   iconAnchor: [12, 25],
 });
 
-// ✅ Updated hauler icon to match Maps.jsx style
+// ✅ Hauler icon with bold design
 const haulerIcon = L.divIcon({
-  className: "pulsing-marker",
+  className: "hauler-marker",
   html: `
     <div style="
-      background: #1A4D2E;
-      width: 24px;
-      height: 24px;
+      background: #FF6B00;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      border: 4px solid #FFD700;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
-      animation: pulse 2s infinite;
     ">
       <div style="
-        background: white;
-        width: 8px;
-        height: 8px;
+        background: #FFD700;
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
       "></div>
     </div>
   `,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-  popupAnchor: [0, -12],
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+  popupAnchor: [0, -15],
 });
 
-// Add pulsing animation
-const style = document.createElement("style");
-style.textContent = `
-  @keyframes pulse {
-    0% {
-      transform: scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: scale(1.2);
-      opacity: 0.8;
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
+// Update ROUTE_STATES to match Android status
+const ROUTE_STATES = {
+  GOING_TO_PICKUP: "GOING_TO_PICKUP",
+  ON_THE_WAY: "ON_THE_WAY",
+  ARRIVED_AT_DESTINATION: "ARRIVED_AT_DESTINATION",
+  COMPLETED: "COMPLETED",
+};
+
+// Add new function to handle status updates
+function updateRouteState(newState) {
+  switch (newState) {
+    case "Going to Pickup":
+      return ROUTE_STATES.GOING_TO_PICKUP;
+    case "On the Way":
+      return ROUTE_STATES.ON_THE_WAY;
+    case "Arrived at Destination":
+      return ROUTE_STATES.ARRIVED_AT_DESTINATION;
+    case "Completed":
+      return ROUTE_STATES.COMPLETED;
+    default:
+      return ROUTE_STATES.GOING_TO_PICKUP;
   }
-`;
-document.head.appendChild(style);
+}
 
 // ✅ Camera pan control
 function ChangeView({ center }) {
@@ -76,8 +87,114 @@ function ChangeView({ center }) {
   return null;
 }
 
-// ✅ Routing control component for the blue route
-function RoutingControl({ pickupCoords, dropCoords }) {
+// Update RouteProgress component to handle new states
+function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
+  const map = useMap();
+  const [progressLine, setProgressLine] = useState(null);
+  const [mainRoute, setMainRoute] = useState(null);
+
+  useEffect(() => {
+    if (!haulerCoords || !pickupCoords || !dropCoords) return;
+
+    // Calculate distance between hauler and pickup
+    const haulerPos = L.latLng(haulerCoords[0], haulerCoords[1]);
+    const pickupPos = L.latLng(pickupCoords[0], pickupCoords[1]);
+    const distance = haulerPos.distanceTo(pickupPos);
+
+    // Check if hauler is within 20 meters of pickup
+    const isAtPickup = distance <= 20;
+
+    // Create the main route first
+    const routingControl = L.Routing.control({
+      waypoints: [
+        L.latLng(pickupCoords[0], pickupCoords[1]),
+        L.latLng(dropCoords[0], dropCoords[1]),
+      ],
+      lineOptions: {
+        styles: [
+          {
+            color: "#1A4D2E", // Dark green color for the main route
+            weight: 4,
+          },
+        ],
+      },
+      plan: L.Routing.plan(
+        [
+          L.latLng(pickupCoords[0], pickupCoords[1]),
+          L.latLng(dropCoords[0], dropCoords[1]),
+        ],
+        { createMarker: () => null }
+      ),
+      show: false,
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: false,
+      collapsible: false,
+      routeWhileDragging: false,
+      showAlternatives: false,
+      containerClassName: "hidden",
+    }).addTo(map);
+
+    setMainRoute(routingControl);
+
+    // Listen for route found event to create progress line
+    routingControl.on("routesfound", (e) => {
+      const routes = e.routes;
+      if (routes && routes.length > 0) {
+        const route = routes[0];
+        const coordinates = route.coordinates;
+
+        // Find the closest point on the route to the hauler
+        let closestPoint = coordinates[0];
+        let minDistance = Infinity;
+        coordinates.forEach((coord) => {
+          const dist = L.latLng(coord).distanceTo(haulerPos);
+          if (dist < minDistance) {
+            minDistance = dist;
+            closestPoint = coord;
+          }
+        });
+
+        // Get the index of the closest point
+        const closestIndex = coordinates.findIndex(
+          (coord) =>
+            coord[0] === closestPoint[0] && coord[1] === closestPoint[1]
+        );
+
+        // Create progress line from start to current position
+        const progressCoordinates = coordinates.slice(0, closestIndex + 1);
+
+        if (progressLine) {
+          map.removeLayer(progressLine);
+        }
+
+        const newProgressLine = L.polyline(progressCoordinates, {
+          color: "#0066CC", // Blue color
+          weight: 4,
+          opacity: 0.7,
+          lineJoin: "round",
+          lineCap: "round",
+        }).addTo(map);
+
+        setProgressLine(newProgressLine);
+      }
+    });
+
+    return () => {
+      if (mainRoute) {
+        map.removeControl(mainRoute);
+      }
+      if (progressLine) {
+        map.removeLayer(progressLine);
+      }
+    };
+  }, [haulerCoords, pickupCoords, dropCoords, routeState, map]);
+
+  return null;
+}
+
+// Update RoutingControl component to only show the main route
+function RoutingControl({ pickupCoords, dropCoords, routeState }) {
   const map = useMap();
   useEffect(() => {
     if (!pickupCoords || !dropCoords) return;
@@ -88,7 +205,12 @@ function RoutingControl({ pickupCoords, dropCoords }) {
         L.latLng(dropCoords[0], dropCoords[1]),
       ],
       lineOptions: {
-        styles: [{ color: "#32CD32", weight: 4 }],
+        styles: [
+          {
+            color: "#1A4D2E", // Dark green color for the main route
+            weight: 4,
+          },
+        ],
       },
       plan: L.Routing.plan(
         [
@@ -151,7 +273,7 @@ function RoutingControl({ pickupCoords, dropCoords }) {
     });
 
     return () => map.removeControl(routingControl);
-  }, [pickupCoords, dropCoords, map]);
+  }, [pickupCoords, dropCoords, routeState, map]);
 
   return null;
 }
@@ -165,6 +287,7 @@ export default function LiveTrackingMap() {
   const [pickupCoords, setPickupCoords] = useState(null);
   const [dropCoords, setDropCoords] = useState(null);
   const [haulerCoords, setHaulerCoords] = useState(null);
+  const [routeState, setRouteState] = useState(ROUTE_STATES.GOING_TO_PICKUP);
 
   useEffect(() => {
     if (pickup) {
@@ -185,12 +308,37 @@ export default function LiveTrackingMap() {
     onValue(locationRef, (snapshot) => {
       const data = snapshot.val();
       if (data?.latitude && data?.longitude) {
-        setHaulerCoords([data.latitude, data.longitude]);
+        const newHaulerCoords = [data.latitude, data.longitude];
+        setHaulerCoords(newHaulerCoords);
+
+        // Check if hauler is at pickup
+        if (pickupCoords) {
+          const haulerPos = L.latLng(newHaulerCoords[0], newHaulerCoords[1]);
+          const pickupPos = L.latLng(pickupCoords[0], pickupCoords[1]);
+          const distance = haulerPos.distanceTo(pickupPos);
+
+          if (distance <= 20 && routeState === ROUTE_STATES.GOING_TO_PICKUP) {
+            setRouteState(ROUTE_STATES.ON_THE_WAY);
+          }
+        }
       }
     });
-  }, [haulerId]);
+  }, [haulerId, pickupCoords, routeState]);
 
   const center = haulerCoords || pickupCoords || [10.3157, 123.8854];
+
+  // Add function to handle status updates from Android
+  const handleStatusUpdate = (newStatus) => {
+    setRouteState(updateRouteState(newStatus));
+  };
+
+  // Expose the function to the window object for Android to call
+  useEffect(() => {
+    window.updateRouteStatus = handleStatusUpdate;
+    return () => {
+      delete window.updateRouteStatus;
+    };
+  }, []);
 
   return (
     <div
@@ -242,13 +390,40 @@ export default function LiveTrackingMap() {
           <>
             <ChangeView center={haulerCoords} />
             <Marker position={haulerCoords} icon={haulerIcon}>
-              <Popup>Hauler (Live)</Popup>
+              <Popup>
+                <div className="text-center font-semibold">
+                  {routeState === ROUTE_STATES.GOING_TO_PICKUP && (
+                    <span className="text-[#FF6B00]">Going to Pickup</span>
+                  )}
+                  {routeState === ROUTE_STATES.ON_THE_WAY && (
+                    <span className="text-[#32CD32]">On the Way</span>
+                  )}
+                  {routeState === ROUTE_STATES.ARRIVED_AT_DESTINATION && (
+                    <span className="text-[#1A4D2E]">
+                      Arrived at Destination
+                    </span>
+                  )}
+                  {routeState === ROUTE_STATES.COMPLETED && (
+                    <span className="text-[#4B0082]">Completed</span>
+                  )}
+                </div>
+              </Popup>
             </Marker>
+            <RouteProgress
+              haulerCoords={haulerCoords}
+              pickupCoords={pickupCoords}
+              dropCoords={dropCoords}
+              routeState={routeState}
+            />
           </>
         )}
 
         {pickupCoords && dropCoords && (
-          <RoutingControl pickupCoords={pickupCoords} dropCoords={dropCoords} />
+          <RoutingControl
+            pickupCoords={pickupCoords}
+            dropCoords={dropCoords}
+            routeState={routeState}
+          />
         )}
       </MapContainer>
     </div>
