@@ -201,7 +201,7 @@ export default function History() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <div className="flex gap-2">
+          <div className="flex gap-2 cursor-">
             <input
               type="date"
               className="border px-3 py-2 rounded"
@@ -322,7 +322,7 @@ export default function History() {
             </ul>
             <button
               onClick={() => setSelectedEntry(null)}
-              className="mt-6 bg-[#1A4D2E] text-white px-4 py-2 rounded hover:bg-green-800"
+              className="mt-6 bg-[#1A4D2E] text-white px-4 py-2 rounded hover:bg-green-800 cursor-pointer"
             >
               Close
             </button>
