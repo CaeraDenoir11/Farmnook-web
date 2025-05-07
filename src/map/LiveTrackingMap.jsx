@@ -442,40 +442,55 @@ export default function LiveTrackingMap({
   const [haulerCoords, setHaulerCoords] = useState(null);
   const [routeState, setRouteState] = useState(ROUTE_STATES.GOING_TO_PICKUP);
 
-  // Check if we're in a WebView (URL parameters) or Modal (props)
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlPickup = urlParams.get("pickup");
-    const urlDrop = urlParams.get("drop");
-    const urlHaulerId = urlParams.get("haulerId");
+  // Get URL parameters if in WebView context
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlPickup = urlParams.get("pickup");
+  const urlDrop = urlParams.get("drop");
+  const urlHaulerId = urlParams.get("haulerId");
 
-    // If URL parameters exist, use those (WebView case)
-    if (urlPickup && urlDrop && urlHaulerId) {
-      const [pickupLat, pickupLng] = urlPickup.split(",").map(Number);
-      const [dropLat, dropLng] = urlDrop.split(",").map(Number);
-      setPickupCoords([pickupLat, pickupLng]);
-      setDropCoords([dropLat, dropLng]);
-      haulerId = urlHaulerId; // Use the URL haulerId
-    }
-    // Otherwise use props (Modal case)
-    else if (pickup && drop) {
-      const [pickupLat, pickupLng] = pickup.split(",").map(Number);
-      const [dropLat, dropLng] = drop.split(",").map(Number);
-      setPickupCoords([pickupLat, pickupLng]);
-      setDropCoords([dropLat, dropLng]);
-    }
-  }, [pickup, drop, haulerId]);
+  // Use URL parameters if available, otherwise use props
+  const effectivePickup = urlPickup || pickup;
+  const effectiveDrop = urlDrop || drop;
+  const effectiveHaulerId = urlHaulerId || haulerId;
 
   useEffect(() => {
+    if (effectivePickup) {
+      try {
+        const [lat, lng] = effectivePickup.split(",").map(Number);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          setPickupCoords([lat, lng]);
+          console.log("Pickup coordinates set:", [lat, lng]);
+        }
+      } catch (error) {
+        console.error("Error parsing pickup coordinates:", error);
+      }
+    }
+    if (effectiveDrop) {
+      try {
+        const [lat, lng] = effectiveDrop.split(",").map(Number);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          setDropCoords([lat, lng]);
+          console.log("Drop coordinates set:", [lat, lng]);
+        }
+      } catch (error) {
+        console.error("Error parsing drop coordinates:", error);
+      }
+    }
+  }, [effectivePickup, effectiveDrop]);
+
+  useEffect(() => {
+    if (!effectiveHaulerId) return;
+
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const locationRef = ref(db, `haulerLocations/${haulerId}`);
+    const locationRef = ref(db, `haulerLocations/${effectiveHaulerId}`);
 
-    onValue(locationRef, (snapshot) => {
+    const unsubscribe = onValue(locationRef, (snapshot) => {
       const data = snapshot.val();
       if (data?.latitude && data?.longitude) {
         const newHaulerCoords = [data.latitude, data.longitude];
         setHaulerCoords(newHaulerCoords);
+        console.log("Hauler location updated:", newHaulerCoords);
 
         // Check if hauler is at pickup
         if (pickupCoords) {
@@ -489,12 +504,15 @@ export default function LiveTrackingMap({
         }
       }
     });
-  }, [haulerId, pickupCoords, routeState]);
+
+    return () => unsubscribe();
+  }, [effectiveHaulerId, pickupCoords, routeState]);
 
   const center = haulerCoords || pickupCoords || [10.3157, 123.8854];
 
   // Add function to handle status updates from Android
   const handleStatusUpdate = (newStatus) => {
+    console.log("Status update received:", newStatus);
     setRouteState(updateRouteState(newStatus));
   };
 
@@ -506,8 +524,20 @@ export default function LiveTrackingMap({
     };
   }, []);
 
+  // Determine if we're in WebView context
+  const isWebView = window.location.pathname === "/live-tracking";
+
   return (
-    <div className="w-full" style={{ height }}>
+    <div
+      className="w-full"
+      style={{
+        height: isWebView ? "100vh" : height,
+        width: isWebView ? "100vw" : "100%",
+        position: isWebView ? "fixed" : "relative",
+        top: isWebView ? 0 : "auto",
+        left: isWebView ? 0 : "auto",
+      }}
+    >
       <MapContainer
         center={center}
         zoom={13}
