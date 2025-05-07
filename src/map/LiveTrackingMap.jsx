@@ -17,10 +17,60 @@ import firebaseConfig from "../../configs/firebase.js";
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`;
 
-const pinIcon = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
-  iconSize: [25, 25],
-  iconAnchor: [12, 25],
+// Update pickup icon to match MapModal
+const pickupIcon = L.divIcon({
+  className: "custom-marker",
+  html: `
+    <div style="
+      background: #FF0000;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        background: white;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      "></div>
+    </div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -12],
+});
+
+// Update destination icon to match MapModal
+const destinationIcon = L.divIcon({
+  className: "custom-marker",
+  html: `
+    <div style="
+      background: #0000FF;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        background: white;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      "></div>
+    </div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -12],
 });
 
 // ✅ Hauler icon with bold design
@@ -79,11 +129,59 @@ function updateRouteState(newState) {
 // ✅ Camera pan control
 function ChangeView({ center }) {
   const map = useMap();
+  const [lastInteraction, setLastInteraction] = useState(Date.now());
+  const [autoCenterTimeout, setAutoCenterTimeout] = useState(null);
+
+  useEffect(() => {
+    // Function to handle user interaction
+    const handleInteraction = () => {
+      setLastInteraction(Date.now());
+    };
+
+    // Add event listeners for map interaction
+    map.on("mousedown", handleInteraction);
+    map.on("touchstart", handleInteraction);
+    map.on("dragstart", handleInteraction);
+    map.on("zoomstart", handleInteraction);
+
+    // Cleanup function
+    return () => {
+      map.off("mousedown", handleInteraction);
+      map.off("touchstart", handleInteraction);
+      map.off("dragstart", handleInteraction);
+      map.off("zoomstart", handleInteraction);
+      if (autoCenterTimeout) {
+        clearTimeout(autoCenterTimeout);
+      }
+    };
+  }, [map]);
+
   useEffect(() => {
     if (center) {
-      map.flyTo(center, 14, { animate: true });
+      // Clear any existing timeout
+      if (autoCenterTimeout) {
+        clearTimeout(autoCenterTimeout);
+      }
+
+      // Set new timeout for auto-centering
+      const timeout = setTimeout(() => {
+        const now = Date.now();
+        // Only auto-center if there's been no interaction for 10 seconds
+        if (now - lastInteraction >= 10000) {
+          map.panTo(center, { animate: true });
+        }
+      }, 10000);
+
+      setAutoCenterTimeout(timeout);
     }
-  }, [center, map]);
+
+    return () => {
+      if (autoCenterTimeout) {
+        clearTimeout(autoCenterTimeout);
+      }
+    };
+  }, [center, map, lastInteraction]);
+
   return null;
 }
 
@@ -92,6 +190,7 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
   const map = useMap();
   const [progressLine, setProgressLine] = useState(null);
   const [mainRoute, setMainRoute] = useState(null);
+  const [dashedRoute, setDashedRoute] = useState(null);
 
   useEffect(() => {
     if (!haulerCoords || !pickupCoords || !dropCoords) return;
@@ -103,6 +202,48 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
 
     // Check if hauler is within 20 meters of pickup
     const isAtPickup = distance <= 20;
+
+    // Handle dashed route - only show during GOING_TO_PICKUP state
+    if (routeState === ROUTE_STATES.GOING_TO_PICKUP) {
+      if (dashedRoute) {
+        map.removeControl(dashedRoute);
+      }
+
+      const newDashedRoute = L.Routing.control({
+        waypoints: [haulerPos, pickupPos],
+        lineOptions: {
+          styles: [
+            {
+              color: "#FF6B00", // Orange color to match hauler icon
+              weight: 3,
+              opacity: 0.7,
+              dashArray: "10, 10", // Creates dashed line effect
+              lineJoin: "round",
+              lineCap: "round",
+            },
+          ],
+        },
+        plan: L.Routing.plan([haulerPos, pickupPos], {
+          createMarker: () => null,
+        }),
+        show: false,
+        addWaypoints: false,
+        draggableWaypoints: false,
+        fitSelectedRoutes: false,
+        collapsible: false,
+        routeWhileDragging: false,
+        showAlternatives: false,
+        containerClassName: "hidden",
+      }).addTo(map);
+
+      setDashedRoute(newDashedRoute);
+    } else {
+      // Remove dashed route if not in GOING_TO_PICKUP state
+      if (dashedRoute) {
+        map.removeControl(dashedRoute);
+        setDashedRoute(null);
+      }
+    }
 
     // Create the main route first
     const routingControl = L.Routing.control({
@@ -144,39 +285,48 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
         const route = routes[0];
         const coordinates = route.coordinates;
 
-        // Find the closest point on the route to the hauler
-        let closestPoint = coordinates[0];
-        let minDistance = Infinity;
-        coordinates.forEach((coord) => {
-          const dist = L.latLng(coord).distanceTo(haulerPos);
-          if (dist < minDistance) {
-            minDistance = dist;
-            closestPoint = coord;
+        // Only show progress line if not in GOING_TO_PICKUP state
+        if (routeState !== ROUTE_STATES.GOING_TO_PICKUP) {
+          // Find the closest point on the route to the hauler
+          let closestPoint = coordinates[0];
+          let minDistance = Infinity;
+          coordinates.forEach((coord) => {
+            const dist = L.latLng(coord).distanceTo(haulerPos);
+            if (dist < minDistance) {
+              minDistance = dist;
+              closestPoint = coord;
+            }
+          });
+
+          // Get the index of the closest point
+          const closestIndex = coordinates.findIndex(
+            (coord) =>
+              coord[0] === closestPoint[0] && coord[1] === closestPoint[1]
+          );
+
+          // Create progress line from start to current position
+          const progressCoordinates = coordinates.slice(0, closestIndex + 1);
+
+          if (progressLine) {
+            map.removeLayer(progressLine);
           }
-        });
 
-        // Get the index of the closest point
-        const closestIndex = coordinates.findIndex(
-          (coord) =>
-            coord[0] === closestPoint[0] && coord[1] === closestPoint[1]
-        );
+          const newProgressLine = L.polyline(progressCoordinates, {
+            color: "#0066CC", // Blue color
+            weight: 4,
+            opacity: 0.7,
+            lineJoin: "round",
+            lineCap: "round",
+          }).addTo(map);
 
-        // Create progress line from start to current position
-        const progressCoordinates = coordinates.slice(0, closestIndex + 1);
-
-        if (progressLine) {
-          map.removeLayer(progressLine);
+          setProgressLine(newProgressLine);
+        } else {
+          // Remove progress line if in GOING_TO_PICKUP state
+          if (progressLine) {
+            map.removeLayer(progressLine);
+            setProgressLine(null);
+          }
         }
-
-        const newProgressLine = L.polyline(progressCoordinates, {
-          color: "#0066CC", // Blue color
-          weight: 4,
-          opacity: 0.7,
-          lineJoin: "round",
-          lineCap: "round",
-        }).addTo(map);
-
-        setProgressLine(newProgressLine);
       }
     });
 
@@ -186,6 +336,9 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
       }
       if (progressLine) {
         map.removeLayer(progressLine);
+      }
+      if (dashedRoute) {
+        map.removeControl(dashedRoute);
       }
     };
   }, [haulerCoords, pickupCoords, dropCoords, routeState, map]);
@@ -278,27 +431,40 @@ function RoutingControl({ pickupCoords, dropCoords, routeState }) {
   return null;
 }
 
-export default function LiveTrackingMap() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const pickup = urlParams.get("pickup");
-  const drop = urlParams.get("drop");
-  const haulerId = urlParams.get("haulerId");
-
+export default function LiveTrackingMap({
+  pickup,
+  drop,
+  haulerId,
+  height = "100%",
+}) {
   const [pickupCoords, setPickupCoords] = useState(null);
   const [dropCoords, setDropCoords] = useState(null);
   const [haulerCoords, setHaulerCoords] = useState(null);
   const [routeState, setRouteState] = useState(ROUTE_STATES.GOING_TO_PICKUP);
 
+  // Check if we're in a WebView (URL parameters) or Modal (props)
   useEffect(() => {
-    if (pickup) {
-      const [lat, lng] = pickup.split(",").map(Number);
-      setPickupCoords([lat, lng]);
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlPickup = urlParams.get("pickup");
+    const urlDrop = urlParams.get("drop");
+    const urlHaulerId = urlParams.get("haulerId");
+
+    // If URL parameters exist, use those (WebView case)
+    if (urlPickup && urlDrop && urlHaulerId) {
+      const [pickupLat, pickupLng] = urlPickup.split(",").map(Number);
+      const [dropLat, dropLng] = urlDrop.split(",").map(Number);
+      setPickupCoords([pickupLat, pickupLng]);
+      setDropCoords([dropLat, dropLng]);
+      haulerId = urlHaulerId; // Use the URL haulerId
     }
-    if (drop) {
-      const [lat, lng] = drop.split(",").map(Number);
-      setDropCoords([lat, lng]);
+    // Otherwise use props (Modal case)
+    else if (pickup && drop) {
+      const [pickupLat, pickupLng] = pickup.split(",").map(Number);
+      const [dropLat, dropLng] = drop.split(",").map(Number);
+      setPickupCoords([pickupLat, pickupLng]);
+      setDropCoords([dropLat, dropLng]);
     }
-  }, [pickup, drop]);
+  }, [pickup, drop, haulerId]);
 
   useEffect(() => {
     const app = initializeApp(firebaseConfig);
@@ -341,16 +507,7 @@ export default function LiveTrackingMap() {
   }, []);
 
   return (
-    <div
-      className="map-container"
-      style={{
-        height: "100vh",
-        width: "100vw",
-        position: "fixed",
-        top: 0,
-        left: 0,
-      }}
-    >
+    <div className="w-full" style={{ height }}>
       <MapContainer
         center={center}
         zoom={13}
@@ -375,13 +532,13 @@ export default function LiveTrackingMap() {
         />
 
         {pickupCoords && (
-          <Marker position={pickupCoords} icon={pinIcon}>
+          <Marker position={pickupCoords} icon={pickupIcon}>
             <Popup>Pickup Location</Popup>
           </Marker>
         )}
 
         {dropCoords && (
-          <Marker position={dropCoords} icon={pinIcon}>
+          <Marker position={dropCoords} icon={destinationIcon}>
             <Popup>Destination</Popup>
           </Marker>
         )}
