@@ -17,10 +17,60 @@ import firebaseConfig from "../../configs/firebase.js";
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const MAPBOX_TILE_URL = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`;
 
-const pinIcon = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
-  iconSize: [25, 25],
-  iconAnchor: [12, 25],
+// Update pickup icon to match MapModal
+const pickupIcon = L.divIcon({
+  className: "custom-marker",
+  html: `
+    <div style="
+      background: #FF0000;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        background: white;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      "></div>
+    </div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -12],
+});
+
+// Update destination icon to match MapModal
+const destinationIcon = L.divIcon({
+  className: "custom-marker",
+  html: `
+    <div style="
+      background: #0000FF;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        background: white;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      "></div>
+    </div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -12],
 });
 
 // ✅ Hauler icon with bold design
@@ -381,27 +431,40 @@ function RoutingControl({ pickupCoords, dropCoords, routeState }) {
   return null;
 }
 
-export default function LiveTrackingMap() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const pickup = urlParams.get("pickup");
-  const drop = urlParams.get("drop");
-  const haulerId = urlParams.get("haulerId");
-
+export default function LiveTrackingMap({
+  pickup,
+  drop,
+  haulerId,
+  height = "100%",
+}) {
   const [pickupCoords, setPickupCoords] = useState(null);
   const [dropCoords, setDropCoords] = useState(null);
   const [haulerCoords, setHaulerCoords] = useState(null);
   const [routeState, setRouteState] = useState(ROUTE_STATES.GOING_TO_PICKUP);
 
+  // Check if we're in a WebView (URL parameters) or Modal (props)
   useEffect(() => {
-    if (pickup) {
-      const [lat, lng] = pickup.split(",").map(Number);
-      setPickupCoords([lat, lng]);
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlPickup = urlParams.get("pickup");
+    const urlDrop = urlParams.get("drop");
+    const urlHaulerId = urlParams.get("haulerId");
+
+    // If URL parameters exist, use those (WebView case)
+    if (urlPickup && urlDrop && urlHaulerId) {
+      const [pickupLat, pickupLng] = urlPickup.split(",").map(Number);
+      const [dropLat, dropLng] = urlDrop.split(",").map(Number);
+      setPickupCoords([pickupLat, pickupLng]);
+      setDropCoords([dropLat, dropLng]);
+      haulerId = urlHaulerId; // Use the URL haulerId
     }
-    if (drop) {
-      const [lat, lng] = drop.split(",").map(Number);
-      setDropCoords([lat, lng]);
+    // Otherwise use props (Modal case)
+    else if (pickup && drop) {
+      const [pickupLat, pickupLng] = pickup.split(",").map(Number);
+      const [dropLat, dropLng] = drop.split(",").map(Number);
+      setPickupCoords([pickupLat, pickupLng]);
+      setDropCoords([dropLat, dropLng]);
     }
-  }, [pickup, drop]);
+  }, [pickup, drop, haulerId]);
 
   useEffect(() => {
     const app = initializeApp(firebaseConfig);
@@ -444,16 +507,7 @@ export default function LiveTrackingMap() {
   }, []);
 
   return (
-    <div
-      className="map-container"
-      style={{
-        height: "100vh",
-        width: "100vw",
-        position: "fixed",
-        top: 0,
-        left: 0,
-      }}
-    >
+    <div className="w-full" style={{ height }}>
       <MapContainer
         center={center}
         zoom={13}
@@ -478,13 +532,13 @@ export default function LiveTrackingMap() {
         />
 
         {pickupCoords && (
-          <Marker position={pickupCoords} icon={pinIcon}>
+          <Marker position={pickupCoords} icon={pickupIcon}>
             <Popup>Pickup Location</Popup>
           </Marker>
         )}
 
         {dropCoords && (
-          <Marker position={dropCoords} icon={pinIcon}>
+          <Marker position={dropCoords} icon={destinationIcon}>
             <Popup>Destination</Popup>
           </Marker>
         )}
