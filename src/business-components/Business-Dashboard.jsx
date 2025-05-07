@@ -854,7 +854,7 @@ export default function BusinessDashboard() {
         >
           <h2 className="text-2xl font-bold mb-4 text-[#1A4D2E]">
             🚀 Upgrade Your Experience
-          </h2>
+          </h2>   
           <p className="mb-6 text-gray-600">
             Unlock premium features and remove ads by subscribing to our
             service.

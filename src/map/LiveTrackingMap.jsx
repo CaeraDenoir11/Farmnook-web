@@ -523,6 +523,7 @@ export default function LiveTrackingMap({
         inertiaDeceleration={3000}
         inertiaMaxSpeed={1500}
         easeLinearity={0.25}
+        style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
           url={MAPBOX_TILE_URL}
