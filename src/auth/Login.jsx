@@ -186,19 +186,19 @@ export default function Login({ setIsAuthenticated, setRole }) {
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-3 flex items-center"
+                    className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
                     onClick={() => setShowPassword((prev) => !prev)}
                   >
                     {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
                   </button>
                 </div>
               </div>
-              <div className="text-right text-sm mt-1 mb-4">
+              {/* <div className="text-right text-sm mt-1 mb-4">
                 <button type="button" onClick={() => navigate("/forgot-password")}>
                   Forgot Password?
                 </button>
-              </div>
-              <button className="w-full font-semibold bg-[#1A4D2E] mt-4 text-white p-3 rounded-lg hover:bg-[#445a4c] transition duration-200">
+              </div> */}
+              <button className="w-full font-semibold bg-[#1A4D2E] mt-4 text-white p-3 rounded-lg hover:bg-[#445a4c] transition duration-200 cursor-pointer">
                 Login
               </button>
             </form>

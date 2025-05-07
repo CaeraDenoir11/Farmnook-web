@@ -71,7 +71,7 @@ export default function SubscribeButton() {
       className={`w-full font-semibold py-2 mt-6 rounded-lg shadow-md transition-all duration-300 ${
         isSubscribed
           ? "bg-gray-400 text-white cursor-not-allowed"
-          : "bg-white text-[#a63f3a] hover:bg-gray-200"
+          : "bg-white text-[#a63f3a] hover:bg-gray-200 cursor-pointer"
       }`}
       onClick={handleSubscription}
       disabled={isSubscribed} // Prevents clicking when already subscribed
