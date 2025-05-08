@@ -6,7 +6,7 @@ import { db } from "../../configs/firebase.js"; // Or just `../configs/firebase`
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 // !! CRITICAL !!: Use your ONE correct Stripe secret key. VERIFY IT.
-const stripe = new Stripe("secret key"); // REPLACE!
+//const stripe = new Stripe("secret key"); // REPLACE!
 
 export default async function handler(req, res) {
   console.log("API_COMPLETE_SESSION: Request received. Method:", req.method);
