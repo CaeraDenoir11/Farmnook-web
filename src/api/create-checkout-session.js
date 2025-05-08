@@ -4,7 +4,6 @@ import Stripe from "stripe";
 
 // !! CRITICAL !!: Use your ONE correct Stripe secret key.
 // This key was taken from your original create-checkout-session.js. VERIFY IT.
-const stripe = new Stripe("secret");
 
 // Ensure this is correctly set in your .env file (e.g., VITE_BASE_URL=http://localhost:5173)
 const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:3000"; // Fallback for safety, but VITE_BASE_URL should be set
