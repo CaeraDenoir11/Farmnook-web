@@ -195,6 +195,13 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
   useEffect(() => {
     if (!haulerCoords || !pickupCoords || !dropCoords) return;
 
+    console.log("RouteProgress: Updating routes", {
+      haulerCoords,
+      pickupCoords,
+      dropCoords,
+      routeState,
+    });
+
     // Calculate distance between hauler and pickup
     const haulerPos = L.latLng(haulerCoords[0], haulerCoords[1]);
     const pickupPos = L.latLng(pickupCoords[0], pickupCoords[1]);
@@ -234,18 +241,25 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
         routeWhileDragging: false,
         showAlternatives: false,
         containerClassName: "hidden",
+        router: L.Routing.mapbox(MAPBOX_ACCESS_TOKEN),
       }).addTo(map);
 
       setDashedRoute(newDashedRoute);
+      console.log("Dashed route created");
     } else {
       // Remove dashed route if not in GOING_TO_PICKUP state
       if (dashedRoute) {
         map.removeControl(dashedRoute);
         setDashedRoute(null);
+        console.log("Dashed route removed");
       }
     }
 
-    // Create the main route first
+    // Create the main route
+    if (mainRoute) {
+      map.removeControl(mainRoute);
+    }
+
     const routingControl = L.Routing.control({
       waypoints: [
         L.latLng(pickupCoords[0], pickupCoords[1]),
@@ -274,12 +288,15 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
       routeWhileDragging: false,
       showAlternatives: false,
       containerClassName: "hidden",
+      router: L.Routing.mapbox(MAPBOX_ACCESS_TOKEN),
     }).addTo(map);
 
     setMainRoute(routingControl);
+    console.log("Main route created");
 
     // Listen for route found event to create progress line
     routingControl.on("routesfound", (e) => {
+      console.log("Route found event triggered");
       const routes = e.routes;
       if (routes && routes.length > 0) {
         const route = routes[0];
@@ -320,11 +337,13 @@ function RouteProgress({ haulerCoords, pickupCoords, dropCoords, routeState }) {
           }).addTo(map);
 
           setProgressLine(newProgressLine);
+          console.log("Progress line updated");
         } else {
           // Remove progress line if in GOING_TO_PICKUP state
           if (progressLine) {
             map.removeLayer(progressLine);
             setProgressLine(null);
+            console.log("Progress line removed");
           }
         }
       }
@@ -351,6 +370,12 @@ function RoutingControl({ pickupCoords, dropCoords, routeState }) {
   const map = useMap();
   useEffect(() => {
     if (!pickupCoords || !dropCoords) return;
+
+    console.log("RoutingControl: Creating route", {
+      pickupCoords,
+      dropCoords,
+      routeState,
+    });
 
     const routingControl = L.Routing.control({
       waypoints: [
@@ -380,9 +405,11 @@ function RoutingControl({ pickupCoords, dropCoords, routeState }) {
       routeWhileDragging: false,
       showAlternatives: false,
       containerClassName: "hidden",
+      router: L.Routing.mapbox(MAPBOX_ACCESS_TOKEN),
     }).addTo(map);
 
     routingControl.on("routesfound", (e) => {
+      console.log("Route found in RoutingControl");
       const routes = e.routes;
       if (routes && routes.length > 0) {
         const route = routes[0];
