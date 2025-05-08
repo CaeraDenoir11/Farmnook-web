@@ -14,7 +14,7 @@ import {getStorage, ref, uploadBytes, getDownloadURL} from "firebase/storage";
 import {db} from "/configs/firebase";
 import "../index.css";
 import profilePic from "../assets/images/default.png";
-import SubscribeButton from "../assets/buttons/SubscribeButton.jsx";
+import SubscribeButton from "../components/SubscribeButton";
 //import SubscribeButton from "./Business-Subscription-Payment";
 
 export default function BusinessProfile() {
