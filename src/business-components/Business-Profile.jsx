@@ -15,6 +15,7 @@ import {db} from "/configs/firebase";
 import "../index.css";
 import profilePic from "../assets/images/default.png";
 import SubscribeButton from "../assets/buttons/SubscribeButton.jsx";
+//import SubscribeButton from "./Business-Subscription-Payment";
 
 export default function BusinessProfile() {
 	const [admin, setAdmin] = useState(null);
