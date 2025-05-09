@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../../configs/firebase";
+import { auth, db } from "../../configs/firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import MapModal from "../map/MapModal.jsx";
 import Modal from "react-modal";
 import NotificationButton from "../assets/buttons/NotificationButton.jsx";
@@ -80,8 +81,27 @@ export default function BusinessDashboard() {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
         setCurrentBusinessId(user.uid);
+        const subRef = query(
+          collection(db, "subscriptions"),
+          where("businessId", "==", user.uid)
+        );
+        const unsubscribeSnapshot = onSnapshot(subRef, (snapshot) => {
+          if (snapshot.empty) {
+            setShowAd(true);
+            setSecondsLeft(5);
+            setAdClosable(false);
+            const timerId = setTimeout(() => setAdClosable(true), 5000);
+            return () => clearTimeout(timerId);
+          } else {
+            setShowAd(false);
+          }
+        });
+        return () => unsubscribeSnapshot();
       } else {
         setCurrentBusinessId(null);
+        setTransactionData({});
+        setOverallTotalEarnings(0);
+        setLoadingTransactions(true);
       }
     });
     return () => unsubscribeAuth();
