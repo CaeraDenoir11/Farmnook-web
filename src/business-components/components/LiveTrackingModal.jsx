@@ -196,36 +196,108 @@ export default function LiveTrackingModal({ isOpen, onClose, deliveryData }) {
                   : "Loading..."}
               </p>
             </div>
-            <div className="bg-white p-3 rounded-lg shadow-sm">
-              <h3 className="text-xs font-semibold text-gray-600 mb-1">
-                Current Status
-              </h3>
-              <p
-                className={`text-[#1A4D2E] text-xl font-bold ${
-                  currentStatus === "Going to Pickup"
-                    ? "text-yellow-600"
-                    : currentStatus === "On the Way"
-                    ? "text-green-600"
-                    : "text-blue-600"
-                }`}
-              >
-                {currentStatus}
-              </p>
-            </div>
-            <div className="bg-white p-3 rounded-lg shadow-sm">
-              <h3 className="text-xs font-semibold text-gray-600 mb-1">
-                Estimated Arrival
-              </h3>
-              <p className="text-[#1A4D2E] text-sm">
-                {currentStatus === "Going to Pickup"
-                  ? `Pickup in ${formatETA(eta)}`
-                  : currentStatus === "On the Way"
-                  ? `Arrival in ${formatETA(eta)}`
-                  : "Arrived"}
-              </p>
-              <p className="text-gray-500 text-xs mt-1">
-                Speed: {haulerSpeed.toFixed(1)} km/h
-              </p>
+          </div>
+
+          {/* Status Progress Bar */}
+          <div className="mt-4 bg-white p-4 rounded-xl shadow-sm">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">
+              Delivery Status
+            </h3>
+            <div className="relative">
+              {/* Progress Line */}
+              <div className="absolute top-1/2 left-0 w-full h-1.5 bg-gray-100 -translate-y-1/2 rounded-full overflow-hidden">
+                <div
+                  className={`h-full bg-[#1A4D2E] transition-all duration-500 ease-in-out ${
+                    currentStatus === "Going to Pickup"
+                      ? "w-1/3"
+                      : currentStatus === "On the Way"
+                      ? "w-2/3"
+                      : "w-full"
+                  }`}
+                ></div>
+              </div>
+
+              {/* Status Points */}
+              <div className="relative flex justify-between">
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+                      currentStatus === "Going to Pickup"
+                        ? "bg-[#1A4D2E] ring-4 ring-[#1A4D2E]/20"
+                        : "bg-gray-100"
+                    }`}
+                  >
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        currentStatus === "Going to Pickup"
+                          ? "bg-white"
+                          : "bg-gray-300"
+                      }`}
+                    ></div>
+                  </div>
+                  <span
+                    className={`text-xs mt-2 font-medium ${
+                      currentStatus === "Going to Pickup"
+                        ? "text-[#1A4D2E]"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    Going to Pickup
+                  </span>
+                </div>
+
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+                      currentStatus === "On the Way"
+                        ? "bg-[#1A4D2E] ring-4 ring-[#1A4D2E]/20"
+                        : "bg-gray-100"
+                    }`}
+                  >
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        currentStatus === "On the Way"
+                          ? "bg-white"
+                          : "bg-gray-300"
+                      }`}
+                    ></div>
+                  </div>
+                  <span
+                    className={`text-xs mt-2 font-medium ${
+                      currentStatus === "On the Way"
+                        ? "text-[#1A4D2E]"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    On the Way
+                  </span>
+                </div>
+
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+                      currentStatus === "Arrived"
+                        ? "bg-[#1A4D2E] ring-4 ring-[#1A4D2E]/20"
+                        : "bg-gray-100"
+                    }`}
+                  >
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        currentStatus === "Arrived" ? "bg-white" : "bg-gray-300"
+                      }`}
+                    ></div>
+                  </div>
+                  <span
+                    className={`text-xs mt-2 font-medium ${
+                      currentStatus === "Arrived"
+                        ? "text-[#1A4D2E]"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    Arrived
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

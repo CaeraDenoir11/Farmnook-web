@@ -170,13 +170,21 @@ export default function BusinessDashboard() {
       haulerName: delivery.haulerName || "N/A",
       vehicleId: delivery.vehicleId,
       vehicleName: delivery.vehicleName || "N/A",
-      status: delivery.status,
+      status: delivery.isDone
+        ? "Completed"
+        : delivery.arrivedAtDestination
+        ? "Arrived at Destination"
+        : delivery.arrivedAtPickup
+        ? "Arrived at Pickup"
+        : delivery.isStarted
+        ? "In Transit"
+        : "Not Started",
       productType: delivery.productType,
       weight: delivery.weight,
       timestamp: delivery.createdAt,
       pickupLocation: delivery.pickupLocation,
       destinationLocation: delivery.destinationLocation,
-      estimatedArrival: delivery.estimatedTime,
+      estimatedCost: delivery.estimatedCost,
       requestId: delivery.requestId,
       isStarted: delivery.isStarted,
       arrivedAtPickup: delivery.arrivedAtPickup,
@@ -184,8 +192,8 @@ export default function BusinessDashboard() {
       pickupName: delivery.pickupName,
       destinationName: delivery.destinationName,
       purpose: delivery.purpose,
-      estimatedCost: delivery.estimatedCost,
       farmerName: delivery.farmerName,
+      isDone: delivery.isDone,
     });
     // Show the tracking screen
     setShowLiveTracking(true);
