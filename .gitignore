@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+serviceAccountKey.json
 *.local
 
 # Editor directories and files
@@ -17,7 +18,6 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .env
-.serviceAccountKey.json
 .DS_Store
 *.suo
 *.ntvs*
