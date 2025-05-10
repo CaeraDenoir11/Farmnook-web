@@ -1,9 +1,30 @@
-export default function handler (req, res) {
+import Cors from 'cors';
+
+// Initialize the CORS middleware
+const cors = Cors({
+    methods: ['GET'], // Allow only GET requests
+});
+
+function runMiddleware(req, res, fn) {
+    return new Promise((resolve, reject) => {
+        fn(req, res, (result) => {
+            if (result instanceof Error) {
+                return reject(result);
+            }
+            return resolve(result);
+        });
+    });
+}
+
+export default async function handler(req, res) {
+    // Run the CORS middleware
+    await runMiddleware(req, res, cors);
+
     if (req.method !== 'GET') {
         return res.status(405).end(`Method ${req.method} Not Allowed`);
-       
     }
- const pricing_rules = pricing_rules = {
+
+    const pricing_rules = {
   "Motorcycle with Box":         { "base_fee": 80,   "weight_fee": 1.0,  "pickup_fee": 6.0,   "delivery_fee": 7.0, "base_km": 2 }, 
   "Tricycle":                    { "base_fee": 80,   "weight_fee": 0.8,  "pickup_fee": 6.0,   "delivery_fee": 9.0, "base_km": 2 },  
   "Small Multicab":              { "base_fee": 100,  "weight_fee": 1.0,  "pickup_fee": 7.0,   "delivery_fee": 12.0, "base_km": 3 },  
