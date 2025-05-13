@@ -16,6 +16,7 @@ import BusinessHaulers from "./business-components/Business-Haulers.jsx";
 import BusinessVehicles from "./business-components/Business-Vehicles.jsx";
 import BusinessHistory from "./business-components/Business-History.jsx";
 import BusinessReviews from "./business-components/Business-Reviews.jsx";
+import BusinesPricingManager from "./dev-components/PricingManager.jsx";
 import Maps from "./business-components/Maps.jsx";
 import BusinessProfile from "./business-components/Business-Profile.jsx";
 import logo from "./assets/images/document-logo.png";
@@ -23,6 +24,7 @@ import OneSignal from "react-onesignal";
 import MapViewer from "./map/MapViewer.jsx";
 import LiveTrackingMap from "./map/LiveTrackingMap.jsx";
 import GlobalNotification from "./business-components/components/GlobalNotification.jsx";
+import PricingRulesManager from "./dev-components/PricingManager.jsx";
 // import BusinessSubscriptionPayment from "./business-components/Business-Subscription-Payment";
 
 export default function App() {
@@ -153,6 +155,7 @@ export default function App() {
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/users" element={<Users />} />
                       <Route path="/feedback" element={<Feedback />} />
+                      <Route path="/pricing" element={<PricingRulesManager />} />
                       {/* ✅ Catch-all route to redirect to dashboard */}
                       <Route path="*" element={<Navigate to="/dashboard" />} />
                     </Routes>

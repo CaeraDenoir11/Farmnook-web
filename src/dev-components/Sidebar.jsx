@@ -56,6 +56,7 @@ export default function Sidebar({
 	const menuItems = [
 		{id: 1, name: "Dashboard", icon: dashboardIcon, route: "/dashboard"},
 		{id: 2, name: "Users", icon: usersIcon, route: "/users"},
+		{id: 3, name: "Pricing", icon: usersIcon, route: "/pricing"},
 	];
 
 	return (
