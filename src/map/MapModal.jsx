@@ -306,7 +306,7 @@ export default function MapModal({
   const handleAssign = async (hauler) => {
     try {
       // 1. Mark request as accepted
-      await updateDoc(doc(db, "deliveryRequests", id), {
+      await updateDoc(doc(db, "deliveryRequests", req.id), {
         isAccepted: true,
       });
 
@@ -404,7 +404,16 @@ export default function MapModal({
 
   const handleDeclineSubmit = async () => {
     try {
-      // Update the request status in Firestore
+      // 🔍 Step 1: Fetch the delivery request to get farmerId
+      const requestDoc = await getDoc(doc(db, "deliveryRequests", id));
+      if (!requestDoc.exists()) {
+        throw new Error("Request not found");
+      }
+
+      const requestData = requestDoc.data();
+      const farmerId = requestData.farmerId;
+
+      // ✅ Step 2: Update the request status
       await updateDoc(doc(db, "deliveryRequests", id), {
         isDeclined: true,
         declineReason: declineReason,
@@ -412,24 +421,42 @@ export default function MapModal({
         declinedBy: currentUser.uid,
       });
 
-      // Create notification for the farmer
+      // ✅ Step 3: Create Firestore notification for farmer
       const businessId = currentUser.uid;
       const businessDoc = await getDoc(doc(db, "users", businessId));
       const businessData = businessDoc.exists() ? businessDoc.data() : {};
-      const businessName = businessData?.businessName || "Your Business";
-      const message = `Your delivery request has been declined by ${businessName}`;
+      const title =
+        `Declined by  ${businessData?.businessName}` || "Your Business";
+      const message = declineReason;
 
       const notifRef = doc(collection(db, "notifications"));
       await setDoc(notifRef, {
         notificationId: notifRef.id,
         recipientId: farmerId,
-        title: businessName,
+        title: title,
         message,
         timestamp: Timestamp.now(),
         isRead: false,
       });
 
-      // Update UI
+      // ✅ Step 4: Send OneSignal push to farmer
+      const farmerDoc = await getDoc(doc(db, "users", farmerId));
+      const farmerData = farmerDoc.exists() ? farmerDoc.data() : null;
+
+      const validPlayerIds = (farmerData?.playerIds || []).filter(
+        (id) => typeof id === "string" && id.length >= 10
+      );
+
+      if (validPlayerIds.length) {
+        await sendPushNotification(validPlayerIds, title, message, {
+          openTarget: "FarmerDashboardFragment",
+          farmerId: farmerId,
+        });
+      } else {
+        console.warn("No valid playerIds found for farmer:", farmerId);
+      }
+
+      // ✅ Step 5: Update UI
       setRequests((prev) => prev.filter((item) => item.id !== id));
       setDeclineModalOpen(false);
       onClose();
@@ -718,7 +745,7 @@ export default function MapModal({
                   onClick={handleDeclineRequest}
                   className="w-full bg-red-500 text-white py-1.5 rounded font-semibold text-sm hover:bg-red-600 transition"
                 >
-                  Cancel
+                  Decline
                 </button>
               </div>
             </div>
@@ -833,7 +860,7 @@ export default function MapModal({
         req={{
           id,
           vehicleId,
-          farmerId: currentUser?.uid,
+          businessId: currentUser?.uid,
           scheduledTime,
         }}
         setRequests={setRequests}
@@ -846,6 +873,7 @@ export default function MapModal({
         onSubmit={handleDeclineSubmit}
         reason={declineReason}
         setReason={setDeclineReason}
+        requestId={id}
       />
     </>
   );
