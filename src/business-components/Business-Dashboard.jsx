@@ -6,7 +6,6 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import MapModal from "../map/MapModal.jsx";
 import Modal from "react-modal";
 import NotificationButton from "../assets/buttons/NotificationButton.jsx";
-import AcceptRequestModal from "../assets/buttons/AcceptRequestModal.jsx";
 import MonthlyTransactionsCard from "../business-components/components/MonthlyTransactionsCard.jsx";
 import useDeliveryRequests from "../assets/hooks/useDeliveryRequests.js";
 import useNotifications from "../assets/hooks/useNotifications";
@@ -27,42 +26,29 @@ import { getMonthName } from "./utils/dateUtils.js";
  */
 export default function BusinessDashboard() {
   // --- State Variables ---
-  // Let's keep track of what month the user is looking at for their transactions
   const [selectedMonth, setSelectedMonth] = useState(
     getMonthName(new Date().getMonth()) + " " + new Date().getFullYear()
   );
-  // We need to remember which delivery request the user clicked on
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  // And which delivery they want to track
   const [selectedDelivery, setSelectedDelivery] = useState(null);
-  // These control when different modals pop up
   const [showLiveTracking, setShowLiveTracking] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  // Where the pickup and drop-off points are for the map
   const [mapPoints, setMapPoints] = useState({ pickup: "", drop: "" });
-  // Control for the modal where we assign haulers to deliveries
-  const [assignModalOpen, setAssignModalOpen] = useState(false);
-  // Keep track of which delivery requests the user has already seen
   const [readRequests, setReadRequests] = useState(() => {
     const saved = localStorage.getItem("readRequests");
     return saved ? JSON.parse(saved) : [];
   });
-  // Stuff for showing ads to users
   const [showAd, setShowAd] = useState(false);
   const [adClosable, setAdClosable] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(5);
-  // Store current business user ID
   const [currentBusinessId, setCurrentBusinessId] = useState(null);
 
   // --- Custom Hooks ---
-  // Get all the delivery requests and handle loading state
   const {
     requests,
     loading: loadingRequests,
     setRequests,
   } = useDeliveryRequests();
 
-  // Get all the deliveries that are currently active
   const {
     deliveryRequests,
     loadingRequests: loadingRequestsDelivery,
@@ -71,7 +57,6 @@ export default function BusinessDashboard() {
   } = useDeliveryRequests();
   const { activeDeliveries, isLoading: loadingDeliveries } =
     useActiveDeliveries();
-  // Get all the transaction data and how much money they've made
   const { transactionData, loadingTransactions, overallTotalEarnings } =
     useTransactionData(currentBusinessId);
 
@@ -128,6 +113,8 @@ export default function BusinessDashboard() {
    * @param {number} weight - Weight of delivery
    * @param {Date} timestamp - Request timestamp
    * @param {string} id - Request ID
+   * @param {string} vehicleId - Vehicle ID
+   * @param {Date} scheduledTime - Scheduled time for the delivery
    */
   const openMapModal = (
     pickup,
@@ -137,9 +124,10 @@ export default function BusinessDashboard() {
     productType,
     weight,
     timestamp,
-    id
+    id,
+    vehicleId,
+    scheduledTime
   ) => {
-    // Save all the delivery details
     setMapPoints({
       pickup,
       drop,
@@ -148,14 +136,15 @@ export default function BusinessDashboard() {
       productType,
       weight,
       timestamp,
+      vehicleId,
+      scheduledTime,
+      id,
     });
-    // Mark this request as read
     setReadRequests((prev) => {
       const updated = [...new Set([...prev, id])];
       localStorage.setItem("readRequests", JSON.stringify(updated));
       return updated;
     });
-    // Show the map
     setModalOpen(true);
   };
 
@@ -230,13 +219,11 @@ export default function BusinessDashboard() {
                   req.productType,
                   req.weight,
                   req.timestamp,
-                  req.id
+                  req.id,
+                  req.vehicleId,
+                  req.scheduledTime
                 )
               }
-              onAcceptRequest={(req) => {
-                setSelectedRequest(req);
-                setAssignModalOpen(true);
-              }}
             />
           </div>
 
@@ -263,15 +250,6 @@ export default function BusinessDashboard() {
       </div>
 
       {/* Modal Components */}
-      {/* Modal for assigning haulers to requests */}
-      <AcceptRequestModal
-        isOpen={assignModalOpen}
-        onClose={() => setAssignModalOpen(false)}
-        onAssign={(hauler) => setAssignModalOpen(false)}
-        req={selectedRequest}
-        setRequests={setRequests}
-      />
-
       {/* Modal for displaying delivery route map */}
       <MapModal
         isOpen={modalOpen}
@@ -283,6 +261,10 @@ export default function BusinessDashboard() {
         productType={mapPoints.productType}
         weight={mapPoints.weight}
         timestamp={mapPoints.timestamp}
+        vehicleId={mapPoints.vehicleId}
+        id={mapPoints.id}
+        scheduledTime={mapPoints.scheduledTime}
+        setRequests={setRequests}
       />
 
       {/* Modal for live delivery tracking */}

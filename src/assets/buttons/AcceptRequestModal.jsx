@@ -91,7 +91,16 @@ export default function AcceptRequestModal({
       const docRef = await addDoc(collection(db, "deliveries"), {
         requestId: req.id,
         haulerAssignedId: hauler.id,
+        vehicleId: req.vehicleId,
         createdAt: new Date(),
+        isStarted: false,
+        arrivedAtPickup: false,
+        isOnDelivery: false,
+        arrivedAtDestination: false,
+        isDone: false,
+        isValidated: false,
+        farmerId: req.farmerId,
+        scheduledTime: req.scheduledTime,
       });
       await updateDoc(docRef, {
         deliveryId: docRef.id,
