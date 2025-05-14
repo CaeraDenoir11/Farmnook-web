@@ -14,7 +14,7 @@ import {getStorage, ref, uploadBytes, getDownloadURL} from "firebase/storage";
 import {db} from "/configs/firebase";
 import "../index.css";
 import profilePic from "../assets/images/default.png";
-import SubscribeButton from "../assets/buttons/SubscribeButton.jsx";
+import SubscribeButton from "../components/SubscribeButton";
 //import SubscribeButton from "./Business-Subscription-Payment";
 
 export default function BusinessProfile() {
@@ -254,8 +254,9 @@ export default function BusinessProfile() {
 							One-Time Subscription
 						</h2>
 						<p className="text-center text-lg mb-6">
-							Enjoy premium access with a single payment—no recurring fees.
+							Enjoy premium access with a single payment for only ₱1,500!
 						</p>
+						<p className="text-center text-lg font-bold mb-6">No recurring fees!</p>
 						<div className="w-full flex flex-col items-start space-y-4">
 							<div className="flex items-center space-x-3">
 								<span className="text-green-300 text-xl">✔</span>

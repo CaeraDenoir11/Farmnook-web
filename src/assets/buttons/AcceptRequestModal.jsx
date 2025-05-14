@@ -87,6 +87,14 @@ export default function AcceptRequestModal({
         isAccepted: true,
       });
 
+      const requestDoc = await getDoc(doc(db, "deliveryRequests", req.id));
+      if (!requestDoc.exists()) {
+        throw new Error("Request not found");
+      }
+
+      const requestData = requestDoc.data();
+      const farmerId = requestData.farmerId;
+
       // 2. Add to deliveries collection
       const docRef = await addDoc(collection(db, "deliveries"), {
         requestId: req.id,
@@ -99,7 +107,8 @@ export default function AcceptRequestModal({
         arrivedAtDestination: false,
         isDone: false,
         isValidated: false,
-        farmerId: req.farmerId,
+        farmerId: farmerId,
+        businessId: currentUser?.uid,
         scheduledTime: req.scheduledTime,
       });
       await updateDoc(docRef, {
@@ -120,7 +129,7 @@ export default function AcceptRequestModal({
       const notifRef = doc(collection(db, "notifications"));
       await setDoc(notifRef, {
         notificationId: notifRef.id,
-        recipientId: req.farmerId,
+        recipientId: farmerId,
         title: businessName,
         message,
         timestamp: Timestamp.now(),
@@ -128,7 +137,7 @@ export default function AcceptRequestModal({
       });
 
       // 5. Send OneSignal push
-      const farmerDoc = await getDoc(doc(db, "users", req.farmerId));
+      const farmerDoc = await getDoc(doc(db, "users", farmerId));
       const farmerData = farmerDoc.exists() ? farmerDoc.data() : null;
       const validPlayerIds = (farmerData?.playerIds || []).filter(
         (id) => typeof id === "string" && id.length >= 10
@@ -136,10 +145,10 @@ export default function AcceptRequestModal({
       if (validPlayerIds.length) {
         await sendPushNotification(validPlayerIds, businessName, message, {
           openTarget: "FarmerDashboardFragment", // ✅ match this string in ApplicationClass
-          farmerId: req.farmerId,
+          farmerId: farmerId,
         });
       } else {
-        console.warn("No valid playerIds found for farmer:", req.farmerId);
+        console.warn("No valid playerIds found for farmer:", farmerId);
       }
 
       // 6. ✅ Notify the assigned hauler
