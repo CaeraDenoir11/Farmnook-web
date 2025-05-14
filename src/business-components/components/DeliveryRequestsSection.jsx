@@ -9,7 +9,6 @@ export default function DeliveryRequestsSection({
   readRequests, // Which requests the user has already seen
   setReadRequests, // Function to mark requests as read
   onViewDetails, // What to do when user clicks "View Details"
-  onAcceptRequest, // What to do when user clicks "Accept Request"
 }) {
   return (
     // The main container with a nice white background and shadow
@@ -100,27 +99,11 @@ export default function DeliveryRequestsSection({
                     <div className="flex flex-col items-end space-y-2">
                       {/* View Details button */}
                       <button
-                        className="text-[#1A4D2E] hover:text-[#1A4D2E]/80 text-sm font-medium transition-colors"
+                        className="px-4 py-2 bg-[#1A4D2E] text-white text-sm rounded-lg hover:bg-[#1A4D2E]/90 transition-colors"
                         onClick={() => onViewDetails(req)}
                       >
                         View Details
                       </button>
-                      {/* Accept button - disabled if request is cancelled */}
-                      {req.status === "Cancelled" ? (
-                        <button
-                          className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg cursor-not-allowed"
-                          disabled
-                        >
-                          Cancelled
-                        </button>
-                      ) : (
-                        <button
-                          className="px-4 py-2 bg-[#1A4D2E] text-white text-sm rounded-lg hover:bg-[#1A4D2E]/90 transition-colors"
-                          onClick={() => onAcceptRequest(req)}
-                        >
-                          Accept Request
-                        </button>
-                      )}
                     </div>
                   </div>
                 </motion.div>
