@@ -18,6 +18,7 @@ import {
 import { db } from "../../configs/firebase";
 import { sendPushNotification } from "../utils/SendPushNotification.jsx";
 import AcceptRequestModal from "../assets/buttons/AcceptRequestModal.jsx";
+import DeclineModal from "../business-components/components/DeclineDialog.jsx";
 
 export default function MapModal({
   isOpen,
@@ -36,6 +37,8 @@ export default function MapModal({
 }) {
   const [isMounted, setIsMounted] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [declineModalOpen, setDeclineModalOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
@@ -296,6 +299,10 @@ export default function MapModal({
     setAssignModalOpen(true);
   };
 
+  const handleDeclineRequest = () => {
+    setDeclineModalOpen(true);
+  };
+
   const handleAssign = async (hauler) => {
     try {
       // 1. Mark request as accepted
@@ -392,6 +399,42 @@ export default function MapModal({
       }
     } catch (err) {
       console.error("Error assigning hauler:", err);
+    }
+  };
+
+  const handleDeclineSubmit = async () => {
+    try {
+      // Update the request status in Firestore
+      await updateDoc(doc(db, "deliveryRequests", id), {
+        isDeclined: true,
+        declineReason: declineReason,
+        declinedAt: Timestamp.now(),
+        declinedBy: currentUser.uid,
+      });
+
+      // Create notification for the farmer
+      const businessId = currentUser.uid;
+      const businessDoc = await getDoc(doc(db, "users", businessId));
+      const businessData = businessDoc.exists() ? businessDoc.data() : {};
+      const businessName = businessData?.businessName || "Your Business";
+      const message = `Your delivery request has been declined by ${businessName}`;
+
+      const notifRef = doc(collection(db, "notifications"));
+      await setDoc(notifRef, {
+        notificationId: notifRef.id,
+        recipientId: farmerId,
+        title: businessName,
+        message,
+        timestamp: Timestamp.now(),
+        isRead: false,
+      });
+
+      // Update UI
+      setRequests((prev) => prev.filter((item) => item.id !== id));
+      setDeclineModalOpen(false);
+      onClose();
+    } catch (err) {
+      console.error("Error declining request:", err);
     }
   };
 
@@ -671,7 +714,10 @@ export default function MapModal({
                 >
                   Accept
                 </button>
-                <button className="w-full bg-red-500 text-white py-1.5 rounded font-semibold text-sm hover:bg-red-600 transition">
+                <button
+                  onClick={handleDeclineRequest}
+                  className="w-full bg-red-500 text-white py-1.5 rounded font-semibold text-sm hover:bg-red-600 transition"
+                >
                   Cancel
                 </button>
               </div>
@@ -791,6 +837,15 @@ export default function MapModal({
           scheduledTime,
         }}
         setRequests={setRequests}
+      />
+
+      {/* Decline Modal */}
+      <DeclineModal
+        isOpen={declineModalOpen}
+        onClose={() => setDeclineModalOpen(false)}
+        onSubmit={handleDeclineSubmit}
+        reason={declineReason}
+        setReason={setDeclineReason}
       />
     </>
   );
