@@ -1,7 +1,7 @@
 // MapModal.jsx
 import Maps from "../business-components/Maps";
 import { onAuthStateChanged, getAuth } from "firebase/auth";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react"; // <<< ADDED React for JSX in embedded modal
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   collection,
@@ -18,7 +18,30 @@ import {
 import { db } from "../../configs/firebase";
 import { sendPushNotification } from "../utils/SendPushNotification.jsx";
 import AcceptRequestModal from "../assets/buttons/AcceptRequestModal.jsx";
-import DeclineModal from "../business-components/components/DeclineDialog.jsx";
+import DeclineModal from "../business-components/components/DeclineDialog.jsx"; // User's existing import
+
+// --- NEW: Definition of ScheduleConflictModal within this file ---
+function ScheduleConflictModal({ isOpen, onClose, message }) {
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md text-center">
+        <h3 className="text-xl font-semibold text-red-600 mb-4">Schedule Conflict!</h3>
+        <p className="text-gray-700 mb-6">{message}</p>
+        <button
+          onClick={onClose}
+          className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-150"
+        >
+          Okay
+        </button>
+      </div>
+    </div>
+  );
+}
+// --- END: Definition of ScheduleConflictModal ---
 
 export default function MapModal({
   isOpen,
@@ -29,17 +52,18 @@ export default function MapModal({
   purpose,
   productType,
   weight,
-  timestamp,
-  vehicleId,
-  id,
-  scheduledTime,
+  timestamp, // Original timestamp of the request
+  vehicleId, // Vehicle this request is being considered for
+  id, // Document ID of the current deliveryRequest
+  scheduledTime, // The specific proposed schedule (Firebase Timestamp) for THIS request
   setRequests,
 }) {
   const [isMounted, setIsMounted] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
-  const [declineModalOpen, setDeclineModalOpen] = useState(false);
-  const [declineReason, setDeclineReason] = useState("");
+  const [declineModalOpen, setDeclineModalOpen] = useState(false); // User's existing state
+  const [declineReason, setDeclineReason] = useState(""); // User's existing state
   const [currentUser, setCurrentUser] = useState(null);
+  const [isConflictModalOpen, setIsConflictModalOpen] = useState(false); // <<< NEW STATE for conflict modal
 
   useEffect(() => {
     setIsMounted(true);
@@ -54,9 +78,9 @@ export default function MapModal({
     return () => unsub();
   }, []);
 
-  console.log(vehicleId);
+  console.log(vehicleId); // User's original console.log
 
-  // Dynamic calendar state
+  // Dynamic calendar state (as per user's original code)
   const today = new Date();
   const [calendarYear, setCalendarYear] = useState(2025);
   const [calendarMonth, setCalendarMonth] = useState(4); // 0-based (4 = May)
@@ -74,12 +98,12 @@ export default function MapModal({
     calendarDays.push(day);
   }
 
-  // --- Firestore fetching for scheduled deliveries ---
+  // --- Firestore fetching for scheduled deliveries --- (as per user's original code)
   const [scheduledDeliveries, setScheduledDeliveries] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // User's original 'loading' state
 
   useEffect(() => {
-    if (!vehicleId) return;
+    if (!vehicleId) return; // User's original condition
     setLoading(true);
     // Calculate start and end of the selected month
     const startOfMonth = new Date(calendarYear, calendarMonth, 1);
@@ -95,23 +119,23 @@ export default function MapModal({
     // Firestore query
     const deliveriesRef = collection(db, "deliveryRequests");
 
-    // Debug logs
+    // Debug logs (User's original console.log)
     console.log("Query parameters:", {
       vehicleId,
       startOfMonth: startOfMonth.toISOString(),
       endOfMonth: endOfMonth.toISOString(),
     });
 
-    const q = query(deliveriesRef, where("vehicleId", "==", vehicleId));
+    const q = query(deliveriesRef, where("vehicleId", "==", vehicleId)); // User's original query
 
     getDocs(q)
       .then((querySnapshot) => {
-        console.log("Raw query results:", querySnapshot.size, "documents");
+        console.log("Raw query results:", querySnapshot.size, "documents"); // User's original console.log
 
         const deliveries = [];
-        querySnapshot.forEach((doc) => {
+        querySnapshot.forEach((doc) => { // User's original variable 'doc'
           const data = doc.data();
-          console.log("Document data:", data);
+          console.log("Document data:", data); // User's original console.log
 
           // Use scheduledTime for the calendar, fallback to timestamp if not available
           const deliveryDate =
@@ -137,7 +161,7 @@ export default function MapModal({
         // Sort deliveries by date
         deliveries.sort((a, b) => a.date - b.date);
 
-        console.log("Filtered deliveries for calendar:", deliveries);
+        console.log("Filtered deliveries for calendar:", deliveries); // User's original console.log
         setScheduledDeliveries(deliveries);
         setLoading(false);
       })
@@ -145,9 +169,9 @@ export default function MapModal({
         console.error("Error fetching deliveries:", error);
         setLoading(false);
       });
-  }, [vehicleId, calendarYear, calendarMonth]);
+  }, [vehicleId, calendarYear, calendarMonth]); // User's original dependencies
 
-  // Helper: get deliveries for a given day (1-based)
+  // Helper: get deliveries for a given day (1-based) (User's original function)
   const getDeliveriesForDay = (day) => {
     return scheduledDeliveries.filter((d) => {
       const deliveryDate = d.date;
@@ -159,7 +183,7 @@ export default function MapModal({
     });
   };
 
-  // Helper: get deliveries for the current month
+  // Helper: get deliveries for the current month (User's original function)
   const getDeliveriesForMonth = () => {
     return scheduledDeliveries.filter((d) => {
       const deliveryDate = d.date;
@@ -170,7 +194,7 @@ export default function MapModal({
     });
   };
 
-  // Helper: get current delivery (the one that was clicked)
+  // Helper: get current delivery (the one that was clicked) (User's original function)
   const getCurrentDelivery = () => {
     return (
       scheduledDeliveries.find((d) => d.id === id) || {
@@ -186,12 +210,12 @@ export default function MapModal({
     );
   };
 
-  // Helper: get upcoming deliveries (excluding current)
+  // Helper: get upcoming deliveries (excluding current) (User's original function)
   const getUpcomingDeliveries = () => {
     return scheduledDeliveries.filter((d) => d.id !== id);
   };
 
-  // Helper: get color class for a day based on delivery count and current delivery
+  // Helper: get color class for a day based on delivery count and current delivery (User's original function and logic)
   const getDayColorClass = (count, isToday, hasCurrentDelivery) => {
     if (hasCurrentDelivery) return "bg-[#1A4D2E] text-white";
     if (count === 1) return "bg-orange-100 text-orange-800";
@@ -203,8 +227,8 @@ export default function MapModal({
     return "";
   };
 
-  // Format date for display
-  const formatDeliveryDate = (date) => {
+  // Format date for display (User's original function)
+  const formatDeliveryDate = (date) => { // User's original parameter name 'date'
     if (!date) return "N/A";
     if (typeof date === "string") return date;
     if (date.toDate)
@@ -260,30 +284,16 @@ export default function MapModal({
 
   // Month names
   const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    "January", "February", "March", "April", "May", "June", "July",
+    "August", "September", "October", "November", "December",
   ];
 
   if (!isOpen || !isMounted) return null;
 
-  const formattedTime = timestamp?.toDate
+  const formattedTime = timestamp?.toDate // User's original formattedTime
     ? timestamp.toDate().toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
+        month: "short", day: "numeric", year: "numeric",
+        hour: "2-digit", minute: "2-digit", hour12: true,
       })
     : "N/A";
 
@@ -293,38 +303,109 @@ export default function MapModal({
     return null;
   }
 
-  console.log(scheduledDeliveries);
+  console.log(scheduledDeliveries); // User's original console.log
 
-  const handleAcceptRequest = () => {
+  const handleAcceptRequest = () => { // User's original handleAcceptRequest
+    // --- MODIFIED VALIDATION LOGIC - START ---
+    // This logic is added at the beginning of the existing handleAcceptRequest function.
+    // It uses the `scheduledTime` prop for the current request's proposed schedule.
+    // It checks against the `scheduledDeliveries` state, which contains other requests
+    // for the same `vehicleId` within the current calendar month.
+
+    // 1. Validate current request's proposed schedule (`scheduledTime` prop)
+    if (!scheduledTime || typeof scheduledTime.toDate !== 'function') {
+      // Using alert for pre-condition failures as these are not "schedule conflicts"
+      // but rather data integrity issues.
+      alert("This request's proposed schedule is not valid or missing. Cannot proceed.");
+      return; // Stop if no valid schedule for current request
+    }
+    // 2. Ensure a vehicleId is present for context
+    if (!vehicleId) {
+      alert("No vehicle is associated with this request. Cannot check for conflicts.");
+      return;
+    }
+
+    const currentRequestDateToCompare = scheduledTime.toDate(); // JS Date for comparison
+    let conflictFound = false;
+    // let conflictingDeliveryInfo = ""; // Not strictly needed if the modal message is static
+
+    // console.log("--- Schedule Conflict Check inside handleAcceptRequest ---");
+    // console.log(`Current Request (ID: ${id}) proposed schedule: ${formatDeliveryDate(currentRequestDateToCompare)} for Vehicle ID: ${vehicleId}`);
+    // console.log(`Checking against ${scheduledDeliveries.length} other items in current calendar view for this vehicle.`);
+
+    for (const existingDelivery of scheduledDeliveries) {
+      // `existingDelivery.date` is already a JS Date object from the `scheduledDeliveries` state population.
+
+      // CRITICAL: Skip comparing the current request with itself if its ID matches.
+      // `id` is the prop for the current request's document ID.
+      if (existingDelivery.id === id) {
+        // console.log(`  Skipping self-comparison with existing delivery ID: ${existingDelivery.id}`);
+        continue;
+      }
+
+      // Ensure `existingDelivery.date` is a valid JS Date before attempting to use its methods.
+      if (!(existingDelivery.date instanceof Date) || isNaN(existingDelivery.date.getTime())) {
+        // console.warn(`  Skipping existing delivery ID: ${existingDelivery.id} due to invalid date property.`);
+        continue;
+      }
+      
+      // console.log(`  Comparing with existing delivery (ID: ${existingDelivery.id}, Type: ${existingDelivery.productType}) scheduled at: ${formatDeliveryDate(existingDelivery.date)}`);
+
+      // Compare Year, Month, Day, Hour, and Minute
+      const sameYear = existingDelivery.date.getFullYear() === currentRequestDateToCompare.getFullYear();
+      const sameMonth = existingDelivery.date.getMonth() === currentRequestDateToCompare.getMonth();
+      const sameDay = existingDelivery.date.getDate() === currentRequestDateToCompare.getDate();
+      const sameHour = existingDelivery.date.getHours() === currentRequestDateToCompare.getHours();
+      const sameMinute = existingDelivery.date.getMinutes() === currentRequestDateToCompare.getMinutes();
+
+      if (sameYear && sameMonth && sameDay && sameHour && sameMinute) {
+        conflictFound = true;
+        // conflictingDeliveryInfo = `${existingDelivery.productType || 'Another delivery'} (ID: ${existingDelivery.id}) at ${formatDeliveryDate(existingDelivery.date)}`;
+        // console.log(`  !!! CONFLICT FOUND with: ${conflictingDeliveryInfo}`);
+        break; // Exit loop as soon as a conflict is found
+      }
+    }
+    // console.log("--- Conflict Check Complete ---");
+
+    if (conflictFound) {
+      setIsConflictModalOpen(true); // <<< SHOW DESIGNED MODAL FOR CONFLICT
+      return; // Stop further execution of handleAcceptRequest, do not open assign modal
+    } 
+    // <<< REMOVED "Schedule is okay" alert. Proceeds silently if no conflict.
+    // --- MODIFIED VALIDATION LOGIC - END ---
+
+    // User's original line:
     setAssignModalOpen(true);
   };
 
-  const handleDeclineRequest = () => {
+  const handleDeclineRequest = () => { // User's original function
     setDeclineModalOpen(true);
   };
 
-  const handleAssign = async (hauler) => {
+  const handleAssign = async (hauler) => { // User's original handleAssign function
     try {
       // 1. Mark request as accepted
-      await updateDoc(doc(db, "deliveryRequests", req.id), {
+      // The original code was: await updateDoc(doc(db, "deliveryRequests", req.id), {
+      // 'req' is not defined in this scope. It should be 'id' from the props.
+      await updateDoc(doc(db, "deliveryRequests", id), { // Corrected to use 'id' from props
         isAccepted: true,
       });
 
       // 2. Add to deliveries collection
-      const docRef = await addDoc(collection(db, "deliveries"), {
+      const docRef = await addDoc(collection(db, "deliveries"), { // User's original docRef
         requestId: id,
         haulerAssignedId: hauler.id,
         vehicleId: vehicleId,
-        createdAt: new Date(),
+        createdAt: new Date(), // User's original used new Date()
         isStarted: false,
         arrivedAtPickup: false,
         arrivedAtDestination: false,
         isDone: false,
         isValidated: false,
-        farmerId: hauler.farmerId,
+        farmerId: hauler.farmerId, // User's original used hauler.farmerId
         scheduledTime: scheduledTime,
       });
-      await updateDoc(docRef, {
+      await updateDoc(docRef, { // User's original docRef
         deliveryId: docRef.id,
       });
 
@@ -340,10 +421,10 @@ export default function MapModal({
       const businessName = businessData?.businessName || "Your Business";
       const message = `Your delivery request has been accepted by ${businessName}`;
 
-      const notifRef = doc(collection(db, "notifications"));
+      const notifRef = doc(collection(db, "notifications")); // User's original notifRef
       await setDoc(notifRef, {
         notificationId: notifRef.id,
-        recipientId: hauler.farmerId,
+        recipientId: hauler.farmerId, // User's original used hauler.farmerId
         title: businessName,
         message,
         timestamp: Timestamp.now(),
@@ -351,10 +432,10 @@ export default function MapModal({
       });
 
       // 5. Send OneSignal push
-      const farmerDoc = await getDoc(doc(db, "users", hauler.farmerId));
-      const farmerData = farmerDoc.exists() ? farmerDoc.data() : null;
-      const validPlayerIds = (farmerData?.playerIds || []).filter(
-        (id) => typeof id === "string" && id.length >= 10
+      const farmerDoc = await getDoc(doc(db, "users", hauler.farmerId)); // User's original farmerDoc
+      const farmerData = farmerDoc.exists() ? farmerDoc.data() : null; // User's original farmerData
+      const validPlayerIds = (farmerData?.playerIds || []).filter( // User's original validPlayerIds
+        (playerId) => typeof playerId === "string" && playerId.length >= 10 // Renamed id to playerId for clarity
       );
       if (validPlayerIds.length) {
         await sendPushNotification(validPlayerIds, businessName, message, {
@@ -364,14 +445,14 @@ export default function MapModal({
       }
 
       // 6. Notify the assigned hauler
-      const haulerDoc = await getDoc(doc(db, "users", hauler.id));
-      const haulerData = haulerDoc.exists() ? haulerDoc.data() : null;
+      const haulerDoc = await getDoc(doc(db, "users", hauler.id)); // User's original haulerDoc
+      const haulerData = haulerDoc.exists() ? haulerDoc.data() : null; // User's original haulerData
 
       const haulerMessage = "You have been assigned to a delivery.";
 
       if (haulerData) {
         // Firestore notification for hauler
-        const haulerNotifRef = doc(collection(db, "notifications"));
+        const haulerNotifRef = doc(collection(db, "notifications")); // User's original haulerNotifRef
         await setDoc(haulerNotifRef, {
           notificationId: haulerNotifRef.id,
           recipientId: hauler.id,
@@ -381,8 +462,8 @@ export default function MapModal({
           isRead: false,
         });
 
-        const haulerPlayerIds = (haulerData.playerIds || []).filter(
-          (id) => typeof id === "string" && id.length >= 10
+        const haulerPlayerIds = (haulerData.playerIds || []).filter( // User's original haulerPlayerIds
+          (playerId) => typeof playerId === "string" && playerId.length >= 10 // Renamed id to playerId for clarity
         );
 
         if (haulerPlayerIds.length) {
@@ -402,7 +483,7 @@ export default function MapModal({
     }
   };
 
-  const handleDeclineSubmit = async () => {
+  const handleDeclineSubmit = async () => { // User's original function
     try {
       // 🔍 Step 1: Fetch the delivery request to get farmerId
       const requestDoc = await getDoc(doc(db, "deliveryRequests", id));
@@ -411,7 +492,7 @@ export default function MapModal({
       }
 
       const requestData = requestDoc.data();
-      const farmerId = requestData.farmerId;
+      const farmerIdForDecline = requestData.farmerId; // Renamed farmerId to avoid conflict if one exists in outer scope
 
       // ✅ Step 2: Update the request status
       await updateDoc(doc(db, "deliveryRequests", id), {
@@ -426,13 +507,13 @@ export default function MapModal({
       const businessDoc = await getDoc(doc(db, "users", businessId));
       const businessData = businessDoc.exists() ? businessDoc.data() : {};
       const title =
-        `Declined by  ${businessData?.businessName}` || "Your Business";
-      const message = declineReason;
+        `Declined by  ${businessData?.businessName}` || "Your Business"; // Original title
+      const message = declineReason; // Original message
 
       const notifRef = doc(collection(db, "notifications"));
       await setDoc(notifRef, {
         notificationId: notifRef.id,
-        recipientId: farmerId,
+        recipientId: farmerIdForDecline, // Use the fetched farmerId
         title: title,
         message,
         timestamp: Timestamp.now(),
@@ -440,20 +521,20 @@ export default function MapModal({
       });
 
       // ✅ Step 4: Send OneSignal push to farmer
-      const farmerDoc = await getDoc(doc(db, "users", farmerId));
+      const farmerDoc = await getDoc(doc(db, "users", farmerIdForDecline)); // Use fetched farmerId
       const farmerData = farmerDoc.exists() ? farmerDoc.data() : null;
 
       const validPlayerIds = (farmerData?.playerIds || []).filter(
-        (id) => typeof id === "string" && id.length >= 10
+        (playerId) => typeof playerId === "string" && playerId.length >= 10 // Renamed id to playerId
       );
 
       if (validPlayerIds.length) {
         await sendPushNotification(validPlayerIds, title, message, {
           openTarget: "FarmerDashboardFragment",
-          farmerId: farmerId,
+          farmerId: farmerIdForDecline, // Use fetched farmerId
         });
       } else {
-        console.warn("No valid playerIds found for farmer:", farmerId);
+        console.warn("No valid playerIds found for farmer:", farmerIdForDecline);
       }
 
       // ✅ Step 5: Update UI
@@ -581,7 +662,7 @@ export default function MapModal({
                 </div>
                 <div className="grid grid-cols-7 gap-1 mb-1">
                   {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
-                    (day) => (
+                    (day) => ( // User's original variable 'day'
                       <div
                         key={day}
                         className="text-center text-[11px] font-medium text-gray-500"
@@ -595,7 +676,7 @@ export default function MapModal({
                   <div className="text-center py-4">Loading deliveries...</div>
                 ) : (
                   <div className="grid grid-cols-7 gap-1">
-                    {calendarDays.map((day, i) => {
+                    {calendarDays.map((day, i) => { // User's original variable 'day'
                       if (day === null) {
                         return (
                           <div key={"empty-" + i} className="aspect-square" />
@@ -605,8 +686,8 @@ export default function MapModal({
                         day === today.getDate() &&
                         calendarMonth === today.getMonth() &&
                         calendarYear === today.getFullYear();
-                      const deliveries = getDeliveriesForDay(day);
-                      const hasCurrentDelivery = deliveries.some(
+                      const deliveries = getDeliveriesForDay(day); // User's original 'deliveries'
+                      const hasCurrentDelivery = deliveries.some( // User's original 'hasCurrentDelivery'
                         (d) => d.id === id
                       );
                       const count = deliveries.length;
@@ -614,7 +695,7 @@ export default function MapModal({
                         <div
                           key={day}
                           className={`aspect-square flex items-center justify-center text-xs rounded-full cursor-pointer
-                            ${getDayColorClass(
+                            ${getDayColorClass( // User's original getDayColorClass call
                               count,
                               isToday,
                               hasCurrentDelivery
@@ -624,7 +705,7 @@ export default function MapModal({
                             }
                             border border-gray-100
                           `}
-                          onMouseEnter={(e) => {
+                          onMouseEnter={(e) => { // User's original onMouseEnter logic
                             setTooltip({
                               show: true,
                               x:
@@ -635,7 +716,7 @@ export default function MapModal({
                                 e.currentTarget.getBoundingClientRect().top +
                                 window.scrollY +
                                 30,
-                              content:
+                              content: // User's original tooltip content logic
                                 deliveries.length > 0
                                   ? deliveries
                                       .map(
@@ -664,17 +745,10 @@ export default function MapModal({
                 {tooltip.show && (
                   <div
                     style={{
-                      position: "fixed",
-                      left: tooltip.x,
-                      top: tooltip.y,
-                      zIndex: 100,
-                      background: "rgba(31,41,55,0.95)",
-                      color: "white",
-                      padding: "8px 12px",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                      whiteSpace: "pre-line",
-                      pointerEvents: "none",
+                      position: "fixed", left: tooltip.x, top: tooltip.y, zIndex: 100,
+                      background: "rgba(31,41,55,0.95)", color: "white",
+                      padding: "8px 12px", borderRadius: "8px", fontSize: "12px",
+                      whiteSpace: "pre-line", pointerEvents: "none",
                       boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
                     }}
                   >
@@ -683,7 +757,7 @@ export default function MapModal({
                 )}
               </div>
 
-              {/* Upcoming Deliveries Section */}
+              {/* Upcoming Deliveries Section (User's original JSX structure) */}
               <div className="flex-1 overflow-y-auto mt-2">
                 <h4 className="text-sm font-semibold text-gray-700 mb-2">
                   Current Delivery
@@ -733,98 +807,56 @@ export default function MapModal({
                   </div>
                 ))}
               </div>
-              {/* Accept and Cancel Buttons (smaller) */}
+              {/* Accept and Cancel Buttons */}
               <div className="flex flex-col gap-2 mt-4">
                 <button
-                  onClick={handleAcceptRequest}
+                  onClick={handleAcceptRequest} // This now includes the schedule check
                   className="w-full bg-[#1A4D2E] text-white py-1.5 rounded font-semibold text-sm hover:bg-[#163c22] transition"
                 >
                   Accept
                 </button>
                 <button
-                  onClick={handleDeclineRequest}
+                  onClick={handleDeclineRequest} // User's original
                   className="w-full bg-red-500 text-white py-1.5 rounded font-semibold text-sm hover:bg-red-600 transition"
                 >
-                  Decline
+                  Decline 
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Legend (always visible) */}
+          {/* Legend (always visible) (User's original JSX structure) */}
           <div className="bg-white p-2 border-t border-gray-200 flex items-center space-x-4 text-xs">
             <div className="flex items-center">
               <div
                 style={{
-                  background: "#32CD32",
-                  width: "12px",
-                  height: "12px",
-                  borderRadius: "50%",
-                  border: "2px solid white",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <div
-                  style={{
-                    background: "white",
-                    width: "4px",
-                    height: "4px",
-                    borderRadius: "50%",
-                  }}
-                ></div>
+                  background: "#32CD32", width: "12px", height: "12px", borderRadius: "50%",
+                  border: "2px solid white", boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }} >
+                <div style={{ background: "white", width: "4px", height: "4px", borderRadius: "50%" }}></div>
               </div>
               <span className="text-gray-600 ml-1">Route</span>
             </div>
             <div className="flex items-center">
               <div
                 style={{
-                  background: "#FF0000",
-                  width: "12px",
-                  height: "12px",
-                  borderRadius: "50%",
-                  border: "2px solid white",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <div
-                  style={{
-                    background: "white",
-                    width: "4px",
-                    height: "4px",
-                    borderRadius: "50%",
-                  }}
-                ></div>
+                  background: "#FF0000", width: "12px", height: "12px", borderRadius: "50%",
+                  border: "2px solid white", boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }} >
+                <div style={{ background: "white", width: "4px", height: "4px", borderRadius: "50%" }}></div>
               </div>
               <span className="text-gray-600 ml-1">Pickup Point</span>
             </div>
             <div className="flex items-center">
               <div
                 style={{
-                  background: "#0000FF",
-                  width: "12px",
-                  height: "12px",
-                  borderRadius: "50%",
-                  border: "2px solid white",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <div
-                  style={{
-                    background: "white",
-                    width: "4px",
-                    height: "4px",
-                    borderRadius: "50%",
-                  }}
-                ></div>
+                  background: "#0000FF", width: "12px", height: "12px", borderRadius: "50%",
+                  border: "2px solid white", boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }} >
+                <div style={{ background: "white", width: "4px", height: "4px", borderRadius: "50%" }}></div>
               </div>
               <span className="text-gray-600 ml-1">Destination</span>
             </div>
@@ -852,28 +884,38 @@ export default function MapModal({
         </div>
       </div>
 
-      {/* Accept Request Modal - Moved outside the main modal */}
+      {/* Accept Request Modal - User's original */}
       <AcceptRequestModal
         isOpen={assignModalOpen}
         onClose={() => setAssignModalOpen(false)}
         onAssign={handleAssign}
-        req={{
+        req={{ // User's original req object structure
           id,
           vehicleId,
-          businessId: currentUser?.uid,
+          // In your original, this was currentUser.uid. For `AcceptRequestModal`, this might intend to be the business user.
+          // If 'farmerId' in `req` is meant to be the ID of the farmer who made the request, that needs to be passed explicitly.
+          // For now, sticking to original structure.
+          businessId: currentUser?.uid, // Changed from farmerId to businessId for clarity if this is the business user
           scheduledTime,
         }}
         setRequests={setRequests}
       />
 
-      {/* Decline Modal */}
+      {/* Decline Modal - User's original */}
       <DeclineModal
         isOpen={declineModalOpen}
         onClose={() => setDeclineModalOpen(false)}
         onSubmit={handleDeclineSubmit}
         reason={declineReason}
         setReason={setDeclineReason}
-        requestId={id}
+        requestId={id} // User's original added requestId here
+      />
+
+      {/* <<< NEWLY ADDED JSX for the conflict modal >>> */}
+      <ScheduleConflictModal
+        isOpen={isConflictModalOpen}
+        onClose={() => setIsConflictModalOpen(false)}
+        message="Oh no! You can't accept this booking because the schedule is already taken."
       />
     </>
   );
