@@ -115,6 +115,7 @@ export default function BusinessDashboard() {
    * @param {string} id - Request ID
    * @param {string} vehicleId - Vehicle ID
    * @param {Date} scheduledTime - Scheduled time for the delivery
+   * @param {Date} estimatedEndTime - Estimated end time for the delivery
    */
   const openMapModal = (
     pickup,
@@ -126,7 +127,8 @@ export default function BusinessDashboard() {
     timestamp,
     id,
     vehicleId,
-    scheduledTime
+    scheduledTime,
+    estimatedEndTime
   ) => {
     setMapPoints({
       pickup,
@@ -138,6 +140,7 @@ export default function BusinessDashboard() {
       timestamp,
       vehicleId,
       scheduledTime,
+      estimatedEndTime,
       id,
     });
     setReadRequests((prev) => {
@@ -221,7 +224,8 @@ export default function BusinessDashboard() {
                   req.timestamp,
                   req.id,
                   req.vehicleId,
-                  req.scheduledTime
+                  req.scheduledTime,
+                  req.estimatedEndTime
                 )
               }
             />
@@ -264,6 +268,7 @@ export default function BusinessDashboard() {
         vehicleId={mapPoints.vehicleId}
         id={mapPoints.id}
         scheduledTime={mapPoints.scheduledTime}
+        estimatedEndTime={mapPoints.estimatedEndTime}
         setRequests={setRequests}
       />
 

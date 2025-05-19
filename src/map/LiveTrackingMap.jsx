@@ -105,7 +105,8 @@ const haulerIcon = L.divIcon({
 // Update ROUTE_STATES to match Android status
 const ROUTE_STATES = {
   GOING_TO_PICKUP: "GOING_TO_PICKUP",
-  ON_THE_WAY: "ON_THE_WAY",
+  ARRIVED_AT_PICKUP: "ARRIVED_AT_PICKUP",
+  ON_DELIVERY: "ON_DELIVERY",
   ARRIVED_AT_DESTINATION: "ARRIVED_AT_DESTINATION",
   COMPLETED: "COMPLETED",
 };
@@ -115,8 +116,10 @@ function updateRouteState(newState) {
   switch (newState) {
     case "Going to Pickup":
       return ROUTE_STATES.GOING_TO_PICKUP;
-    case "On the Way":
-      return ROUTE_STATES.ON_THE_WAY;
+    case "Arrived at Pickup":
+      return ROUTE_STATES.ARRIVED_AT_PICKUP;
+    case "On Delivery":
+      return ROUTE_STATES.ON_DELIVERY;
     case "Arrived at Destination":
       return ROUTE_STATES.ARRIVED_AT_DESTINATION;
     case "Completed":
@@ -526,7 +529,7 @@ export default function LiveTrackingMap({
           const distance = haulerPos.distanceTo(pickupPos);
 
           if (distance <= 20 && routeState === ROUTE_STATES.GOING_TO_PICKUP) {
-            setRouteState(ROUTE_STATES.ON_THE_WAY);
+            setRouteState(ROUTE_STATES.ARRIVED_AT_PICKUP);
           }
         }
       }
@@ -610,13 +613,16 @@ export default function LiveTrackingMap({
                   {routeState === ROUTE_STATES.GOING_TO_PICKUP && (
                     <span className="text-[#FF6B00]">Going to Pickup</span>
                   )}
-                  {routeState === ROUTE_STATES.ON_THE_WAY && (
-                    <span className="text-[#32CD32]">On the Way</span>
+                  {routeState === ROUTE_STATES.ARRIVED_AT_PICKUP && (
+                    <span className="text-[#f2e24f]">Arrived at Pickup</span>
+                  )}
+                  {routeState === ROUTE_STATES.ON_DELIVERY && (
+                    <span className="text-[#87db39]">On Delivery</span>
                   )}
                   {routeState === ROUTE_STATES.ARRIVED_AT_DESTINATION && (
                     <span className="text-[#1A4D2E]">
                       Arrived at Destination
-                    </span>
+                    </span> 
                   )}
                   {routeState === ROUTE_STATES.COMPLETED && (
                     <span className="text-[#4B0082]">Completed</span>
