@@ -134,8 +134,8 @@ export default function MapModal({
       999
     );
 
-    // Revert back to deliveryRequests collection
-    const deliveriesRef = collection(db, "deliveryRequests");
+    // Change to deliveries collection
+    const deliveriesRef = collection(db, "deliveries");
 
     console.log("Query parameters:", {
       vehicleId,
@@ -146,7 +146,7 @@ export default function MapModal({
     const q = query(
       deliveriesRef,
       where("vehicleId", "==", vehicleId),
-      where("isAccepted", "==", true)
+      where("isDone", "==", false)
     );
 
     // Set loading state
@@ -155,34 +155,48 @@ export default function MapModal({
     // Use onSnapshot for real-time updates
     const unsubscribe = onSnapshot(
       q,
-      (querySnapshot) => {
+      async (querySnapshot) => {
         console.log("Raw query results:", querySnapshot.size, "documents");
 
         const deliveries = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          console.log("Document data:", data);
+        // Use Promise.all to fetch request details for each delivery
+        await Promise.all(
+          querySnapshot.docs.map(async (docSnapshot) => {
+            const data = docSnapshot.data();
+            console.log("Document data:", data);
 
-          const deliveryDate =
-            data.scheduledTime?.toDate?.() ||
-            data.timestamp?.toDate?.() ||
-            new Date();
+            // Fetch the corresponding request details
+            const requestRef = doc(db, "deliveryRequests", data.requestId);
+            const requestDoc = await getDoc(requestRef);
+            const requestData = requestDoc.exists() ? requestDoc.data() : {};
 
-          if (deliveryDate >= startOfMonth && deliveryDate <= endOfMonth) {
-            deliveries.push({
-              ...data,
-              id: doc.id,
-              date: deliveryDate,
-              label: `${data.productType || "Delivery"} - ${
-                data.purpose || ""
-              }`,
-              scheduledTime: data.scheduledTime,
-              timestamp: data.timestamp,
-              isAccepted: data.isAccepted,
-              estimatedEndTime: data.estimatedEndTime,
-            });
-          }
-        });
+            const deliveryDate =
+              data.scheduledTime?.toDate?.() ||
+              data.timestamp?.toDate?.() ||
+              new Date();
+
+            if (deliveryDate >= startOfMonth && deliveryDate <= endOfMonth) {
+              deliveries.push({
+                ...data,
+                id: docSnapshot.id,
+                date: deliveryDate,
+                label: `${requestData.productType || "Delivery"} - ${
+                  requestData.purpose || ""
+                }`,
+                scheduledTime: data.scheduledTime,
+                timestamp: data.timestamp,
+                isAccepted: true, // Since it's in deliveries, it's accepted
+                estimatedEndTime: data.estimatedEndTime,
+                productType: requestData.productType,
+                purpose: requestData.purpose,
+                weight: requestData.weight,
+                farmerName: requestData.farmerName,
+                pickup: requestData.pickupLocation,
+                drop: requestData.destinationLocation,
+              });
+            }
+          })
+        );
 
         deliveries.sort((a, b) => a.date - b.date);
         console.log("Filtered deliveries for calendar:", deliveries);
