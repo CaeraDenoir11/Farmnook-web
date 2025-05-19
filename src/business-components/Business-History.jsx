@@ -16,13 +16,14 @@ export default function History() {
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
+  const [showProofModal, setShowProofModal] = useState(false); // State for proof image modal
 
   const getReadableLocation = async (coords) => {
     if (!coords) return "No location";
     const [lat, lng] = coords.split(",");
     try {
       const response = await fetch(
-        `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=9b332265c5664a9984191710ac38cc4a`
+        `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=9b332265c5664a9984191710ac38cc4a` // Replace with your actual API key if different
       );
       const data = await response.json();
       return data.results?.[0]?.formatted || "Unknown location";
@@ -54,6 +55,12 @@ export default function History() {
           .map((item) => item.deliveryId)
           .filter(Boolean);
 
+        if (deliveryIds.length === 0) {
+          setHistoryData([]);
+          setIsLoading(false);
+          return;
+        }
+        
         const deliverySnapshots = await Promise.all(
           deliveryIds.map((id) => getDoc(doc(db, "deliveries", id)))
         );
@@ -79,10 +86,10 @@ export default function History() {
               ).docs.map((d) => [d.data().userId, d.data()])
             )
           : {};
-
-        const requestSnapshots = await Promise.all(
+        
+        const requestSnapshots = requestIds.length ? await Promise.all(
           requestIds.map((id) => getDoc(doc(db, "deliveryRequests", id)))
-        );
+        ) : [];
 
         const requests = requestSnapshots
           .filter((snap) => snap.exists())
@@ -133,7 +140,7 @@ export default function History() {
             if (!hauler || hauler.businessId !== currentUserId) return null;
 
             const request = requests.find((r) => r.id === delivery.requestId);
-            if (!request) return null;
+            if (!request) return null; // If request data is crucial, keep this. Otherwise, handle missing request gracefully.
 
             const farmer = farmerMap[request.farmerId] || {};
             const vehicle = vehicleMap[request.vehicleId] || {};
@@ -163,6 +170,10 @@ export default function History() {
               destinationName: request.destinationName,
               pickupLocation: request.pickupLocation,
               destinationLocation: request.destinationLocation,
+              // Added fields
+              receiverName: request.receiverName || "N/A",
+              receiverNumber: request.receiverNumber || "N/A",
+              proofImageUrl: delivery.proofImageUrl || null,
             };
           })
           .filter(Boolean);
@@ -177,14 +188,15 @@ export default function History() {
   }, []);
 
   const filteredHistory = historyData.filter((entry) => {
-    const query = searchQuery.toLowerCase();
+    const queryText = searchQuery.toLowerCase(); // Renamed 'query' to 'queryText' to avoid conflict
     const queryMatch =
-      (entry.farmerName?.toLowerCase() || "").includes(query) ||
-      (entry.haulerName?.toLowerCase() || "").includes(query) ||
-      (entry.vehicleType?.toLowerCase() || "").includes(query);
+      (entry.farmerName?.toLowerCase() || "").includes(queryText) ||
+      (entry.haulerName?.toLowerCase() || "").includes(queryText) ||
+      (entry.vehicleType?.toLowerCase() || "").includes(queryText);
 
     const fromDate = dateRange.from ? new Date(dateRange.from) : null;
     const toDate = dateRange.to ? new Date(dateRange.to) : null;
+    if (toDate) toDate.setHours(23, 59, 59, 999); // Set to end of day for inclusive range
 
     const inRange =
       (!fromDate || entry.timestampRaw >= fromDate) &&
@@ -271,8 +283,8 @@ export default function History() {
 
                           setSelectedEntry({
                             ...entry,
-                            pickupLocation: pickup,
-                            destinationLocation: drop,
+                            pickupLocation: pickup, // This will be the readable name
+                            destinationLocation: drop, // This will be the readable name
                           });
                         }}
                       >
@@ -304,7 +316,7 @@ export default function History() {
       </div>
 
       {selectedEntry && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 z-50">
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 z-50 p-4">
           <div className="bg-[#F5EFE6] p-8 rounded-2xl shadow-2xl w-full max-w-md relative">
             <button
               onClick={() => setSelectedEntry(null)}
@@ -357,12 +369,28 @@ export default function History() {
                 <strong>Date Completed:</strong> {selectedEntry.timestamp}
               </li>
               <li>
-                <strong>Pickup Location:</strong> {selectedEntry.pickupName}
+                {/* Displaying readable location names if available, otherwise coords */}
+                <strong>Pickup Location:</strong> {selectedEntry.pickupName} (Details: {selectedEntry.pickupLocation})
               </li>
               <li>
-                <strong>Destination Location:</strong>{" "}
-                {selectedEntry.destinationName}
+                <strong>Destination Location:</strong> {selectedEntry.destinationName} (Details: {selectedEntry.destinationLocation})
               </li>
+              <li>
+                <strong>Receiver Name:</strong> {selectedEntry.receiverName}
+              </li>
+              <li>
+                <strong>Receiver Number:</strong> {selectedEntry.receiverNumber}
+              </li>
+              {selectedEntry.proofImageUrl && (
+                <li className="mt-1">
+                  <button
+                    onClick={() => setShowProofModal(true)}
+                    className="text-sm text-[#1A4D2E] hover:text-[#145C38] hover:underline focus:outline-none font-medium cursor-pointer"
+                  >
+                    View Proof
+                  </button>
+                </li>
+              )}
             </ul>
             <div className="flex justify-end mt-6">
               <button
@@ -371,6 +399,46 @@ export default function History() {
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Proof Image Modal */}
+      {showProofModal && selectedEntry && selectedEntry.proofImageUrl && (
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/50 z-[60] p-4"> {/* Ensure z-index is higher than details modal */}
+          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl relative">
+            <button
+              onClick={() => setShowProofModal(false)}
+              className="absolute top-3 right-3 text-gray-600 hover:text-red-600 transition-colors duration-200 z-10 cursor-pointer"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-7 w-7"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+            <h3 className="text-xl font-semibold text-[#1A4D2E] mb-4 text-center">
+              Proof of Delivery
+            </h3>
+            <div className="flex justify-center items-center max-h-[80vh] overflow-auto bg-gray-100 rounded">
+              <img
+                src={selectedEntry.proofImageUrl}
+                alt="Proof of Delivery"
+                className="max-w-full max-h-full object-contain rounded"
+                onError={(e) => {
+                  e.target.alt = "Failed to load proof image.";
+                }}
+              />
             </div>
           </div>
         </div>
