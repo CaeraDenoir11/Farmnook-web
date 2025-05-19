@@ -517,11 +517,29 @@ export default function AcceptRequestModal({
       {/* Conflict Modal */}
       {conflictModal.isOpen && (
         <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 z-[60] p-4">
-          <div className="bg-[#F5EFE6] p-6 rounded-2xl shadow-2xl w-full max-w-2xl">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-2xl border-2 border-red-500">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-2xl font-bold text-[#1A4D2E]">
-                Schedule Conflict
-              </h3>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 rounded-full">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 text-red-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-red-600">
+                  Schedule Conflict Detected
+                </h3>
+              </div>
               <button
                 onClick={() => {
                   console.log("Closing conflict modal");
@@ -531,15 +549,18 @@ export default function AcceptRequestModal({
                     hauler: null,
                   });
                 }}
-                className="text-[#1A4D2E] text-xl font-bold hover:opacity-80"
+                className="text-gray-500 hover:text-red-600 text-xl font-bold transition-colors"
               >
                 ×
               </button>
             </div>
 
             <div className="mb-6">
-              <p className="text-gray-700 mb-4">
-                {conflictModal.hauler.firstName} {conflictModal.hauler.lastName}{" "}
+              <p className="text-gray-700 mb-4 bg-red-50 p-4 rounded-lg border border-red-100">
+                <span className="font-semibold text-red-600">
+                  {conflictModal.hauler.firstName}{" "}
+                  {conflictModal.hauler.lastName}
+                </span>{" "}
                 has {conflictModal.conflicts.length} existing delivery
                 {conflictModal.conflicts.length > 1 ? "s" : ""} during this
                 time:
@@ -549,20 +570,20 @@ export default function AcceptRequestModal({
                 {conflictModal.conflicts.map((conflict, index) => (
                   <div
                     key={index}
-                    className="bg-white p-3 rounded-lg border border-gray-200"
+                    className="bg-red-50 p-3 rounded-lg border border-red-200 hover:bg-red-100 transition-colors"
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium text-gray-800">
+                      <span className="text-sm font-medium text-red-800">
                         {conflict.vehicleType}
                       </span>
-                      <span className="px-2 py-0.5 text-xs rounded-full bg-[#1A4D2E]/10 text-[#1A4D2E]">
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-red-200 text-red-800">
                         {conflict.plateNumber}
                       </span>
                     </div>
-                    <p className="text-sm font-semibold text-gray-500 mb-1">
+                    <p className="text-sm font-semibold text-red-700 mb-1">
                       {conflict.model}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-red-600">
                       {conflict.start.toLocaleString()} -{" "}
                       {conflict.end.toLocaleString()}
                     </p>
@@ -581,8 +602,22 @@ export default function AcceptRequestModal({
                     hauler: null,
                   });
                 }}
-                className="px-6 py-2.5 bg-[#1A4D2E] text-white font-medium rounded-lg hover:bg-[#145C38] transition-colors"
+                className="px-6 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
               >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
                 Choose Different Driver
               </button>
             </div>
