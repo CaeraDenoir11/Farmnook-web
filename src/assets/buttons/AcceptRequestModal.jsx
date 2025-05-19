@@ -37,6 +37,11 @@ export default function AcceptRequestModal({
   const [haulerVehicles, setHaulerVehicles] = useState([]);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [haulerDetails, setHaulerDetails] = useState({});
+  const [conflictModal, setConflictModal] = useState({
+    isOpen: false,
+    conflicts: [],
+    hauler: null,
+  });
 
   useEffect(() => {
     const auth = getAuth();
@@ -177,51 +182,79 @@ export default function AcceptRequestModal({
       const querySnapshot = await getDocs(q);
       const conflicts = [];
 
-      querySnapshot.forEach((doc) => {
-        const delivery = doc.data();
+      console.log("Checking for conflicts...");
+      console.log("New delivery time:", {
+        start: newDeliveryStart,
+        end: newDeliveryEnd,
+      });
+
+      // Fetch all vehicle details first
+      const vehiclePromises = querySnapshot.docs.map(async (deliveryDoc) => {
+        const delivery = deliveryDoc.data();
         const existingStart = delivery.scheduledTime.toDate();
         const existingEnd = delivery.estimatedEndTime.toDate();
+
+        console.log("Checking existing delivery:", {
+          id: deliveryDoc.id,
+          start: existingStart,
+          end: existingEnd,
+          vehicleId: delivery.vehicleId,
+        });
 
         // Check for overlap
         if (
           (newDeliveryStart < existingEnd && newDeliveryEnd > existingStart) ||
           (existingStart < newDeliveryEnd && existingEnd > newDeliveryStart)
         ) {
-          conflicts.push({
-            id: doc.id,
+          console.log("Found overlap with delivery:", deliveryDoc.id);
+          // Fetch vehicle details
+          const vehicleDoc = await getDoc(
+            doc(db, "vehicles", delivery.vehicleId)
+          );
+          const vehicleData = vehicleDoc.exists() ? vehicleDoc.data() : null;
+
+          console.log("Vehicle data:", vehicleData);
+
+          return {
+            id: deliveryDoc.id,
             start: existingStart,
             end: existingEnd,
-            vehicleType:
-              delivery.vehicleDetails?.vehicleType || "Unknown Vehicle",
-            plateNumber: delivery.vehicleDetails?.plateNumber || "No Plate",
-          });
+            vehicleType: vehicleData?.vehicleType || "Unknown Vehicle",
+            plateNumber: vehicleData?.plateNumber || "No Plate",
+            model: vehicleData?.model || "Unknown Model",
+          };
         }
+        return null;
       });
 
-      if (conflicts.length > 0) {
-        // Show conflict modal
-        const conflictMessage = `This delivery conflicts with ${
-          conflicts.length
-        } existing delivery${conflicts.length > 1 ? "s" : ""}:\n\n${conflicts
-          .map(
-            (conflict) =>
-              `• ${conflict.vehicleType} (${
-                conflict.plateNumber
-              })\n  ${conflict.start.toLocaleString()} - ${conflict.end.toLocaleString()}`
-          )
-          .join("\n\n")}`;
+      const resolvedConflicts = (await Promise.all(vehiclePromises)).filter(
+        Boolean
+      );
+      console.log("Resolved conflicts:", resolvedConflicts);
 
-        if (
-          !window.confirm(
-            conflictMessage +
-              "\n\nDo you still want to proceed with this assignment?"
-          )
-        ) {
-          setLoadingHaulerId(null);
-          return;
-        }
+      if (resolvedConflicts.length > 0) {
+        console.log("Setting conflict modal with:", {
+          conflicts: resolvedConflicts,
+          hauler: hauler,
+        });
+        setConflictModal({
+          isOpen: true,
+          conflicts: resolvedConflicts,
+          hauler,
+        });
+        setLoadingHaulerId(null);
+        return;
       }
 
+      await proceedWithAssignment(hauler, requestData, farmerId);
+    } catch (err) {
+      console.error("Error assigning hauler:", err);
+      setLoadingHaulerId(null);
+    }
+  };
+
+  const proceedWithAssignment = async (hauler, requestData, farmerId) => {
+    try {
       // 1. Mark request as accepted
       await updateDoc(doc(db, "deliveryRequests", req.id), {
         isAccepted: true,
@@ -327,8 +360,7 @@ export default function AcceptRequestModal({
         onClose();
       }, 2000);
     } catch (err) {
-      console.error("Error assigning hauler:", err);
-    } finally {
+      console.error("Error in assignment:", err);
       setLoadingHaulerId(null);
     }
   };
@@ -342,141 +374,221 @@ export default function AcceptRequestModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 z-50 p-4">
-      <div className="relative bg-[#F5EFE6] p-8 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
-        {/* Header Section */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-3xl font-bold text-[#1A4D2E]">Assign a Hauler</h2>
-          <button
-            onClick={onClose}
-            className="text-[#1A4D2E] text-2xl font-bold hover:opacity-80 transition-opacity"
-          >
-            ×
-          </button>
-        </div>
-
-        {successMessage && (
-          <div className="bg-green-100 text-green-700 text-sm px-4 py-3 mb-6 rounded-lg text-center">
-            {successMessage}
+    <>
+      <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 z-50 p-4">
+        <div className="relative bg-[#F5EFE6] p-8 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
+          {/* Header Section */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-bold text-[#1A4D2E]">
+              Assign a Hauler
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-[#1A4D2E] text-2xl font-bold hover:opacity-80 transition-opacity"
+            >
+              ×
+            </button>
           </div>
-        )}
 
-        {/* Main Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-12rem)] pr-2 custom-scroll">
-          {haulers.length === 0 ? (
-            <div className="flex items-center justify-center h-40">
-              <p className="text-gray-400 text-lg">No haulers found.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {haulers.map((hauler) => (
-                <div
-                  key={hauler.id}
-                  className="bg-white rounded-xl border border-[#1A4D2E] shadow-sm hover:shadow-md transition-shadow"
-                >
-                  {/* Hauler Header - Always Visible */}
-                  <div className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <img
-                          src={hauler.profileImageUrl || defaultImg}
-                          alt="Hauler"
-                          className="w-12 h-12 rounded-full border-2 border-[#1A4D2E]"
-                        />
-                        <div>
-                          <h3 className="text-lg font-semibold text-[#1A4D2E]">
-                            {hauler.firstName} {hauler.lastName}
-                          </h3>
-                          <p className="text-sm text-gray-500">
-                            {hauler.businessName || "Independent Hauler"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => handleHaulerSelect(hauler)}
-                          className="text-[#1A4D2E] text-sm font-medium hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors"
-                        >
-                          {selectedHauler?.id === hauler.id
-                            ? "Hide Details"
-                            : "Show Details"}
-                        </button>
-                        <button
-                          onClick={() => handleAssign(hauler)}
-                          className="bg-[#1A4D2E] text-white text-sm px-4 py-1.5 rounded-lg hover:bg-[#145C38] transition-all disabled:opacity-50 font-medium"
-                          disabled={loadingHaulerId !== null}
-                        >
-                          {loadingHaulerId === hauler.id
-                            ? "Assigning..."
-                            : "Assign"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Expandable Details Section */}
-                  {selectedHauler?.id === hauler.id && (
-                    <div className="border-t border-gray-200">
-                      <div className="p-4">
-                        {isLoadingDetails ? (
-                          <div className="flex items-center justify-center py-4">
-                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1A4D2E]"></div>
-                            <p className="text-sm text-gray-600 ml-2">
-                              Loading details...
-                            </p>
-                          </div>
-                        ) : (
-                          <div>
-                            <h4 className="text-sm font-semibold text-[#1A4D2E] mb-3">
-                              Current Deliveries
-                            </h4>
-                            {haulerSchedule.length > 0 ? (
-                              <div className="space-y-2">
-                                {haulerSchedule.map((delivery) => (
-                                  <div
-                                    key={delivery.id}
-                                    className="bg-gray-50 p-3 rounded-lg border border-gray-200"
-                                  >
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="text-sm font-medium text-gray-800">
-                                        {delivery.vehicleDetails?.vehicleType ||
-                                          "No Vehicle Type"}
-                                      </span>
-                                      <span className="px-2 py-0.5 text-xs rounded-full bg-[#1A4D2E]/10 text-[#1A4D2E]">
-                                        {delivery.vehicleDetails?.plateNumber ||
-                                          "No Plate"}
-                                      </span>
-                                    </div>
-                                    <p className="text-xs text-gray-500">
-                                      {delivery.scheduledTime
-                                        ?.toDate()
-                                        .toLocaleString()}{" "}
-                                      -
-                                      {delivery.estimatedEndTime
-                                        ?.toDate()
-                                        .toLocaleString()}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="text-center py-3 bg-gray-50 rounded-lg">
-                                <p className="text-sm text-gray-500">
-                                  No active deliveries
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+          {successMessage && (
+            <div className="bg-green-100 text-green-700 text-sm px-4 py-3 mb-6 rounded-lg text-center">
+              {successMessage}
             </div>
           )}
+
+          {/* Main Content */}
+          <div className="overflow-y-auto max-h-[calc(90vh-12rem)] pr-2 custom-scroll">
+            {haulers.length === 0 ? (
+              <div className="flex items-center justify-center h-40">
+                <p className="text-gray-400 text-lg">No haulers found.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {haulers.map((hauler) => (
+                  <div
+                    key={hauler.id}
+                    className="bg-white rounded-xl border border-[#1A4D2E] shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    {/* Hauler Header - Always Visible */}
+                    <div className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <img
+                            src={hauler.profileImageUrl || defaultImg}
+                            alt="Hauler"
+                            className="w-12 h-12 rounded-full border-2 border-[#1A4D2E]"
+                          />
+                          <div>
+                            <h3 className="text-lg font-semibold text-[#1A4D2E]">
+                              {hauler.firstName} {hauler.lastName}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                              {hauler.businessName || "Independent Hauler"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => handleHaulerSelect(hauler)}
+                            className="text-[#1A4D2E] text-sm font-medium hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors"
+                          >
+                            {selectedHauler?.id === hauler.id
+                              ? "Hide Details"
+                              : "Show Details"}
+                          </button>
+                          <button
+                            onClick={() => handleAssign(hauler)}
+                            className="bg-[#1A4D2E] text-white text-sm px-4 py-1.5 rounded-lg hover:bg-[#145C38] transition-all disabled:opacity-50 font-medium"
+                            disabled={loadingHaulerId !== null}
+                          >
+                            {loadingHaulerId === hauler.id
+                              ? "Assigning..."
+                              : "Assign"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expandable Details Section */}
+                    {selectedHauler?.id === hauler.id && (
+                      <div className="border-t border-gray-200">
+                        <div className="p-4">
+                          {isLoadingDetails ? (
+                            <div className="flex items-center justify-center py-4">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1A4D2E]"></div>
+                              <p className="text-sm text-gray-600 ml-2">
+                                Loading details...
+                              </p>
+                            </div>
+                          ) : (
+                            <div>
+                              <h4 className="text-sm font-semibold text-[#1A4D2E] mb-3">
+                                Current Deliveries
+                              </h4>
+                              {haulerSchedule.length > 0 ? (
+                                <div className="space-y-2">
+                                  {haulerSchedule.map((delivery) => (
+                                    <div
+                                      key={delivery.id}
+                                      className="bg-gray-50 p-3 rounded-lg border border-gray-200"
+                                    >
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-sm font-medium text-gray-800">
+                                          {delivery.vehicleDetails
+                                            ?.vehicleType || "No Vehicle Type"}
+                                        </span>
+                                        <span className="px-2 py-0.5 text-xs rounded-full bg-[#1A4D2E]/10 text-[#1A4D2E]">
+                                          {delivery.vehicleDetails
+                                            ?.plateNumber || "No Plate"}
+                                        </span>
+                                      </div>
+                                      <p className="text-xs text-gray-500">
+                                        {delivery.scheduledTime
+                                          ?.toDate()
+                                          .toLocaleString()}{" "}
+                                        -
+                                        {delivery.estimatedEndTime
+                                          ?.toDate()
+                                          .toLocaleString()}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="text-center py-3 bg-gray-50 rounded-lg">
+                                  <p className="text-sm text-gray-500">
+                                    No active deliveries
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Conflict Modal */}
+      {conflictModal.isOpen && (
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 z-[60] p-4">
+          <div className="bg-[#F5EFE6] p-6 rounded-2xl shadow-2xl w-full max-w-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-2xl font-bold text-[#1A4D2E]">
+                Schedule Conflict
+              </h3>
+              <button
+                onClick={() => {
+                  console.log("Closing conflict modal");
+                  setConflictModal({
+                    isOpen: false,
+                    conflicts: [],
+                    hauler: null,
+                  });
+                }}
+                className="text-[#1A4D2E] text-xl font-bold hover:opacity-80"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-gray-700 mb-4">
+                {conflictModal.hauler.firstName} {conflictModal.hauler.lastName}{" "}
+                has {conflictModal.conflicts.length} existing delivery
+                {conflictModal.conflicts.length > 1 ? "s" : ""} during this
+                time:
+              </p>
+
+              <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2 custom-scroll">
+                {conflictModal.conflicts.map((conflict, index) => (
+                  <div
+                    key={index}
+                    className="bg-white p-3 rounded-lg border border-gray-200"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium text-gray-800">
+                        {conflict.vehicleType}
+                      </span>
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-[#1A4D2E]/10 text-[#1A4D2E]">
+                        {conflict.plateNumber}
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-500 mb-1">
+                      {conflict.model}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {conflict.start.toLocaleString()} -{" "}
+                      {conflict.end.toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  console.log("Choosing different driver");
+                  setConflictModal({
+                    isOpen: false,
+                    conflicts: [],
+                    hauler: null,
+                  });
+                }}
+                className="px-6 py-2.5 bg-[#1A4D2E] text-white font-medium rounded-lg hover:bg-[#145C38] transition-colors"
+              >
+                Choose Different Driver
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
