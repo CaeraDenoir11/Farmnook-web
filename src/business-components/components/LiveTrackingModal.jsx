@@ -4,20 +4,74 @@ import LiveTrackingMap from "../../map/LiveTrackingMap";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../configs/firebase";
 
+// Define delivery statuses and their colors
+const DELIVERY_STATUSES = {
+  GOING_TO_PICKUP: {
+    label: "Going to Pickup",
+    color: "#1A4D2E",
+    icon: "🚚",
+  },
+  ARRIVED_AT_PICKUP: {
+    label: "Arrived at Pickup",
+    color: "#1A4D2E",
+    icon: "📍",
+  },
+  ON_DELIVERY: {
+    label: "On Delivery",
+    color: "#1A4D2E",
+    icon: "📦",
+  },
+  ARRIVED_AT_DESTINATION: {
+    label: "Arrived at Destination",
+    color: "#1A4D2E",
+    icon: "✅",
+  },
+};
+
 export default function LiveTrackingModal({ isOpen, onClose, deliveryData }) {
   const [isMounted, setIsMounted] = useState(false);
-  const [currentStatus, setCurrentStatus] = useState(
-    deliveryData?.status || "Going to Pickup"
-  );
+  const [currentStatus, setCurrentStatus] = useState("GOING_TO_PICKUP");
   const [eta, setEta] = useState(null);
   const [haulerSpeed, setHaulerSpeed] = useState(0);
   const [haulerInfo, setHaulerInfo] = useState(null);
   const [vehicleInfo, setVehicleInfo] = useState(null);
 
-  // Add debug log for deliveryData
+  // Function to determine status based on boolean flags
+  const determineStatus = (data) => {
+    if (!data) return "GOING_TO_PICKUP";
+
+    console.log("Checking delivery status:", {
+      isStarted: data.isStarted,
+      arrivedAtPickup: data.arrivedAtPickup,
+      isOnDelivery: data.isOnDelivery,
+      arrivedAtDestination: data.arrivedAtDestination,
+    });
+
+    if (data.arrivedAtDestination) {
+      return "ARRIVED_AT_DESTINATION";
+    } else if (data.isOnDelivery) {
+      return "ON_DELIVERY";
+    } else if (data.arrivedAtPickup) {
+      return "ARRIVED_AT_PICKUP";
+    } else if (data.isStarted) {
+      return "GOING_TO_PICKUP";
+    }
+    return "GOING_TO_PICKUP";
+  };
+
+  // Update status when deliveryData changes
   useEffect(() => {
-    console.log("Delivery Data in Modal:", deliveryData);
-  }, [deliveryData]);
+    if (deliveryData) {
+      const newStatus = determineStatus(deliveryData);
+      console.log("Status updated to:", newStatus);
+      setCurrentStatus(newStatus);
+    }
+  }, [
+    deliveryData?.isStarted,
+    deliveryData?.arrivedAtPickup,
+    deliveryData?.isOnDelivery,
+    deliveryData?.arrivedAtDestination,
+  ]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -49,22 +103,14 @@ export default function LiveTrackingModal({ isOpen, onClose, deliveryData }) {
   // Fetch vehicle information
   useEffect(() => {
     const fetchVehicleInfo = async () => {
-      console.log("Fetching vehicle info for ID:", deliveryData?.vehicleId);
-
-      if (!deliveryData?.vehicleId) {
-        console.log("No vehicleId found in deliveryData");
-        return;
-      }
+      if (!deliveryData?.vehicleId) return;
 
       try {
         const vehicleDoc = await getDoc(
           doc(db, "vehicles", deliveryData.vehicleId)
         );
-        console.log("Vehicle document exists:", vehicleDoc.exists());
-
         if (vehicleDoc.exists()) {
           const data = vehicleDoc.data();
-          console.log("Vehicle data:", data);
           setVehicleInfo({
             model: data.model,
             vehicleType: data.vehicleType,
@@ -82,8 +128,7 @@ export default function LiveTrackingModal({ isOpen, onClose, deliveryData }) {
   const calculateETA = (currentPos, destinationPos, speed) => {
     if (!currentPos || !destinationPos || !speed) return null;
 
-    // Calculate distance using Haversine formula
-    const R = 6371; // Earth's radius in km
+    const R = 6371;
     const lat1 = (currentPos[0] * Math.PI) / 180;
     const lat2 = (destinationPos[0] * Math.PI) / 180;
     const dLat = ((destinationPos[0] - currentPos[0]) * Math.PI) / 180;
@@ -93,9 +138,8 @@ export default function LiveTrackingModal({ isOpen, onClose, deliveryData }) {
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c; // Distance in km
+    const distance = R * c;
 
-    // Calculate time in minutes
     const timeInHours = distance / speed;
     const timeInMinutes = Math.round(timeInHours * 60);
 
@@ -124,19 +168,18 @@ export default function LiveTrackingModal({ isOpen, onClose, deliveryData }) {
       const { latitude, longitude, speed } = event.detail;
       setHaulerSpeed(speed || 0);
 
-      if (currentStatus === "Going to Pickup") {
+      // Only calculate ETA if we're going to pickup or on delivery
+      if (currentStatus === "GOING_TO_PICKUP") {
         const pickupCoords = deliveryData.pickupLocation.split(",").map(Number);
-        const eta = calculateETA([latitude, longitude], pickupCoords, speed);
+        const haulerPos = [latitude, longitude];
+        const eta = calculateETA(haulerPos, pickupCoords, speed);
         setEta(eta);
-      } else if (currentStatus === "On the Way") {
+      } else if (currentStatus === "ON_DELIVERY") {
         const destinationCoords = deliveryData.destinationLocation
           .split(",")
           .map(Number);
-        const eta = calculateETA(
-          [latitude, longitude],
-          destinationCoords,
-          speed
-        );
+        const haulerPos = [latitude, longitude];
+        const eta = calculateETA(haulerPos, destinationCoords, speed);
         setEta(eta);
       }
     };
@@ -146,17 +189,39 @@ export default function LiveTrackingModal({ isOpen, onClose, deliveryData }) {
       window.removeEventListener("haulerLocationUpdate", handleHaulerUpdate);
   }, [deliveryData, currentStatus]);
 
+  // Add function to calculate distance between two points
+  const calculateDistance = (point1, point2) => {
+    const R = 6371; // Earth's radius in km
+    const lat1 = (point1[0] * Math.PI) / 180;
+    const lat2 = (point2[0] * Math.PI) / 180;
+    const dLat = ((point2[0] - point1[0]) * Math.PI) / 180;
+    const dLon = ((point2[1] - point1[1]) * Math.PI) / 180;
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+  };
+
   if (!isOpen || !isMounted) return null;
 
-  // Validate required props
   if (!deliveryData?.pickupLocation || !deliveryData?.destinationLocation) {
     console.error("Missing required pickup or destination coordinates");
     return null;
   }
 
+  const currentStatusInfo =
+    DELIVERY_STATUSES[currentStatus] || DELIVERY_STATUSES.GOING_TO_PICKUP;
+
   return (
     <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[90vh] relative flex flex-col overflow-hidden">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[90vh] relative flex flex-col overflow-hidden"
+      >
         {/* Header Section */}
         <div className="bg-[#1A4D2E] px-6 py-4 rounded-t-2xl">
           <div className="flex justify-between items-center">
@@ -208,10 +273,12 @@ export default function LiveTrackingModal({ isOpen, onClose, deliveryData }) {
               <div className="absolute top-1/2 left-0 w-full h-1.5 bg-gray-100 -translate-y-1/2 rounded-full overflow-hidden">
                 <div
                   className={`h-full bg-[#1A4D2E] transition-all duration-500 ease-in-out ${
-                    currentStatus === "Going to Pickup"
-                      ? "w-1/3"
-                      : currentStatus === "On the Way"
-                      ? "w-2/3"
+                    currentStatus === "GOING_TO_PICKUP"
+                      ? "w-1/4"
+                      : currentStatus === "ARRIVED_AT_PICKUP"
+                      ? "w-2/4"
+                      : currentStatus === "ON_DELIVERY"
+                      ? "w-3/4"
                       : "w-full"
                   }`}
                 ></div>
@@ -219,84 +286,28 @@ export default function LiveTrackingModal({ isOpen, onClose, deliveryData }) {
 
               {/* Status Points */}
               <div className="relative flex justify-between">
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
-                      currentStatus === "Going to Pickup"
-                        ? "bg-[#1A4D2E] ring-4 ring-[#1A4D2E]/20"
-                        : "bg-gray-100"
-                    }`}
-                  >
+                {Object.entries(DELIVERY_STATUSES).map(([status, info]) => (
+                  <div key={status} className="flex flex-col items-center">
                     <div
-                      className={`w-3 h-3 rounded-full ${
-                        currentStatus === "Going to Pickup"
-                          ? "bg-white"
-                          : "bg-gray-300"
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+                        currentStatus === status
+                          ? "bg-[#1A4D2E] ring-4 ring-[#1A4D2E]/20"
+                          : "bg-gray-100"
                       }`}
-                    ></div>
-                  </div>
-                  <span
-                    className={`text-xs mt-2 font-medium ${
-                      currentStatus === "Going to Pickup"
-                        ? "text-[#1A4D2E]"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    Going to Pickup
-                  </span>
-                </div>
-
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
-                      currentStatus === "On the Way"
-                        ? "bg-[#1A4D2E] ring-4 ring-[#1A4D2E]/20"
-                        : "bg-gray-100"
-                    }`}
-                  >
-                    <div
-                      className={`w-3 h-3 rounded-full ${
-                        currentStatus === "On the Way"
-                          ? "bg-white"
-                          : "bg-gray-300"
+                    >
+                      <span className="text-sm">{info.icon}</span>
+                    </div>
+                    <span
+                      className={`text-xs mt-2 font-medium ${
+                        currentStatus === status
+                          ? "text-[#1A4D2E]"
+                          : "text-gray-400"
                       }`}
-                    ></div>
+                    >
+                      {info.label}
+                    </span>
                   </div>
-                  <span
-                    className={`text-xs mt-2 font-medium ${
-                      currentStatus === "On the Way"
-                        ? "text-[#1A4D2E]"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    On the Way
-                  </span>
-                </div>
-
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
-                      currentStatus === "Arrived"
-                        ? "bg-[#1A4D2E] ring-4 ring-[#1A4D2E]/20"
-                        : "bg-gray-100"
-                    }`}
-                  >
-                    <div
-                      className={`w-3 h-3 rounded-full ${
-                        currentStatus === "Arrived" ? "bg-white" : "bg-gray-300"
-                      }`}
-                    ></div>
-                  </div>
-                  <span
-                    className={`text-xs mt-2 font-medium ${
-                      currentStatus === "Arrived"
-                        ? "text-[#1A4D2E]"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    Arrived
-                  </span>
-                </div>
+                ))}
               </div>
             </div>
           </div>
@@ -318,83 +329,20 @@ export default function LiveTrackingModal({ isOpen, onClose, deliveryData }) {
         <div className="bg-white p-3 border-t border-gray-200">
           <div className="flex items-center space-x-6 text-xs">
             <div className="flex items-center">
-              <div
-                style={{
-                  background: "#FF6B00",
-                  width: "12px",
-                  height: "12px",
-                  borderRadius: "50%",
-                  border: "2px solid white",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <div
-                  style={{
-                    background: "white",
-                    width: "4px",
-                    height: "4px",
-                    borderRadius: "50%",
-                  }}
-                ></div>
-              </div>
+              <div className="w-3 h-3 rounded-full bg-[#FF6B00] border-2 border-white shadow-sm"></div>
               <span className="text-gray-600 ml-2">Hauler Location</span>
             </div>
             <div className="flex items-center">
-              <div
-                style={{
-                  background: "#FF0000",
-                  width: "12px",
-                  height: "12px",
-                  borderRadius: "50%",
-                  border: "2px solid white",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <div
-                  style={{
-                    background: "white",
-                    width: "4px",
-                    height: "4px",
-                    borderRadius: "50%",
-                  }}
-                ></div>
-              </div>
+              <div className="w-3 h-3 rounded-full bg-[#FF0000] border-2 border-white shadow-sm"></div>
               <span className="text-gray-600 ml-2">Pickup Point</span>
             </div>
             <div className="flex items-center">
-              <div
-                style={{
-                  background: "#0000FF",
-                  width: "12px",
-                  height: "12px",
-                  borderRadius: "50%",
-                  border: "2px solid white",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <div
-                  style={{
-                    background: "white",
-                    width: "4px",
-                    height: "4px",
-                    borderRadius: "50%",
-                  }}
-                ></div>
-              </div>
+              <div className="w-3 h-3 rounded-full bg-[#0000FF] border-2 border-white shadow-sm"></div>
               <span className="text-gray-600 ml-2">Destination</span>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
