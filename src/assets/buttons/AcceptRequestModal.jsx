@@ -422,9 +422,6 @@ export default function AcceptRequestModal({
                             <h3 className="text-lg font-semibold text-[#1A4D2E]">
                               {hauler.firstName} {hauler.lastName}
                             </h3>
-                            <p className="text-sm text-gray-500">
-                              {hauler.businessName || "Independent Hauler"}
-                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -516,111 +513,90 @@ export default function AcceptRequestModal({
 
       {/* Conflict Modal */}
       {conflictModal.isOpen && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/40 z-[60] p-4">
-          <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-2xl border-2 border-red-500">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md border-t-8 border-red-500 relative">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 rounded-full">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6 text-red-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold text-red-600">
-                  Schedule Conflict Detected
-                </h3>
-              </div>
-              <button
-                onClick={() => {
-                  console.log("Closing conflict modal");
-                  setConflictModal({
-                    isOpen: false,
-                    conflicts: [],
-                    hauler: null,
-                  });
-                }}
-                className="text-gray-500 hover:text-red-600 text-xl font-bold transition-colors"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="mb-6">
-              <p className="text-gray-700 mb-4 bg-red-50 p-4 rounded-lg border border-red-100">
-                <span className="font-semibold text-red-600">
-                  {conflictModal.hauler.firstName}{" "}
-                  {conflictModal.hauler.lastName}
-                </span>{" "}
-                has {conflictModal.conflicts.length} existing delivery
-                {conflictModal.conflicts.length > 1 ? "s" : ""} during this
-                time:
-              </p>
-
-              <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2 custom-scroll">
-                {conflictModal.conflicts.map((conflict, index) => (
-                  <div
-                    key={index}
-                    className="bg-red-50 p-3 rounded-lg border border-red-200 hover:bg-red-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium text-red-800">
-                        {conflict.vehicleType}
-                      </span>
-                      <span className="px-2 py-0.5 text-xs rounded-full bg-red-200 text-red-800">
-                        {conflict.plateNumber}
-                      </span>
-                    </div>
-                    <p className="text-sm font-semibold text-red-700 mb-1">
-                      {conflict.model}
-                    </p>
-                    <p className="text-xs text-red-600">
-                      {conflict.start.toLocaleString()} -{" "}
-                      {conflict.end.toLocaleString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                onClick={() => {
-                  console.log("Choosing different driver");
-                  setConflictModal({
-                    isOpen: false,
-                    conflicts: [],
-                    hauler: null,
-                  });
-                }}
-                className="px-6 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
-              >
+              <div className="flex items-center gap-2">
                 <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
+                  className="w-7 h-7 text-red-500"
                   fill="none"
-                  viewBox="0 0 24 24"
                   stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                Choose Different Driver
+                <h3 className="text-xl font-bold text-red-600">
+                  Schedule Conflict!
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setConflictModal({
+                    isOpen: false,
+                    conflicts: [],
+                    hauler: null,
+                  });
+                }}
+                className="text-gray-400 hover:text-gray-700 text-2xl font-bold px-2"
+              >
+                ×
               </button>
             </div>
+
+            <div className="bg-red-50 p-4 rounded-lg mb-4 border border-red-200">
+              <p className="text-sm text-red-700 mb-3 font-medium">
+                <span className="font-semibold">
+                  {conflictModal.hauler.firstName}{" "}
+                  {conflictModal.hauler.lastName}
+                </span>{" "}
+                has{" "}
+                <span className="font-semibold">
+                  {conflictModal.conflicts.length}
+                </span>{" "}
+                conflicting deliver
+                {conflictModal.conflicts.length > 1 ? "ies" : "y"} during this
+                time:
+              </p>
+              <div className="space-y-3 max-h-[30vh] overflow-y-auto pr-2 custom-scroll">
+                {conflictModal.conflicts.map((conflict, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 bg-white p-3 rounded-lg border border-red-100 shadow-sm"
+                  >
+                    <div className="flex flex-col flex-1">
+                      <span className="text-sm font-semibold text-red-800">
+                        {conflict.vehicleType}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {conflict.start.toLocaleString()} -{" "}
+                        {conflict.end.toLocaleString()}
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 font-semibold border border-red-200">
+                      {conflict.plateNumber}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setConflictModal({
+                  isOpen: false,
+                  conflicts: [],
+                  hauler: null,
+                });
+              }}
+              className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-150 shadow"
+            >
+              Choose Different Driver
+            </button>
           </div>
         </div>
       )}
