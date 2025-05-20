@@ -270,7 +270,7 @@ export default function LiveTrackingModal({ isOpen, onClose, deliveryData }) {
             </h3>
             <div className="relative">
               {/* Progress Line */}
-              <div className="absolute top-1/2 left-0 w-full h-1.5 bg-gray-100 -translate-y-1/2 rounded-full overflow-hidden">
+              <div className="absolute top-1/4 left-0 w-full h-1.5 bg-gray-100 -translate-y-1/2 rounded-full overflow-hidden">
                 <div
                   className={`h-full bg-[#1A4D2E] transition-all duration-500 ease-in-out ${
                     currentStatus === "GOING_TO_PICKUP"

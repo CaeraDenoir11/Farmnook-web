@@ -21,10 +21,24 @@ import { sendPushNotification } from "../utils/SendPushNotification.jsx";
 import AcceptRequestModal from "../assets/buttons/AcceptRequestModal.jsx";
 import DeclineModal from "../business-components/components/DeclineDialog.jsx"; // User's existing import
 
-// --- NEW: Definition of ScheduleConflictModal within this file ---
-function ScheduleConflictModal({ isOpen, onClose, message }) {
-  if (!isOpen) return null;
+// Utility function to format date/time without seconds
+function formatTimeNoSeconds(date) {
+  if (!date) return "N/A";
+  if (typeof date === "string") return date;
+  if (date.toDate) date = date.toDate();
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
 
+// --- NEW: Definition of ScheduleConflictModal within this file ---
+function ScheduleConflictModal({ isOpen, onClose, current, conflict }) {
+  if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
@@ -39,13 +53,29 @@ function ScheduleConflictModal({ isOpen, onClose, message }) {
             ×
           </button>
         </div>
-
         <div className="bg-red-50 p-4 rounded-lg">
           <div className="whitespace-pre-line text-sm text-red-700">
-            {message}
+            {`Your delivery request:
+` +
+              `📦 ${current?.productType || "Delivery"} - ${
+                current?.weight
+              } kg\n` +
+              `⏰ Time: ${formatTimeNoSeconds(
+                current?.start
+              )} - ${formatTimeNoSeconds(current?.end)}\n\n` +
+              `Conflicts with existing delivery:\n` +
+              `📦 ${conflict?.productType || "Delivery"} - ${
+                conflict?.weight
+              } kg\n` +
+              `⏰ Time: ${formatTimeNoSeconds(
+                conflict?.start
+              )} - ${formatTimeNoSeconds(conflict?.end)}\n` +
+              (conflict?.plateNumber
+                ? `🚗 Plate: ${conflict.plateNumber}\n`
+                : "") +
+              `\nOverlap detected: The time slots overlap, which means the vehicle would be in two places at once.`}
           </div>
         </div>
-
         <button
           onClick={onClose}
           className="w-full mt-4 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-150"
@@ -85,6 +115,7 @@ export default function MapModal({
   const [loading, setLoading] = useState(true); // Change initial state to true
   const [isInitialLoad, setIsInitialLoad] = useState(true); // Add this for initial load state
   const [conflictMessage, setConflictMessage] = useState("");
+  const [conflictDetails, setConflictDetails] = useState(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -547,17 +578,22 @@ export default function MapModal({
     }
 
     if (conflictFound) {
-      const message =
-        `Your delivery request:\n` +
-        `📦 ${productType} - ${weight} kg\n` +
-        `⏰ Time: ${conflictDetails.currentStart} - ${conflictDetails.currentEnd}\n\n` +
-        `Conflicts with existing delivery:\n` +
-        `📦 ${conflictDetails.productType} - ${conflictDetails.weight} kg\n` +
-        `⏰ Time: ${conflictDetails.existingStart} - ${conflictDetails.existingEnd}\n\n` +
-        `Overlap detected: The time slots overlap, which means the vehicle would be in two places at once.`;
-
-      setConflictMessage(message);
       setIsConflictModalOpen(true);
+      setConflictDetails({
+        current: {
+          productType,
+          weight,
+          start: currentRequestStart,
+          end: currentRequestEnd,
+        },
+        conflict: {
+          productType: conflictDetails.productType,
+          weight: conflictDetails.weight,
+          start: new Date(conflictDetails.existingStart),
+          end: new Date(conflictDetails.existingEnd),
+          plateNumber: conflictDetails.plateNumber,
+        },
+      });
       return;
     }
 
@@ -1222,9 +1258,10 @@ export default function MapModal({
         isOpen={isConflictModalOpen}
         onClose={() => {
           setIsConflictModalOpen(false);
-          setConflictMessage("");
+          setConflictDetails(null);
         }}
-        message={conflictMessage}
+        current={conflictDetails?.current}
+        conflict={conflictDetails?.conflict}
       />
     </>
   );

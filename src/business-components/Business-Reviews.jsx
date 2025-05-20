@@ -3,7 +3,7 @@ import {
   IoSearchOutline,
   IoStar,
   IoStarHalf,
-  IoShareOutline,
+  IoStarOutline,
 } from "react-icons/io5";
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
@@ -32,6 +32,52 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// Helper: Render stars (full, half, empty)
+function renderStars(rating, size = "text-xl") {
+  const full = Math.floor(rating);
+  const half = rating % 1 !== 0;
+  const empty = 5 - full - (half ? 1 : 0);
+  return (
+    <span className={`flex ${size} text-[#1A4D2E]`}>
+      {Array.from({ length: full }).map((_, i) => (
+        <IoStar key={"full-" + i} />
+      ))}
+      {half && <IoStarHalf key="half" />}
+      {Array.from({ length: empty }).map((_, i) => (
+        <IoStarOutline key={"empty-" + i} />
+      ))}
+    </span>
+  );
+}
+
+// Helper: Time ago
+function timeAgo(ts) {
+  if (!ts) return "";
+  const now = Date.now();
+  const date = ts.seconds ? new Date(ts.seconds * 1000) : new Date(ts);
+  const diff = Math.floor((now - date.getTime()) / 1000);
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hrs ago`;
+  if (diff < 2592000) return `${Math.floor(diff / 86400)} days ago`;
+  return date.toLocaleDateString();
+}
+
+// Helper: Rating distribution
+function getRatingDistribution(reviews) {
+  const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  reviews.forEach((r) => {
+    const star = Math.floor(r.rating);
+    if (counts[star] !== undefined) counts[star]++;
+  });
+  const total = reviews.length || 1;
+  const percentages = {};
+  Object.keys(counts).forEach(
+    (k) => (percentages[k] = Math.round((counts[k] / total) * 100))
+  );
+  return percentages;
+}
 
 export default function BusinessReviews() {
   const [search, setSearch] = useState("");
@@ -127,6 +173,7 @@ export default function BusinessReviews() {
   const filtered = sorted.filter((r) =>
     r.comment.toLowerCase().includes(search.toLowerCase())
   );
+  const percentages = getRatingDistribution(reviewsData);
 
   return (
     <div className="antialiased bg-white flex flex-col items-center min-h-screen">
@@ -143,13 +190,9 @@ export default function BusinessReviews() {
                 {averageRating.toFixed(1)}
               </div>
               <div className="flex text-[#1A4D2E] text-2xl">
-                {Array.from({ length: Math.floor(averageRating) }).map(
-                  (_, i) => (
-                    <IoStar key={i} />
-                  )
-                )}
-                {averageRating % 1 !== 0 && <IoStarHalf />}
+                {renderStars(averageRating, "text-2xl text-[#1A4D2E]")}
               </div>
+              <span className="text-xs text-gray-500 mt-1">Average Rating</span>
             </div>
             <div className="w-full sm:w-96 mt-4 sm:mt-0">
               <div className="flex items-center bg-white border border-gray-400 rounded-lg px-3 py-2">
@@ -163,6 +206,31 @@ export default function BusinessReviews() {
                 />
               </div>
             </div>
+          </div>
+
+          {/* RATING DISTRIBUTION */}
+          <div className="w-full max-w-7xl px-4 sm:px-8 mb-8">
+            {[5, 4, 3, 2, 1].map((star) => (
+              <div key={star} className="flex items-center mb-2">
+                <span className="flex text-[#1A4D2E] mr-2">
+                  {Array.from({ length: star }).map((_, i) => (
+                    <IoStar key={i} />
+                  ))}
+                </span>
+                <div className="flex-1 bg-gray-200 rounded h-3 mx-2 relative">
+                  <div
+                    className="bg-[#1A4D2E] h-3 rounded"
+                    style={{
+                      width: `${percentages[star]}%`,
+                      transition: "width 0.5s",
+                    }}
+                  ></div>
+                </div>
+                <span className="w-10 text-right text-sm text-gray-600">
+                  {percentages[star]}%
+                </span>
+              </div>
+            ))}
           </div>
 
           {/* ERROR MESSAGE */}
@@ -190,24 +258,17 @@ export default function BusinessReviews() {
                         <span className="font-semibold">{fullName}</span>
                       </div>
                       <div className="flex p-1 gap-1 text-[#1A4D2E] text-lg">
-                        {Array.from({ length: Math.floor(r.rating) }).map(
-                          (_, i) => (
-                            <IoStar key={i} />
-                          )
-                        )}
-                        {r.rating % 1 !== 0 && <IoStarHalf />}
+                        {renderStars(r.rating, "text-lg text-[#1A4D2E]")}
                       </div>
                     </div>
 
                     <div className="text-lg mt-2">{r.comment}</div>
 
                     <div className="flex justify-between items-center mt-3">
-                      <span className="text-sm">
-                        {new Date(r.timestamp.seconds * 1000).toDateString()}
-                      </span>
-                      <div className="text-sm text-[#1A4D2E] bg-[#F5EFE6] border border-[#1A4D2E] px-3 py-1 rounded-md">
+                      <span className="text-sm">{timeAgo(r.timestamp)}</span>
+                      {/*  <div className="text-sm text-[#1A4D2E] bg-[#F5EFE6] border border-[#1A4D2E] px-3 py-1 rounded-md">
                         Delivery ID: {r.deliveryId || "N/A"}
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 );

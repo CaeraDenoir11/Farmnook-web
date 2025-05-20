@@ -21,6 +21,21 @@ import { db } from "../../../configs/firebase";
 import defaultImg from "../../assets/images/default.png";
 import { sendPushNotification } from "../../utils/SendPushNotification.jsx";
 
+// Utility function to format date/time without seconds
+function formatTimeNoSeconds(date) {
+  if (!date) return "N/A";
+  if (typeof date === "string") return date;
+  if (date.toDate) date = date.toDate();
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 export default function AcceptRequestModal({
   isOpen,
   onClose,
@@ -41,6 +56,7 @@ export default function AcceptRequestModal({
     isOpen: false,
     conflicts: [],
     hauler: null,
+    current: null,
   });
 
   useEffect(() => {
@@ -236,11 +252,23 @@ export default function AcceptRequestModal({
         console.log("Setting conflict modal with:", {
           conflicts: resolvedConflicts,
           hauler: hauler,
+          current: {
+            start: newDeliveryStart,
+            end: newDeliveryEnd,
+            productType: requestData.productType,
+            weight: requestData.weight,
+          },
         });
         setConflictModal({
           isOpen: true,
           conflicts: resolvedConflicts,
-          hauler,
+          hauler: hauler,
+          current: {
+            start: newDeliveryStart,
+            end: newDeliveryEnd,
+            productType: requestData.productType,
+            weight: requestData.weight,
+          },
         });
         setLoadingHaulerId(null);
         return;
@@ -540,6 +568,7 @@ export default function AcceptRequestModal({
                     isOpen: false,
                     conflicts: [],
                     hauler: null,
+                    current: null,
                   });
                 }}
                 className="text-gray-400 hover:text-gray-700 text-2xl font-bold px-2"
@@ -547,50 +576,37 @@ export default function AcceptRequestModal({
                 ×
               </button>
             </div>
-
             <div className="bg-red-50 p-4 rounded-lg mb-4 border border-red-200">
-              <p className="text-sm text-red-700 mb-3 font-medium">
-                <span className="font-semibold">
-                  {conflictModal.hauler.firstName}{" "}
-                  {conflictModal.hauler.lastName}
-                </span>{" "}
-                has{" "}
-                <span className="font-semibold">
-                  {conflictModal.conflicts.length}
-                </span>{" "}
-                conflicting deliver
-                {conflictModal.conflicts.length > 1 ? "ies" : "y"} during this
-                time:
-              </p>
-              <div className="space-y-3 max-h-[30vh] overflow-y-auto pr-2 custom-scroll">
-                {conflictModal.conflicts.map((conflict, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-3 bg-white p-3 rounded-lg border border-red-100 shadow-sm"
-                  >
-                    <div className="flex flex-col flex-1">
-                      <span className="text-sm font-semibold text-red-800">
-                        {conflict.vehicleType}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {conflict.start.toLocaleString()} -{" "}
-                        {conflict.end.toLocaleString()}
-                      </span>
-                    </div>
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 font-semibold border border-red-200">
-                      {conflict.plateNumber}
-                    </span>
-                  </div>
-                ))}
+              <div className="whitespace-pre-line text-sm text-red-700">
+                {`Your delivery request:
+` +
+                  `⏰ Time: ${formatTimeNoSeconds(
+                    conflictModal.current?.start
+                  )} - ${formatTimeNoSeconds(conflictModal.current?.end)}
+
+` +
+                  `Conflicts with existing delivery:
+` +
+                  conflictModal.conflicts
+                    .map(
+                      (conflict, idx) =>
+                        `⏰ Time: ${formatTimeNoSeconds(
+                          conflict.start
+                        )} - ${formatTimeNoSeconds(conflict.end)}
+
+`
+                    )
+                    .join("") +
+                  `Overlap detected: The time slots overlap, which means the hauler would be in two places at once.`}
               </div>
             </div>
-
             <button
               onClick={() => {
                 setConflictModal({
                   isOpen: false,
                   conflicts: [],
                   hauler: null,
+                  current: null,
                 });
               }}
               className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-150 shadow"
